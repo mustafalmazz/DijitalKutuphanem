@@ -1,4 +1,4 @@
-﻿@using BookManagementApp.Areas.Admin.Models
+@using BookManagementApp.Areas.Admin.Models
 @using BookManagementApp.Models
 @model CategoryUserViewModel
 
@@ -319,6 +319,14 @@
                 <span>DijitalKütüphanem</span>
             </a>
 
+            @if(Model.User != null)
+            {
+                <a asp-area="" asp-controller="Store" asp-action="Index" class="d-flex d-lg-none align-items-center me-2" style="color: #ffd782; font-weight: 700; font-size: 0.95rem; white-space: nowrap; text-decoration: none;" title="Mağazaya Git">
+                    <i class="fa-solid fa-gem me-1" style="color: #00ffff; text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);"></i>
+                    @Model.User.WisdomStones
+                </a>
+            }
+
             <form class="mobile-search-form d-flex d-lg-none" asp-controller="Home" asp-action="@targetAction" method="get">
                 <input class="mobile-search-input" type="search" name="q" placeholder="Ara..." aria-label="Search" value="@ViewData["CurrentSearch"]" autocomplete="off">
                 <button type="submit" class="mobile-search-btn-icon">
@@ -328,6 +336,15 @@
 
             <div class="navbar-collapse collapse d-none d-lg-flex" id="navbarContent">
                 <ul class="navbar-nav flex-grow-1">
+
+                    @if(Model.User != null)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Store" asp-action="Index" style="color: #ffd782 !important; font-weight: 700; letter-spacing: 1px;" title="Mağazaya Git">
+                                <i class="fa-solid fa-gem" style="color: #00ffff; text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);"></i> @Model.User.WisdomStones
+                            </a>
+                        </li>
+                    }
 
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="categoryDropdown" role="button"
@@ -354,10 +371,33 @@
                     </li>
 
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fa-solid fa-user"></i>
-                            @(Model.User != null ? Model.User.UserName : "Hesabım")
+                            @if (Model.User != null)
+                            {
+                                <div style="position: relative; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%); color: #5c4b3d; font-size: 1.1rem; font-weight: bold; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                                    <div style="width: 100%; height: 100%; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                        @if (!string.IsNullOrEmpty(Model.User.ProfileImageUrl))
+                                        {
+                                            <img src="@Model.User.ProfileImageUrl" alt="Profil" style="width: 100%; height: 100%; object-fit: cover;">
+                                        }
+                                        else
+                                        {
+                                            @Model.User.UserName.Substring(0, 1).ToUpper()
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(Model.User.ActiveFrameImageUrl))
+                                    {
+                                        <img src="@Model.User.ActiveFrameImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;" />
+                                    }
+                                </div>
+                                <span>@Model.User.UserName</span>
+                            }
+                            else
+                            {
+                                <i class="fa-solid fa-user"></i>
+                                <span>Hesabım</span>
+                            }
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="userDropdown">
                             <li>

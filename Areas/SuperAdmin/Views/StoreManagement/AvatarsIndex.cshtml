@@ -1,0 +1,152 @@
+@model IEnumerable<BookManagementApp.Models.ProfileAvatar>
+@{
+    ViewData["Title"] = "Avatar Yönetimi";
+    Layout = "~/Areas/SuperAdmin/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-warning mb-0"><i class="fa-solid fa-face-smile"></i> Avatar Yönetimi</h2>
+        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#createAvatarModal">
+            <i class="fa-solid fa-plus"></i> Yeni Avatar Yükle
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card shadow-sm border-0 bg-dark text-light">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-dark align-middle">
+                    <thead class="table-secondary text-dark">
+                        <tr>
+                            <th>Önizleme</th>
+                            <th>Ad & Açıklama</th>
+                            <th>Fiyat (Taş)</th>
+                            <th>Kitap Şartı</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var avatar in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="p-2 border border-secondary rounded bg-secondary bg-opacity-25 d-inline-block text-center" style="width: 80px; height: 80px;">
+                                        <img src="@avatar.ImageUrl" class="img-fluid" style="max-height: 100%; object-fit: contain;" />
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>@(string.IsNullOrEmpty(avatar.Name) ? "İsimsiz Avatar" : avatar.Name)</strong>
+                                    <br />
+                                    <small class="text-muted">@avatar.Description</small>
+                                </td>
+                                <td><i class="fa-solid fa-gem text-warning"></i> @avatar.PriceInStones</td>
+                                <td><i class="fa-solid fa-book text-info"></i> @avatar.RequiredBookCount</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editAvatarModal-@avatar.Id">
+                                        <i class="fa-solid fa-pen"></i> Düzenle
+                                    </button>
+                                    <form asp-action="DeleteAvatar" asp-route-id="@avatar.Id" method="post" class="d-inline" onsubmit="return confirm('Silmek istediğinize emin misiniz?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i> Sil</button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editAvatarModal-@avatar.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content bg-dark text-light border-warning">
+                                        <form asp-action="EditAvatar" method="post">
+                                            <input type="hidden" name="Id" value="@avatar.Id" />
+                                            <div class="modal-header border-secondary">
+                                                <h5 class="modal-title text-warning">Avatar Düzenle</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="text-center mb-3">
+                                                    <img src="@avatar.ImageUrl" style="height: 100px; border-radius: 10px;" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Avatar Adı</label>
+                                                    <input type="text" class="form-control bg-secondary text-light border-0" name="Name" value="@avatar.Name" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Açıklama</label>
+                                                    <textarea class="form-control bg-secondary text-light border-0" name="Description" rows="2">@avatar.Description</textarea>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label">Fiyat (Bilgelik Taşı)</label>
+                                                        <input type="number" class="form-control bg-secondary text-light border-0" name="PriceInStones" value="@avatar.PriceInStones" min="0" required />
+                                                    </div>
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label">Kilit Açma Şartı (Kitap)</label>
+                                                        <input type="number" class="form-control bg-secondary text-light border-0" name="RequiredBookCount" value="@avatar.RequiredBookCount" min="0" required />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                                <button type="submit" class="btn btn-warning text-dark fw-bold">Değişiklikleri Kaydet</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createAvatarModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light border-warning">
+            <form asp-action="CreateAvatar" method="post" enctype="multipart/form-data">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning">Yeni Avatar Yükle</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Avatar Görseli (Kare formunda PNG/JPG)</label>
+                        <input type="file" class="form-control bg-secondary text-light border-0" name="ImageFile" accept="image/*" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Avatar Adı</label>
+                        <input type="text" class="form-control bg-secondary text-light border-0" name="Name" placeholder="Örn: Mistik Büyücü" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea class="form-control bg-secondary text-light border-0" name="Description" rows="2" placeholder="Mağazada görünecek kısa açıklama"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Fiyat (Taş)</label>
+                            <input type="number" class="form-control bg-secondary text-light border-0" name="PriceInStones" value="0" min="0" required />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Şart (Kitap)</label>
+                            <input type="number" class="form-control bg-secondary text-light border-0" name="RequiredBookCount" value="0" min="0" required />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold">Yükle ve Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

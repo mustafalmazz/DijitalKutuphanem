@@ -1142,12 +1142,11 @@
         }
 
         // Kaydet butonuna tıklandığında
-           if (saveInfoBtn) {
+              if (saveInfoBtn) {
         saveInfoBtn.addEventListener('click', function () {
             const bookId = @Model.Book.Id;
             const newBookName = document.getElementById('bookNameInput').value;
-                const newAuthor = document.getElementById('editAuthorInput').value;
-                  formData.append('Author', newAuthor);
+            const newAuthor = document.getElementById('editAuthorInput').value;
             const newCategoryId = document.getElementById('categorySelect').value;
             const newPages = document.getElementById('pagesInput').value;
             const imageFile = document.getElementById('bookImageInput').files[0];

@@ -4,6 +4,7 @@ using BookManagementApp.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookManagementApp.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260709154305_SeedProfileFrames")]
+    partial class SeedProfileFrames
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,6 +69,11 @@ namespace BookManagementApp.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CssClassName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -73,10 +81,6 @@ namespace BookManagementApp.Migrations
                     b.Property<string>("IconEmoji")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ImageUrl")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -97,9 +101,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 1,
+                            CssClassName = "frame-emerald",
                             Description = "Doğanın dinginliği profilinde.",
                             IconEmoji = "🌿",
-                            ImageUrl = "/images/frames/emerald.png",
                             Name = "Zümrüt Bahçesi",
                             PriceInStones = 100,
                             RequiredBookCount = 0
@@ -107,9 +111,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 2,
+                            CssClassName = "frame-sunset",
                             Description = "Her sayfa yeni bir ufuk.",
                             IconEmoji = "🌅",
-                            ImageUrl = "/images/frames/sunset.png",
                             Name = "Gün Batımı",
                             PriceInStones = 120,
                             RequiredBookCount = 0
@@ -117,9 +121,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 3,
+                            CssClassName = "frame-ice",
                             Description = "Soğukkanlı okurların tercihi.",
                             IconEmoji = "❄️",
-                            ImageUrl = "/images/frames/ice.png",
                             Name = "Buz Kristali",
                             PriceInStones = 150,
                             RequiredBookCount = 5
@@ -127,9 +131,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 4,
+                            CssClassName = "frame-ancient",
                             Description = "Asırlık kütüphanelerin ruhu.",
                             IconEmoji = "📜",
-                            ImageUrl = "/images/frames/ancient.png",
                             Name = "Kadim Bilgelik",
                             PriceInStones = 250,
                             RequiredBookCount = 10
@@ -137,9 +141,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 5,
+                            CssClassName = "frame-royal",
                             Description = "Altın işlemeli mor ihtişam.",
                             IconEmoji = "💜",
-                            ImageUrl = "/images/frames/royal.png",
                             Name = "Kraliyet Asaleti",
                             PriceInStones = 300,
                             RequiredBookCount = 15
@@ -147,9 +151,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 6,
+                            CssClassName = "frame-neon",
                             Description = "Geceleri parlayan dijital aura.",
                             IconEmoji = "🔮",
-                            ImageUrl = "/images/frames/neon.png",
                             Name = "Siber Neon",
                             PriceInStones = 350,
                             RequiredBookCount = 20
@@ -157,9 +161,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 7,
+                            CssClassName = "frame-gold",
                             Description = "Parlayan saf altın ışıltısı.",
                             IconEmoji = "🥇",
-                            ImageUrl = "/images/frames/gold.png",
                             Name = "Kraliyet Altını",
                             PriceInStones = 500,
                             RequiredBookCount = 30
@@ -167,9 +171,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 8,
+                            CssClassName = "frame-fire",
                             Description = "Kıvılcımlar saçan okuma tutkusu.",
                             IconEmoji = "🔥",
-                            ImageUrl = "/images/frames/fire.png",
                             Name = "Cehennem Alevi",
                             PriceInStones = 600,
                             RequiredBookCount = 40
@@ -177,9 +181,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 9,
+                            CssClassName = "frame-shadow",
                             Description = "Karanlığın gizemli gücü.",
                             IconEmoji = "🌑",
-                            ImageUrl = "/images/frames/shadow.png",
                             Name = "Gece Lordu",
                             PriceInStones = 700,
                             RequiredBookCount = 50
@@ -187,9 +191,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 10,
+                            CssClassName = "frame-diamond",
                             Description = "Yıldız tozuyla bezeli prestij.",
                             IconEmoji = "💎",
-                            ImageUrl = "/images/frames/diamond.png",
                             Name = "Elmas Pırıltısı",
                             PriceInStones = 1000,
                             RequiredBookCount = 75
@@ -197,9 +201,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 11,
+                            CssClassName = "frame-galaxy",
                             Description = "Dönen nebulalar ve yıldız tarlası.",
                             IconEmoji = "🌌",
-                            ImageUrl = "/images/frames/galaxy.png",
                             Name = "Derin Uzay",
                             PriceInStones = 1250,
                             RequiredBookCount = 100
@@ -207,9 +211,9 @@ namespace BookManagementApp.Migrations
                         new
                         {
                             Id = 12,
+                            CssClassName = "frame-rainbow",
                             Description = "Tüm spektruma hükmedenlerin çerçevesi.",
                             IconEmoji = "🌈",
-                            ImageUrl = "/images/frames/rainbow.png",
                             Name = "Efsanevi Prizma",
                             PriceInStones = 2000,
                             RequiredBookCount = 150
@@ -224,9 +228,9 @@ namespace BookManagementApp.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ActiveFrameImageUrl")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                    b.Property<string>("ActiveFrameCssClass")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
@@ -387,181 +391,6 @@ namespace BookManagementApp.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("BookManagementApp.Models.ProfileAvatar", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PriceInStones")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RequiredBookCount")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ProfileAvatars");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/3906/3906607.png",
-                            Name = "Klasik Prens",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/4042/4042356.png",
-                            Name = "Klasik Prenses",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/523/523461.png",
-                            Name = "Sevimli Ninja",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/4086/4086679.png",
-                            Name = "Bilge Baykuş",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/4042/4042422.png",
-                            Name = "Kitap Kurdu 1",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/4086/4086577.png",
-                            Name = "Gözlüklü Bilgin",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/189/189162.png",
-                            Name = "Şapkalı Büyücü",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/4322/4322991.png",
-                            Name = "Gizemli Okur",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/4140/4140047.png",
-                            Name = "Genç Öğrenci",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/8854/8854242.png",
-                            Name = "Mutlu Çocuk",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/17715/17715285.png",
-                            Name = "Kedi Dostu",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/8231/8231329.png",
-                            Name = "Sevimli Köpek",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 13,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/1326/1326377.png",
-                            Name = "Uzaylı Okuyucu",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 14,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/9308/9308979.png",
-                            Name = "Robot Kitapkurdu",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 15,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/780/780258.png",
-                            Name = "Canavar Okur",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        },
-                        new
-                        {
-                            Id = 16,
-                            Description = "Başlangıç Avatarı",
-                            ImageUrl = "https://cdn-icons-png.flaticon.com/512/624/624150.png",
-                            Name = "Sevimli Hayalet",
-                            PriceInStones = 0,
-                            RequiredBookCount = 0
-                        });
-                });
-
             modelBuilder.Entity("BookManagementApp.Models.StudySession", b =>
                 {
                     b.Property<int>("Id")
@@ -592,29 +421,6 @@ namespace BookManagementApp.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("StudySessions");
-                });
-
-            modelBuilder.Entity("BookManagementApp.Models.UserAvatar", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ProfileAvatarId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProfileAvatarId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserAvatars");
                 });
 
             modelBuilder.Entity("BookManagementApp.Areas.Admin.Models.Contact", b =>
@@ -679,25 +485,6 @@ namespace BookManagementApp.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("BookManagementApp.Models.UserAvatar", b =>
-                {
-                    b.HasOne("BookManagementApp.Models.ProfileAvatar", "ProfileAvatar")
-                        .WithMany()
-                        .HasForeignKey("ProfileAvatarId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ProfileAvatar");
 
                     b.Navigation("User");
                 });

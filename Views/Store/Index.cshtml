@@ -1,0 +1,784 @@
+@using BookManagementApp.Models
+@using BookManagementApp.Areas.Admin.Models
+@model StoreViewModel
+@{
+    ViewData["Title"] = "Mağaza";
+    var user = ViewBag.User as User;
+    var ownedFrameIds = ViewBag.OwnedFrameIds as List<int>;
+    var ownedAvatarIds = ViewBag.OwnedAvatarIds as List<int>;
+    int userBookCount = ViewBag.UserBookCount;
+}
+
+<style>
+    /* --- MAĞAZA ANA SAYFASI --- */
+    .store-page {
+        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
+        min-height: 100vh;
+        font-family: 'Georgia', serif;
+        color: #4a3f35;
+        padding-bottom: 120px;
+    }
+
+    /* --- BAŞLIK ALANI --- */
+    .store-hero {
+        background: linear-gradient(135deg, #4a3f35 0%, #6b5541 40%, #8b6f47 100%);
+        padding: 40px 0 55px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .store-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255,215,130,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(0,255,255,0.05) 0%, transparent 50%);
+        }
+
+    .store-title {
+        color: #f5f0e8;
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+        position: relative;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .store-subtitle {
+        color: rgba(245, 240, 232, 0.7);
+        font-size: 1rem;
+        font-style: italic;
+        position: relative;
+    }
+
+    /* --- BAKİYE KARTI --- */
+    .balance-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 215, 130, 0.3);
+        padding: 12px 28px;
+        border-radius: 50px;
+        margin-top: 20px;
+        position: relative;
+    }
+
+    .balance-icon {
+        font-size: 1.5rem;
+        color: #00ffff;
+        text-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
+    }
+
+    .balance-amount {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #ffd782;
+        letter-spacing: 1px;
+        line-height: 1.1;
+    }
+
+    .balance-label {
+        font-size: 0.75rem;
+        color: rgba(245, 240, 232, 0.6);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    /* --- ÜRÜN GRID --- */
+    .store-container {
+        max-width: 1300px;
+        margin: -30px auto 0;
+        padding: 0 20px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .store-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr); /* PC: 4 kart */
+        gap: 22px;
+    }
+
+    /* --- ÜRÜN KARTI --- */
+    .frame-card {
+        background: #fff;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(107, 85, 65, 0.1);
+        border: 2px solid rgba(139, 111, 71, 0.08);
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .frame-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(107, 85, 65, 0.2);
+            border-color: rgba(139, 111, 71, 0.2);
+        }
+
+        .frame-card.owned {
+            border-color: rgba(72, 187, 120, 0.4);
+        }
+
+        .frame-card.equipped {
+            border-color: #ffd782;
+            box-shadow: 0 8px 30px rgba(255, 215, 130, 0.25);
+        }
+
+    /* Kart Üst Kısım (Çerçeve Önizleme) */
+    .frame-preview {
+        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
+        padding: 28px 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        min-height: 155px;
+        flex-shrink: 0;
+    }
+
+    .preview-avatar-wrapper {
+        width: 95px;
+        height: 95px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.4rem;
+        background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%);
+        color: #5c4b3d;
+        font-weight: 700;
+        position: relative;
+    }
+
+        .preview-avatar-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    /* --- KART ALT BİLGİ --- */
+    .frame-info {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        flex: 1; /* Butonlar tüm kartlarda aynı hizada dursun */
+    }
+
+    .frame-name {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #4a3f35;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .frame-desc {
+        font-size: 0.82rem;
+        color: #8b6f47;
+        line-height: 1.5;
+        margin-bottom: 12px;
+        font-style: italic;
+        min-height: 40px;
+    }
+
+    .frame-price {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #4a3f35;
+        margin-bottom: 12px;
+        margin-top: auto; /* Fiyat ve buton hep en altta */
+    }
+
+        .frame-price i {
+            color: #00ffff;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+
+    .frame-requirement {
+        font-size: 0.72rem;
+        color: #e74c3c;
+        background: rgba(231, 76, 60, 0.08);
+        padding: 4px 10px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+
+    .frame-requirement-met {
+        color: #27ae60;
+        background: rgba(39, 174, 96, 0.08);
+    }
+
+    /* --- BUTONLAR --- */
+    .btn-buy {
+        width: 100%;
+        padding: 11px 8px;
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        font-family: 'Georgia', serif;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 0.3px;
+    }
+
+        .btn-buy:active {
+            transform: scale(0.97); /* Dokunma geri bildirimi */
+        }
+
+    .btn-buy-available {
+        background: linear-gradient(135deg, #8b6f47, #6b5541);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(107, 85, 65, 0.25);
+    }
+
+        .btn-buy-available:hover {
+            background: linear-gradient(135deg, #a0785a, #8b6f47);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(107, 85, 65, 0.35);
+        }
+
+    .btn-buy-locked {
+        background: #e8dcc8;
+        color: #999;
+        cursor: not-allowed;
+    }
+
+    .btn-buy-equip {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+    }
+
+        .btn-buy-equip:hover {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+            transform: translateY(-2px);
+        }
+
+    .btn-buy-equipped {
+        background: linear-gradient(135deg, #ffd782, #f0c050);
+        color: #4a3f35;
+        box-shadow: 0 4px 15px rgba(255, 215, 130, 0.3);
+    }
+
+        .btn-buy-equipped:hover {
+            background: linear-gradient(135deg, #f0c050, #e0b040);
+            transform: translateY(-2px);
+        }
+
+    /* Sahiplik rozeti */
+    .owned-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(72, 187, 120, 0.9);
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        backdrop-filter: blur(5px);
+        z-index: 2;
+    }
+
+    .equipped-badge {
+        background: rgba(255, 215, 130, 0.95);
+        color: #4a3f35;
+    }
+
+    /* --- ALERT MESAJLARI --- */
+    .store-alert {
+        max-width: 1300px;
+        margin: 0 auto 20px;
+        padding: 0 20px;
+    }
+
+    .alert-store {
+        border-radius: 12px;
+        border: none;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        padding: 14px 20px;
+    }
+
+    .alert-store-success {
+        background: rgba(72, 187, 120, 0.1);
+        color: #27ae60;
+        border-left: 4px solid #27ae60;
+    }
+
+    .alert-store-error {
+        background: rgba(231, 76, 60, 0.1);
+        color: #e74c3c;
+        border-left: 4px solid #e74c3c;
+    }
+
+    /* Sekme butonları */
+    .nav-pills .nav-link.active {
+        background: #4a3f35 !important;
+        color: #f5f0e8 !important;
+    }
+
+    /* ========================
+           RESPONSIVE TASARIM
+           ======================== */
+
+    /* Küçük laptop / büyük tablet: 3 sütun */
+    @@media (max-width: 1200px) {
+        .store-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+    }
+
+    /* Tablet: 2 sütun */
+    @@media (max-width: 992px) {
+        .store-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .store-title {
+            font-size: 1.8rem;
+        }
+    }
+
+    /* Mobil: 2 sütun (kompakt kartlar) */
+    @@media (max-width: 768px) {
+        .store-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .store-hero {
+            padding: 28px 15px 42px;
+        }
+
+        .store-title {
+            font-size: 1.5rem;
+        }
+
+        .store-subtitle {
+            font-size: 0.85rem;
+        }
+
+        .balance-badge {
+            padding: 10px 22px;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .balance-amount {
+            font-size: 1.3rem;
+        }
+
+        .balance-icon {
+            font-size: 1.2rem;
+        }
+
+        .balance-label {
+            font-size: 0.65rem;
+            letter-spacing: 1.5px;
+        }
+
+        .store-container {
+            padding: 0 12px;
+            margin-top: -25px;
+        }
+
+        .store-alert {
+            padding: 0 12px;
+        }
+
+        .frame-card {
+            border-radius: 14px;
+        }
+            /* Dokunmatikte hover kaydırması olmasın */
+            .frame-card:hover {
+                transform: none;
+                box-shadow: 0 8px 30px rgba(107, 85, 65, 0.1);
+            }
+
+        .frame-preview {
+            padding: 20px 10px;
+            min-height: 115px;
+        }
+
+        .preview-avatar-wrapper {
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+            border-radius: 12px;
+        }
+
+        .owned-badge {
+            top: 8px;
+            right: 8px;
+            padding: 3px 9px;
+            font-size: 0.62rem;
+        }
+
+        .frame-info {
+            padding: 12px;
+        }
+
+        .frame-name {
+            font-size: 0.9rem;
+            gap: 5px;
+        }
+
+        .frame-desc {
+            font-size: 0.72rem;
+            min-height: 32px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .frame-requirement {
+            font-size: 0.62rem;
+            padding: 3px 8px;
+            margin-bottom: 8px;
+        }
+
+        .frame-price {
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            gap: 5px;
+        }
+
+        .btn-buy {
+            padding: 9px 6px;
+            font-size: 0.7rem;
+            border-radius: 10px;
+        }
+
+            .btn-buy:hover {
+                transform: none; /* Mobilde hover kayması yok */
+            }
+
+        .alert-store {
+            padding: 11px 15px;
+            font-size: 0.85rem;
+        }
+    }
+
+    /* Çok küçük ekranlar */
+    @@media (max-width: 400px) {
+        .store-grid {
+            gap: 10px;
+        }
+
+        .preview-avatar-wrapper {
+            width: 62px;
+            height: 62px;
+            font-size: 1.6rem;
+        }
+
+        .frame-preview {
+            min-height: 100px;
+            padding: 16px 8px;
+        }
+
+        .frame-name {
+            font-size: 0.82rem;
+        }
+
+        .frame-desc {
+            font-size: 0.68rem;
+        }
+
+        .frame-price {
+            font-size: 0.78rem;
+        }
+
+        .btn-buy {
+            font-size: 0.64rem;
+            padding: 8px 4px;
+        }
+    }
+</style>
+
+<div class="store-page">
+    <!-- BAŞLIK -->
+    <div class="store-hero">
+        <h1 class="store-title">
+            <i class="fa-solid fa-store"></i> Mağaza
+        </h1>
+        <p class="store-subtitle">Bilgelik Taşlarınla profilini özelleştir!</p>
+
+        @if (user != null)
+        {
+            <div class="balance-badge">
+                <i class="fa-solid fa-gem balance-icon"></i>
+                <div>
+                    <div class="balance-amount">@user.WisdomStones</div>
+                    <div class="balance-label">Bilgelik Taşı</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- ALERT MESAJLARI -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="store-alert">
+            <div class="alert alert-store alert-store-success">
+                @TempData["SuccessMessage"]
+            </div>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="store-alert">
+            <div class="alert alert-store alert-store-error">
+                @TempData["ErrorMessage"]
+            </div>
+        </div>
+    }
+
+    <!-- SEKME YAPISI (TABS) -->
+    <div class="store-container" style="max-width: 1300px; margin: 0 auto; padding: 0 20px 20px;">
+        <ul class="nav nav-pills mb-4 justify-content-center" id="storeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="frames-tab" data-bs-toggle="pill" data-bs-target="#frames" type="button" role="tab" aria-controls="frames" aria-selected="true">Çerçeveler</button>
+            </li>
+            <li class="nav-item ms-2" role="presentation">
+                <button class="nav-link fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="avatars-tab" data-bs-toggle="pill" data-bs-target="#avatars" type="button" role="tab" aria-controls="avatars" aria-selected="false">Avatarlar</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="storeTabsContent">
+            <!-- ÇERÇEVELER SEKME İÇERİĞİ -->
+            <div class="tab-pane fade show active" id="frames" role="tabpanel" aria-labelledby="frames-tab">
+                <div class="store-grid">
+                    @foreach (var frame in Model.Frames)
+                    {
+                        bool isOwned = ownedFrameIds.Contains(frame.Id);
+                        bool isEquipped = user?.ActiveFrameImageUrl == frame.ImageUrl;
+                        bool hasEnoughStones = user != null && user.WisdomStones >= frame.PriceInStones;
+                        bool meetsBookReq = frame.RequiredBookCount == 0 || userBookCount >= frame.RequiredBookCount;
+                        bool canBuy = !isOwned && hasEnoughStones && meetsBookReq;
+
+                        <div class="frame-card @(isEquipped ? "equipped" : isOwned ? "owned" : "")">
+
+                            @if (isEquipped)
+                            {
+                                <span class="owned-badge equipped-badge">✨ Aktif</span>
+                            }
+                            else if (isOwned)
+                            {
+                                <span class="owned-badge">✓ Sahip</span>
+                            }
+
+                            <div class="frame-preview">
+                                <div class="preview-avatar-wrapper" style="position: relative; border-radius: 15px;">
+                                    <div style="width: 100%; height: 100%; border-radius: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                        @if (!string.IsNullOrEmpty(user?.ProfileImageUrl))
+                                        {
+                                            <img src="@user.ProfileImageUrl" alt="Profil" style="width: 100%; height: 100%; object-fit: cover;" />
+                                        }
+                                        else
+                                        {
+                                            @(user?.UserName?.Substring(0, 1).ToUpper())
+                                        }
+                                    </div>
+
+                                    @if (!string.IsNullOrEmpty(frame.ImageUrl))
+                                    {
+                                        <img src="@frame.ImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;" />
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Bilgi Kısmı -->
+                            <div class="frame-info">
+                                <div class="frame-name">
+                                    <span>@frame.IconEmoji</span>
+                                    @frame.Name
+                                </div>
+                                <p class="frame-desc">@frame.Description</p>
+
+                                @if (frame.RequiredBookCount > 0)
+                                {
+                                    if (meetsBookReq)
+                                    {
+                                        <div class="frame-requirement frame-requirement-met">
+                                            ✓ @frame.RequiredBookCount kitap gereksinimi karşılandı
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="frame-requirement">
+                                            <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i>
+                                            En az @frame.RequiredBookCount kitap gerekli (@userBookCount / @frame.RequiredBookCount)
+                                        </div>
+                                    }
+                                }
+
+                                <div class="frame-price">
+                                    <i class="fa-solid fa-gem"></i>
+                                    @frame.PriceInStones Bilgelik Taşı
+                                </div>
+
+                                @if (isOwned)
+                                {
+                                    <form asp-action="EquipFrame" asp-controller="Store" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@frame.Id" />
+                                        <button type="submit" class="btn-buy @(isEquipped ? "btn-buy-equipped" : "btn-buy-equip")">
+                                            @if (isEquipped)
+                                            {
+                                                <text><i class="fa-solid fa-star"></i> Takılı - Çıkarmak İçin Tıkla</text>
+                                            }
+                                            else
+                                            {
+                                                <text><i class="fa-solid fa-wand-magic-sparkles"></i> Kullan</text>
+                                            }
+                                        </button>
+                                    </form>
+                                }
+                                else if (canBuy)
+                                {
+                                    <form asp-action="BuyFrame" asp-controller="Store" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@frame.Id" />
+                                        <button type="submit" class="btn-buy btn-buy-available">
+                                            <i class="fa-solid fa-cart-shopping"></i> Satın Al
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button class="btn-buy btn-buy-locked" disabled>
+                                        @if (!meetsBookReq)
+                                        {
+                                            <text><i class="fa-solid fa-lock"></i> Kitap Gereksinimi Karşılanmadı</text>
+                                        }
+                                        else
+                                        {
+                                            <text><i class="fa-solid fa-lock"></i> Yetersiz Bilgelik Taşı</text>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- AVATARLAR SEKME İÇERİĞİ -->
+            <div class="tab-pane fade" id="avatars" role="tabpanel" aria-labelledby="avatars-tab">
+                <div class="store-grid">
+                    @foreach (var avatar in Model.Avatars)
+                    {
+                        bool isOwnedA = ownedAvatarIds.Contains(avatar.Id);
+                        bool isEquippedA = user?.ProfileImageUrl == avatar.ImageUrl;
+                        bool hasEnoughStonesA = user != null && user.WisdomStones >= avatar.PriceInStones;
+                        bool meetsBookReqA = avatar.RequiredBookCount == 0 || userBookCount >= avatar.RequiredBookCount;
+                        bool canBuyA = !isOwnedA && hasEnoughStonesA && meetsBookReqA;
+
+                        <div class="frame-card @(isEquippedA ? "equipped" : isOwnedA ? "owned" : "")">
+
+                            @if (isEquippedA)
+                            {
+                                <span class="owned-badge equipped-badge">✨ Aktif</span>
+                            }
+                            else if (isOwnedA)
+                            {
+                                <span class="owned-badge">✓ Sahip</span>
+                            }
+
+                            <div class="frame-preview d-flex justify-content-center align-items-center">
+                                <img src="@avatar.ImageUrl" alt="@avatar.Name" style="width: 100px; height: 100px; object-fit: contain; border-radius: 10px;" />
+                            </div>
+
+                            <div class="frame-info">
+                                <div class="frame-name">
+                                    @avatar.Name
+                                </div>
+                                <p class="frame-desc">@avatar.Description</p>
+
+                                @if (avatar.RequiredBookCount > 0)
+                                {
+                                    if (meetsBookReqA)
+                                    {
+                                        <div class="frame-requirement frame-requirement-met">
+                                            ✓ @avatar.RequiredBookCount kitap gereksinimi karşılandı
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="frame-requirement">
+                                            <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i>
+                                            En az @avatar.RequiredBookCount kitap gerekli (@userBookCount / @avatar.RequiredBookCount)
+                                        </div>
+                                    }
+                                }
+
+                                <div class="frame-price">
+                                    <i class="fa-solid fa-gem"></i>
+                                    @avatar.PriceInStones Bilgelik Taşı
+                                </div>
+
+                                @if (isOwnedA)
+                                {
+                                    <form asp-action="EquipAvatar" asp-controller="Store" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@avatar.Id" />
+                                        <button type="submit" class="btn-buy @(isEquippedA ? "btn-buy-equipped" : "btn-buy-equip")" @(isEquippedA ? "disabled" : "")>
+                                            @if (isEquippedA)
+                                            {
+                                                <text><i class="fa-solid fa-check"></i> Şu An Kullanımda</text>
+                                            }
+                                            else
+                                            {
+                                                <text><i class="fa-solid fa-wand-magic-sparkles"></i> Kullan</text>
+                                            }
+                                        </button>
+                                    </form>
+                                }
+                                else if (canBuyA)
+                                {
+                                    <form asp-action="BuyAvatar" asp-controller="Store" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@avatar.Id" />
+                                        <button type="submit" class="btn-buy btn-buy-available">
+                                            <i class="fa-solid fa-cart-shopping"></i> Satın Al
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button class="btn-buy btn-buy-locked" disabled>
+                                        @if (!meetsBookReqA)
+                                        {
+                                            <text><i class="fa-solid fa-lock"></i> Kitap Gereksinimi Karşılanmadı</text>
+                                        }
+                                        else
+                                        {
+                                            <text><i class="fa-solid fa-lock"></i> Yetersiz Bilgelik Taşı</text>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

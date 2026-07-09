@@ -1,0 +1,177 @@
+@model IEnumerable<BookManagementApp.Areas.Admin.Models.ProfileFrame>
+@{
+    ViewData["Title"] = "Çerçeve Yönetimi";
+    Layout = "~/Areas/SuperAdmin/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-warning mb-0"><i class="fa-solid fa-gem"></i> Çerçeve Yönetimi</h2>
+        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#createFrameModal">
+            <i class="fa-solid fa-plus"></i> Yeni Çerçeve Ekle
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card shadow-sm border-0 bg-dark text-light">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-dark align-middle">
+                    <thead class="table-secondary text-dark">
+                        <tr>
+                            <th>Önizleme</th>
+                            <th>İkon & Ad</th>
+                            <th>Açıklama</th>
+                            <th>Fiyat (Taş)</th>
+                            <th>Gereken Kitap</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var frame in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="p-2 border border-secondary rounded bg-secondary bg-opacity-25 d-inline-block text-center position-relative" style="width: 80px; height: 80px; display: flex !important; align-items: center; justify-content: center;">
+                                        <div style="width: 100%; height: 100%; border-radius: 11px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%); color: #5c4b3d; font-size: 1.5rem; font-weight: bold;">
+                                            A
+                                        </div>
+                                        <img src="@frame.ImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; object-fit: contain; pointer-events: none;" />
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>@frame.IconEmoji @frame.Name</strong>
+                                </td>
+                                <td class="text-muted small">@frame.Description</td>
+                                <td><i class="fa-solid fa-gem text-warning"></i> @frame.PriceInStones</td>
+                                <td>
+                                    @if(frame.RequiredBookCount > 0)
+                                    {
+                                        <span><i class="fa-solid fa-book text-info"></i> @frame.RequiredBookCount</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editFrameModal_@frame.Id">
+                                        <i class="fa-solid fa-pen"></i> Düzenle
+                                    </button>
+                                    <form asp-action="DeleteFrame" asp-route-id="@frame.Id" method="post" class="d-inline" onsubmit="return confirm('Bu çerçeveyi silmek istediğinize emin misiniz? Kullanıcılarda sorun yaratabilir!');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i> Sil</button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editFrameModal_@frame.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content bg-dark text-light border-warning">
+                                        <form asp-action="EditFrame" method="post">
+                                            <div class="modal-header border-secondary">
+                                                <h5 class="modal-title text-warning">Çerçeveyi Düzenle: @frame.Name</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <input type="hidden" name="Id" value="@frame.Id" />
+                                                
+                                                <div class="text-center mb-3">
+                                                    <div class="d-inline-block position-relative" style="width: 100px; height: 100px;">
+                                                        <div style="width: 100%; height: 100%; border-radius: 11px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%); color: #5c4b3d; font-size: 2rem; font-weight: bold;">A</div>
+                                                        <img src="@frame.ImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; object-fit: contain;" />
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Çerçeve Adı</label>
+                                                    <input type="text" class="form-control bg-secondary text-light border-0" name="Name" value="@frame.Name" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">İkon (Emoji)</label>
+                                                    <input type="text" class="form-control bg-secondary text-light border-0" name="IconEmoji" value="@frame.IconEmoji" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Açıklama</label>
+                                                    <textarea class="form-control bg-secondary text-light border-0" name="Description" rows="2">@frame.Description</textarea>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label">Fiyat (Bilgelik Taşı)</label>
+                                                        <input type="number" class="form-control bg-secondary text-light border-0" name="PriceInStones" value="@frame.PriceInStones" required min="0" />
+                                                    </div>
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label">Gereken Kitap Sayısı</label>
+                                                        <input type="number" class="form-control bg-secondary text-light border-0" name="RequiredBookCount" value="@frame.RequiredBookCount" required min="0" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                                <button type="submit" class="btn btn-warning text-dark fw-bold">Değişiklikleri Kaydet</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createFrameModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light border-warning">
+            <form asp-action="CreateFrame" method="post" enctype="multipart/form-data">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning">Yeni Çerçeve Ekle</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Çerçeve Görseli (Arka planı şeffaf PNG/Kare)</label>
+                        <input type="file" class="form-control bg-secondary text-light border-0" name="ImageFile" accept="image/png" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Çerçeve Adı</label>
+                        <input type="text" class="form-control bg-secondary text-light border-0" name="Name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">İkon (Emoji)</label>
+                        <input type="text" class="form-control bg-secondary text-light border-0" name="IconEmoji" placeholder="Örn: 🌿" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea class="form-control bg-secondary text-light border-0" name="Description" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Fiyat (Bilgelik Taşı)</label>
+                            <input type="number" class="form-control bg-secondary text-light border-0" name="PriceInStones" value="100" required min="0" />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Gereken Kitap Sayısı</label>
+                            <input type="number" class="form-control bg-secondary text-light border-0" name="RequiredBookCount" value="0" required min="0" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold">Yükle ve Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

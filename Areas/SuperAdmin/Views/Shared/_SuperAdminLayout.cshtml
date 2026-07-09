@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
@@ -204,9 +204,23 @@
             </li>
 
             <li>
-                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Logs" ? "active" : "")"
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Categories" ? "active" : "")"
                    asp-area="SuperAdmin" asp-controller="Categories" asp-action="List">
                     <i class="bi bi-folder"></i> Kategoriler
+                </a>
+            </li>
+
+            <li>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "StoreManagement" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+                   asp-area="SuperAdmin" asp-controller="StoreManagement" asp-action="Index">
+                    <i class="bi bi-gem"></i> Çerçeveler
+                </a>
+            </li>
+
+            <li>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "StoreManagement" && ViewContext.RouteData.Values["action"]?.ToString() == "AvatarsIndex" ? "active" : "")"
+                   asp-area="SuperAdmin" asp-controller="StoreManagement" asp-action="AvatarsIndex">
+                    <i class="bi bi-person-bounding-box"></i> Avatarlar
                 </a>
             </li>
         </ul>

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using BookManagementApp.Areas.Admin.Models;
 using BookManagementApp.Models;
 using Microsoft.EntityFrameworkCore;
@@ -135,6 +135,16 @@ namespace BookManagementApp.Controllers
                 ThisMonthStudyMinutes = monthStudyMins,
                 TotalPomodoroCompleted = completedPomodoros
             };
+            // --- ÇERÇEVE BİLGİLERİ ---
+            var ownedFrames = _context.UserFrames
+                .Where(uf => uf.UserId == userId)
+                .Include(uf => uf.ProfileFrame)
+                .Select(uf => uf.ProfileFrame)
+                .ToList();
+
+            ViewBag.OwnedFrames = ownedFrames;
+            ViewBag.ActiveFrameImageUrl = user.ActiveFrameImageUrl;
+            ViewBag.Avatars = _context.ProfileAvatars.ToList();
 
             return View(model);
         }

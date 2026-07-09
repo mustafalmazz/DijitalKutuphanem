@@ -1,4 +1,4 @@
-﻿using BookManagementApp.Models;
+using BookManagementApp.Models;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -29,6 +29,11 @@ namespace BookManagementApp.Areas.Admin.Models
         public int YearlyReadingGoal { get; set; }
         public int MonthlyReadingGoal { get; set; }
         public int MonthlyPagesRead { get; set; }
+        
+        public int WisdomStones { get; set; } = 0;
+
+        [StringLength(255)]
+        public string? ActiveFrameImageUrl { get; set; }
 
         public DateTime CreateDate { get; set; } = DateTime.Now;
 

@@ -1,4 +1,4 @@
-﻿using BookManagementApp.Models;
+using BookManagementApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -91,6 +91,21 @@ namespace BookManagementApp.Areas.Admin.Controllers
 
             _context.Books.Add(model);
             await _context.SaveChangesAsync();
+
+            // --- BİLGELİK TAŞI KAZANMA MANTIĞI ---
+            var today = DateTime.Today;
+            var booksAddedToday = await _context.Books.CountAsync(b => b.UserId == userId && b.CreateDate >= today);
+            
+            if (booksAddedToday <= 3) // Sınır 3
+            {
+                var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (currentUser != null)
+                {
+                    currentUser.WisdomStones += 10;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            // ------------------------------------
 
             TempData["SuccessMessage"] = "Kitap başarıyla kütüphanenize eklendi!";
 
@@ -399,6 +414,21 @@ namespace BookManagementApp.Areas.Admin.Controllers
 
             _context.Books.Add(model);
             await _context.SaveChangesAsync();
+
+            // --- BİLGELİK TAŞI KAZANMA MANTIĞI ---
+            var today = DateTime.Today;
+            var booksAddedToday = await _context.Books.CountAsync(b => b.UserId == userId && b.CreateDate >= today);
+            
+            if (booksAddedToday <= 3) // Sınır 3
+            {
+                var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (currentUser != null)
+                {
+                    currentUser.WisdomStones += 10;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            // ------------------------------------
 
             return RedirectToAction("List");
         }

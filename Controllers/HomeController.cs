@@ -71,20 +71,22 @@ namespace BookManagementApp.Controllers
             {
                 using (var client = new HttpClient())
                 {
-                    // 1. API Key'i appsettings.json dosyasından okuyoruz
+                    // API Key'i appsettings.json dosyasından okuyoruz
                     string apiKey = _configuration["GoogleBooks:ApiKey"];
-
-                    // 2. User-Agent (Yine de ekli kalsın, iyi bir pratiktir)
                     client.DefaultRequestHeaders.Add("User-Agent", "DijitalKutuphanem/1.0");
 
                     int startIndex = (page - 1) * pageSize;
 
-                    // --- GÜNCELLENEN KISIM: TEMİZ VE RESMİ URL ---
-                    // Artık 'intitle' vs. gibi hilelere gerek yok. 
-                    // "q={q}" diyerek hem başlıkta, hem yazarda, hem açıklamada arar.
-                    // "&key={apiKey}" parametresi ile Google bizi tanır ve sonuçları verir.
+                    // q artık URL-encode ediliyor, country=TR eklendi, langRestrict kaldırıldı
+                    string encodedQuery = Uri.EscapeDataString(q);
 
-                    var url = $"https://www.googleapis.com/books/v1/volumes?q={q}&startIndex={startIndex}&maxResults={pageSize}&printType=books&langRestrict=tr&key={apiKey}";
+                    var url = $"https://www.googleapis.com/books/v1/volumes" +
+                              $"?q={encodedQuery}" +
+                              $"&startIndex={startIndex}" +
+                              $"&maxResults={pageSize}" +
+                              $"&printType=books" +
+                              $"&country=TR" +          // ← IP geolokasyon sorununu çözer
+                              $"&key={apiKey}";
 
                     var response = await client.GetAsync(url);
 
@@ -94,8 +96,23 @@ namespace BookManagementApp.Controllers
                         var data = JObject.Parse(jsonString);
 
                         totalItems = data["totalItems"]?.Value<int>() ?? 0;
-
                         var items = data["items"];
+
+                        // Google bazen totalItems > 0 olmasına rağmen items'ı boş döner.
+                        // İlk sayfada bu olursa kısa bir bekleyip tek sefer tekrar deniyoruz.
+                        if (items == null && totalItems > 0 && page == 1)
+                        {
+                            await Task.Delay(300);
+                            response = await client.GetAsync(url);
+                            if (response.IsSuccessStatusCode)
+                            {
+                                jsonString = await response.Content.ReadAsStringAsync();
+                                data = JObject.Parse(jsonString);
+                                totalItems = data["totalItems"]?.Value<int>() ?? 0;
+                                items = data["items"];
+                            }
+                        }
+
                         if (items != null)
                         {
                             foreach (var item in items)
@@ -107,10 +124,7 @@ namespace BookManagementApp.Controllers
 
                                 if (imageLinks != null)
                                 {
-                                    // --- GÜVENLİ KALİTE SEÇİMİ ---
                                     // API'nin sunduğu en yüksek kaliteyi sırasıyla kontrol ediyoruz.
-                                    // Elle zoom parametresini değiştirmiyoruz, API ne veriyorsa onu alıyoruz.
-
                                     if (imageLinks["extraLarge"] != null)
                                     {
                                         imageLink = imageLinks["extraLarge"].ToString();
@@ -125,11 +139,10 @@ namespace BookManagementApp.Controllers
                                     }
                                     else if (imageLinks["thumbnail"] != null)
                                     {
-                                        // Yüksek kalite yoksa standart olanı alıyoruz.
                                         imageLink = imageLinks["thumbnail"].ToString();
                                     }
 
-                                    // Sadece "kıvrık sayfa" efektini siliyoruz (Bu çözünürlükle oynamaz, sadece resmi düz kare yapar)
+                                    // "Kıvrık sayfa" efektini siliyoruz
                                     if (!string.IsNullOrEmpty(imageLink))
                                     {
                                         imageLink = imageLink.Replace("&edge=curl", "");
@@ -163,15 +176,17 @@ namespace BookManagementApp.Controllers
                     }
                     else
                     {
-                        // Hata durumunda loglama (Geliştirme aşamasında hatayı görmek için)
+                        // Detaylı hata sadece geliştirme için; kullanıcıya genel mesaj gösterilir.
                         var errorContent = await response.Content.ReadAsStringAsync();
-                        ViewData["Error"] = $"Google Hatası: {response.StatusCode} - {errorContent}";
+                        System.Diagnostics.Debug.WriteLine($"Google Hatası: {response.StatusCode} - {errorContent}");
+                        ViewData["Error"] = "Arama sırasında bir sorun oluştu, lütfen tekrar deneyin.";
                     }
                 }
             }
             catch (Exception ex)
             {
-                ViewData["Error"] = "Bağlantı Hatası: " + ex.Message;
+                System.Diagnostics.Debug.WriteLine("Bağlantı Hatası: " + ex.Message);
+                ViewData["Error"] = "Bağlantıda bir sorun oluştu, lütfen tekrar deneyin.";
             }
 
             // Sayfalama Hesabı
@@ -554,7 +569,7 @@ namespace BookManagementApp.Controllers
                     contact.GuestEmail = user.Email;
                 }
             }
-
+            
             contact.CreatedDate = DateTime.Now;
 
             _context.Contacts.Add(contact);

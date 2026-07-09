@@ -1,7 +1,8 @@
-﻿using BookManagementApp.Areas.Admin.Models;
+using BookManagementApp.Areas.Admin.Models;
 using BookManagementApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using BCrypt.Net; 
+using Microsoft.EntityFrameworkCore;
 
 namespace BookManagementApp.Areas.Admin.Controllers
 {
@@ -27,6 +28,15 @@ namespace BookManagementApp.Areas.Admin.Controllers
             if (model != null)
             {
                 model.PasswordHash = string.Empty;
+
+                var ownedFrames = _context.UserFrames
+                    .Where(uf => uf.UserId == userId)
+                    .Include(uf => uf.ProfileFrame)
+                    .Select(uf => uf.ProfileFrame)
+                    .ToList();
+
+                ViewBag.OwnedFrames = ownedFrames;
+                ViewBag.ActiveFrameImageUrl = model.ActiveFrameImageUrl;
             }
 
             return View(model);
