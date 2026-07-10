@@ -1,4 +1,4 @@
-﻿<style>
+<style>
     body {
         display: flex;
         flex-direction: column;
@@ -570,6 +570,17 @@
             </a>
         </li>
         <li>
+            <a href="/Leaderboard/Index" class="action-sheet-item">
+                <i class="fa-solid fa-trophy"></i> Sıralama
+            </a>
+        </li>
+        <li>
+            <a href="/Message/Index" class="action-sheet-item d-flex align-items-center">
+                <i class="fa-solid fa-envelope"></i> Mesajlar
+                <span id="mobileUnreadBadge" class="badge bg-danger rounded-pill ms-auto d-none" style="font-size: 0.8rem; margin-right: 0;">0</span>
+            </a>
+        </li>
+        <li>
             <a href="/Admin/Books/List" class="action-sheet-item">
                 <i class="fa-solid fa-book"></i> Kitapları Yönet
             </a>
@@ -614,9 +625,12 @@
         <span>Odaklan</span>
     </a>
 
-    <button type="button" class="bottom-nav-item" id="nav-menu-btn">
+    <button type="button" class="bottom-nav-item position-relative" id="nav-menu-btn">
         <i class="fa-solid fa-bars"></i>
         <span>Menü</span>
+        <span id="mobileMenuDot" class="position-absolute top-0 start-50 translate-middle p-1 bg-danger border border-light rounded-circle d-none" style="margin-top: 5px; margin-left: 10px;">
+            <span class="visually-hidden">Yeni mesaj</span>
+        </span>
     </button>
 </nav>
 

@@ -1,0 +1,75 @@
+@model IEnumerable<BookManagementApp.Models.ChatMessage>
+@{
+    ViewData["Title"] = "Mesajlarım";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0 rounded-4">
+                <div class="card-header bg-warning text-dark py-3 rounded-top-4 border-0">
+                    <h4 class="mb-0 fw-bold"><i class="fas fa-inbox me-2"></i> Gelen Kutusu</h4>
+                </div>
+                <div class="card-body p-0">
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center p-5">
+                            <i class="fas fa-comments text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted">Henüz mesajlaştığınız kimse yok.</h5>
+                            <p>Sıralama listesinden arkadaş bulup sohbet başlatabilirsiniz!</p>
+                            <a href="/Leaderboard/Index" class="btn btn-warning mt-2">Sıralamaya Git</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush rounded-bottom-4" id="inboxList">
+                            @foreach(var item in Model)
+                            {
+                                var otherUser = item.SenderId == ViewBag.CurrentUserId ? item.Receiver : item.Sender;
+                                var isUnread = (item.ReceiverId == ViewBag.CurrentUserId && !item.IsRead);
+
+                                <a href="/Message/Chat?userId=@otherUser.Id" class="list-group-item list-group-item-action d-flex align-items-center p-3 @(isUnread ? "bg-light border-start border-warning border-4" : "")">
+                                    <img src="@(string.IsNullOrEmpty(otherUser.ProfileImageUrl) ? "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" : otherUser.ProfileImageUrl)" 
+                                         class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold @(isUnread ? "text-dark" : "text-secondary")">@otherUser.UserName</h6>
+                                        <p class="mb-0 small text-muted text-truncate" style="max-width: 200px;">
+                                            @if(item.SenderId == ViewBag.CurrentUserId) { <span>Sen: </span> }
+                                            @item.Content
+                                        </p>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">@item.CreatedAt.ToString("HH:mm")</small>
+                                        @if(isUnread)
+                                        {
+                                            <div class="mt-1"><span class="badge bg-danger rounded-pill">Yeni</span></div>
+                                        }
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            if (window.globalConnection) {
+                window.globalConnection.on("ReceiveMessage", function (msg) {
+                    $.get('/Message/Index', function(html) {
+                        var newContent = $(html).find('#inboxList').html();
+                        if(newContent) {
+                            $('#inboxList').html(newContent);
+                        } else {
+                            var newBody = $(html).find('.card-body').html();
+                            $('.card-body').html(newBody);
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+}

@@ -17,5 +17,7 @@ namespace BookManagementApp.Models
         public int PriceInStones { get; set; } = 0; // Mağaza Fiyatı
 
         public int RequiredBookCount { get; set; } = 0; // Kilit Açma Şartı
+        
+        public string? PackCategory { get; set; } // Hangi pakete ait olduğu (Örn: "AnimalPack")
     }
 }

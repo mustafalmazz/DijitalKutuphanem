@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -133,6 +133,8 @@
         </div>
     </div>
 
+    <partial name="_StreakToastPartial" />
+
     <div class="container flex-grow-1">
         <main role="main" class="pb-3 pt-1 pt-md-4">
             @RenderBody()
@@ -143,7 +145,55 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/signalr/signalr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        $(document).ready(function() {
+            var badge = $('#unreadBadge');
+            var mobileBadge = $('#mobileUnreadBadge');
+
+            // Sayfa ilk yüklendiğinde var olanları çek
+            function fetchUnreadCount() {
+                $.get('/Message/GetUnreadCount', function(count) {
+                    updateBadgeCount(count);
+                });
+            }
+
+            function updateBadgeCount(count) {
+                var menuDot = $('#mobileMenuDot');
+                if (count > 0) {
+                    if (badge.length) badge.text(count).removeClass('d-none');
+                    if (mobileBadge.length) mobileBadge.text(count).removeClass('d-none');
+                    if (menuDot.length) menuDot.removeClass('d-none');
+                } else {
+                    if (badge.length) badge.addClass('d-none');
+                    if (mobileBadge.length) mobileBadge.addClass('d-none');
+                    if (menuDot.length) menuDot.addClass('d-none');
+                }
+            }
+
+            fetchUnreadCount();
+
+            // Global SignalR bağlantısı (Tüm site içi bildirimler için)
+            window.globalConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/chatHub")
+                .withAutomaticReconnect()
+                .build();
+
+            window.globalConnection.on("ReceiveMessage", function (msg) {
+                var isChattingWithSender = window.location.pathname.toLowerCase().includes('/message/chat') && window.location.search.includes('userId=' + msg.senderId);
+                
+                if (!isChattingWithSender) {
+                    var currentCount = parseInt(badge.text()) || 0;
+                    updateBadgeCount(currentCount + 1);
+                }
+            });
+
+            window.globalConnection.start().catch(err => console.error("Global SignalR error:", err));
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

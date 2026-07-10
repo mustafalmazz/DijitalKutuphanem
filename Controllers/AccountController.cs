@@ -1,4 +1,4 @@
-﻿using BookManagementApp.Areas.Admin.Models;
+using BookManagementApp.Areas.Admin.Models;
 using BookManagementApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
@@ -210,11 +210,12 @@ namespace BookManagementApp.Controllers
         private async Task SignInUserAsync(User user)
         {
             var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.Name, user.UserName ?? ""),
-        new Claim(ClaimTypes.Email, user.Email ?? ""),
-        new Claim(ClaimTypes.Role, user.Role ?? "User")
-    };
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.UserName ?? ""),
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
+                new Claim(ClaimTypes.Role, user.Role ?? "User")
+            };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new AuthenticationProperties { IsPersistent = true };
@@ -226,6 +227,56 @@ namespace BookManagementApp.Controllers
 
             HttpContext.Session.SetInt32("UserId", user.Id);
             HttpContext.Session.SetString("UserName", user.UserName ?? "");
+
+            // Daily Streak (Seri Giriş) Logic
+            DateTime today = DateTime.Today;
+            bool streakUpdated = false;
+            int reward = 0;
+
+            if (user.LastLoginDate.HasValue)
+            {
+                var lastLoginDay = user.LastLoginDate.Value.Date;
+                if (lastLoginDay == today.AddDays(-1))
+                {
+                    user.CurrentStreak++;
+                    streakUpdated = true;
+                }
+                else if (lastLoginDay < today.AddDays(-1))
+                {
+                    user.CurrentStreak = 1;
+                    streakUpdated = true;
+                }
+            }
+            else
+            {
+                user.CurrentStreak = 1;
+                streakUpdated = true;
+            }
+
+            if (streakUpdated)
+            {
+                if (user.CurrentStreak > user.LongestStreak)
+                {
+                    user.LongestStreak = user.CurrentStreak;
+                }
+
+                // Reward is NOT given here anymore. Only notify the user to claim it.
+                if (user.LastRewardClaimDate == null || user.LastRewardClaimDate.Value.Date != today)
+                {
+                    if (user.CurrentStreak == 1 && user.LastLoginDate.HasValue)
+                    {
+                        TempData["StreakMessage"] = $"Seriniz sıfırlandı ancak yeni bir başlangıç için ödülünüz hazır! Toplamak için tıklayın.";
+                    }
+                    else
+                    {
+                        TempData["StreakMessage"] = $"🔥 {user.CurrentStreak} günlük serinize ulaştınız! Günlük ödülünüzü toplamak için tıklayın.";
+                    }
+                }
+            }
+
+            user.LastLoginDate = DateTime.Now;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
         }
 
         [HttpGet]
@@ -341,6 +392,35 @@ namespace BookManagementApp.Controllers
             mailMessage.To.Add(toEmail);
 
             smtpClient.Send(mailMessage);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ClaimDailyReward()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false, message = "Oturum bulunamadı." });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return Json(new { success = false, message = "Kullanıcı bulunamadı." });
+
+            DateTime today = DateTime.Today;
+
+            if (user.LastRewardClaimDate.HasValue && user.LastRewardClaimDate.Value.Date == today)
+            {
+                return Json(new { success = false, message = "Bugünün ödülünü zaten topladınız." });
+            }
+
+            // Ödülü hesapla
+            int reward = 10 + ((user.CurrentStreak - 1) * 5);
+            if (reward > 50) reward = 50;
+
+            user.WisdomStones += reward;
+            user.LastRewardClaimDate = DateTime.Now;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, reward = reward, newBalance = user.WisdomStones });
         }
     }
 }

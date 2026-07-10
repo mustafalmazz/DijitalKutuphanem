@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using BookManagementApp.Areas.Admin.Models;
 using BookManagementApp.Models;
 using Microsoft.AspNetCore.Mvc;

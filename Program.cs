@@ -17,7 +17,7 @@ namespace BookManagementApp
 
             if (string.IsNullOrEmpty(cloudName) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret))
             {
-                Console.WriteLine("UYARI: Cloudinary ayarlarý appsettings.json dosyasýndan okunamadý!");
+                Console.WriteLine("UYARI: Cloudinary ayarlarÄ± appsettings.json dosyasÄ±ndan okunamadÄ±!");
             }
 
             Account account = new Account(cloudName, apiKey, apiSecret);
@@ -46,6 +46,7 @@ namespace BookManagementApp
 
             builder.Services.AddControllersWithViews();
             builder.Services.AddSession();
+            builder.Services.AddSignalR(); // SignalR servisi eklendi
 
             var app = builder.Build();
 
@@ -61,7 +62,9 @@ namespace BookManagementApp
             app.UseRouting();
             app.UseSession();
             app.UseAuthentication(); // "Kimsin?" 
-            app.UseAuthorization();  // "Yetkin var mý?"
+            app.UseAuthorization();  // "Yetkin var mÄ±?"
+
+            app.MapHub<BookManagementApp.Hubs.ChatHub>("/chatHub"); // ChatHub route tanÄ±mlamasÄ±
 
             app.MapControllerRoute(
               name: "areas",

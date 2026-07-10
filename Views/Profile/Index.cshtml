@@ -1263,8 +1263,8 @@
 
                 <div class="tab-content" id="avatarTabsContent">
                     <div class="tab-pane fade show active" id="select-pane" role="tabpanel">
-                        <div class="text-center mb-2 text-muted small">Bir karakter seç:</div>
-                        <div class="avatar-grid">
+                        <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
+                        <div class="avatar-grid" style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
                             @if (ViewBag.Avatars != null)
                             {
                                 foreach (var avatar in ViewBag.Avatars)

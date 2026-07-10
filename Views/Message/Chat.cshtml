@@ -1,0 +1,587 @@
+@model IEnumerable<BookManagementApp.Models.ChatMessage>
+@{
+    var otherUser = ViewBag.OtherUser as BookManagementApp.Areas.Admin.Models.User;
+    ViewData["Title"] = otherUser.UserName + " ile Sohbet";
+}
+
+<style>
+    /* ===== GENEL ===== */
+    body {
+        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
+        font-family: 'Georgia', serif;
+    }
+
+    .chat-page {
+        max-width: 850px;
+        margin: 25px auto;
+        padding: 0 15px;
+    }
+
+    .chat-card {
+        background: #fff9f0;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(107, 85, 65, 0.18);
+        border: 1px solid rgba(139, 111, 71, 0.15);
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 140px);
+        min-height: 480px;
+    }
+
+    /* ===== ÜST BAR ===== */
+    .chat-header {
+        background: linear-gradient(135deg, #8b6f47 0%, #6b5541 100%);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+        position: relative;
+        z-index: 3;
+    }
+
+    .chat-back-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(245, 240, 232, 0.15);
+        color: #f5f0e8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        flex-shrink: 0;
+    }
+
+        .chat-back-btn:hover {
+            background: rgba(245, 240, 232, 0.3);
+            color: #fff;
+            transform: translateX(-2px);
+        }
+
+    .chat-header-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(255, 215, 130, 0.7);
+        flex-shrink: 0;
+    }
+
+    .chat-header-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .chat-header-name {
+        color: #f5f0e8;
+        font-weight: 700;
+        font-size: 1.05rem;
+        text-decoration: none;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+        .chat-header-name:hover {
+            color: #ffd782;
+        }
+
+    .chat-header-sub {
+        color: rgba(245, 240, 232, 0.6);
+        font-size: 0.75rem;
+        font-style: italic;
+    }
+
+    /* ===== MESAJ ALANI ===== */
+    .chat-container {
+        flex: 1;
+        overflow-y: auto;
+        background: linear-gradient(180deg, #f7f2ea 0%, #f2ebe0 100%);
+        padding: 18px 16px;
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+        scrollbar-color: #a0785a #ede5d8;
+        position: relative;
+    }
+
+        .chat-container::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: #ede5d8;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #a0785a, #8b6f47);
+            border-radius: 10px;
+        }
+
+    /* ===== TARİH AYRAÇLARI ===== */
+    .date-divider {
+        text-align: center;
+        margin: 16px 0 14px;
+    }
+
+        .date-divider span {
+            background: rgba(139, 111, 71, 0.12);
+            color: #8b6f47;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 4px 14px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+
+    .bubble {
+        max-width: 75%;
+        width: fit-content;
+        padding: 10px 15px;
+        border-radius: 16px;
+        margin-bottom: 8px;
+        word-wrap: break-word;
+        position: relative;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        animation: bubbleIn 0.25s ease-out;
+    }
+
+    @@keyframes bubbleIn {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .bubble-sent {
+        background: linear-gradient(135deg, #206a5d 0%, #155045 100%);
+        color: #ffffff;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 3px 10px rgba(21, 80, 69, 0.25);
+    }
+
+    .bubble-received {
+        background: #fff;
+        color: #4a3f35;
+        border: 1px solid rgba(139, 111, 71, 0.15);
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 2px 8px rgba(107, 85, 65, 0.08);
+    }
+
+    .bubble-time {
+        font-size: 0.66rem;
+        margin-top: 4px;
+        text-align: right;
+        opacity: 0.7;
+    }
+
+    .bubble-sent .bubble-time {
+        color: rgba(245, 240, 232, 0.8);
+    }
+
+    .bubble-received .bubble-time {
+        color: #8b6f47;
+    }
+
+    /* ===== YENİ MESAJ BUTONU ===== */
+    .scroll-down-btn {
+        position: absolute;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #8b6f47, #6b5541);
+        color: #f5f0e8;
+        border: none;
+        border-radius: 50px;
+        padding: 8px 18px;
+        font-family: 'Georgia', serif;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 15px rgba(107, 85, 65, 0.4);
+        display: none;
+        z-index: 5;
+        animation: bubbleIn 0.25s ease-out;
+    }
+
+        .scroll-down-btn:hover {
+            background: linear-gradient(135deg, #a0785a, #8b6f47);
+        }
+
+    /* ===== BOŞ DURUM ===== */
+    .chat-empty {
+        text-align: center;
+        padding: 60px 20px;
+        color: #8b6f47;
+    }
+
+        .chat-empty i {
+            font-size: 3rem;
+            color: #d4c5b0;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .chat-empty p {
+            font-style: italic;
+            margin: 0;
+        }
+
+    /* ===== ALT GİRİŞ ALANI ===== */
+    .chat-footer {
+        background: #fff9f0;
+        padding: 12px 14px;
+        border-top: 1px solid rgba(139, 111, 71, 0.15);
+        flex-shrink: 0;
+        position: relative;
+        z-index: 3;
+    }
+
+    .chat-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chat-input {
+        flex: 1;
+        border: 2px solid #e8dcc8;
+        border-radius: 50px;
+        padding: 11px 18px;
+        font-family: 'Georgia', serif;
+        font-size: 0.95rem;
+        color: #4a3f35;
+        background: #fff;
+        transition: all 0.25s ease;
+        outline: none;
+        min-width: 0;
+    }
+
+        .chat-input:focus {
+            border-color: #8b6f47;
+            box-shadow: 0 0 10px rgba(139, 111, 71, 0.15);
+        }
+
+        .chat-input::placeholder {
+            color: #b5a48e;
+            font-style: italic;
+        }
+
+    .chat-send-btn {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #8b6f47 0%, #6b5541 100%);
+        color: #f5f0e8;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(107, 85, 65, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .chat-send-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #a0785a 0%, #8b6f47 100%);
+            transform: scale(1.08);
+        }
+
+        .chat-send-btn:active:not(:disabled) {
+            transform: scale(0.94);
+        }
+
+        .chat-send-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+    /* ========================
+           RESPONSIVE
+           ======================== */
+    @@media (max-width: 768px) {
+        /* Mobilde tam ekran sohbet deneyimi */
+        .chat-page {
+            margin: 0;
+            padding: 0;
+            max-width: 100%;
+        }
+
+        .chat-card {
+            border-radius: 0;
+            height: calc(100vh - 60px); /* Navbar payı — kendi navbar yüksekliğine göre ayarla */
+            min-height: 400px;
+            border: none;
+        }
+
+        .chat-header {
+            padding: 10px 12px;
+            gap: 10px;
+        }
+
+        .chat-header-avatar {
+            width: 38px;
+            height: 38px;
+        }
+
+        .chat-header-name {
+            font-size: 0.95rem;
+        }
+
+        .chat-container {
+            padding: 14px 10px;
+        }
+
+        .bubble {
+            max-width: 85%;
+            font-size: 0.9rem;
+            padding: 9px 13px;
+        }
+
+        .chat-footer {
+            padding: 10px;
+        }
+
+        .chat-input {
+            padding: 10px 15px;
+            font-size: 16px; /* iOS'ta odaklanınca zoom yapmasını önler */
+        }
+
+        .chat-send-btn {
+            width: 42px;
+            height: 42px;
+        }
+
+        .scroll-down-btn {
+            bottom: 80px;
+        }
+    }
+</style>
+
+<div class="chat-page">
+    <div class="chat-card">
+
+        <!-- ÜST BAR -->
+        <div class="chat-header">
+            <a href="/Message" class="chat-back-btn"><i class="fas fa-arrow-left"></i></a>
+            <div class="position-relative">
+                <img src="@(string.IsNullOrEmpty(otherUser.ProfileImageUrl) ? "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" : otherUser.ProfileImageUrl)"
+                     class="chat-header-avatar" alt="@otherUser.UserName">
+                <div id="onlineStatus" class="bg-secondary rounded-circle" style="width:12px; height:12px; position:absolute; bottom:0; right:0; border:2px solid #fff;"></div>
+            </div>
+            <div class="chat-header-info">
+                <a href="/Profile/PublicProfile?id=@otherUser.Id" class="chat-header-name">@otherUser.UserName</a>
+                <div class="chat-header-sub">
+                    <span id="onlineText">Çevrimdışı</span>
+                    <span id="typingIndicator" class="ms-2 fst-italic" style="display:none; color:#198754;"><small>yazıyor...</small></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MESAJLAR -->
+        <div class="chat-container" id="chatBox">
+            @if (Model.Any())
+            {
+                DateTime? lastDate = null;
+                foreach (var msg in Model)
+                {
+                    // Tarih ayracı: gün değiştiğinde göster
+                    if (lastDate == null || msg.CreatedAt.Date != lastDate.Value.Date)
+                    {
+                        string dateLabel = msg.CreatedAt.Date == DateTime.Today
+                        ? "Bugün"
+                        : msg.CreatedAt.Date == DateTime.Today.AddDays(-1)
+                        ? "Dün"
+                        : msg.CreatedAt.ToString("dd MMMM yyyy");
+                        <div class="date-divider"><span>@dateLabel</span></div>
+                        lastDate = msg.CreatedAt.Date;
+                    }
+
+                    var isSent = msg.SenderId == ViewBag.CurrentUserId;
+                    <div class="bubble @(isSent ? "bubble-sent" : "bubble-received")" data-id="@msg.Id">
+                        <div>@msg.Content</div>
+                        <div class="bubble-time">@msg.CreatedAt.ToString("HH:mm")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="chat-empty" id="chatEmpty">
+                    <i class="fa-regular fa-comments"></i>
+                    <p>Henüz mesaj yok.<br />İlk mesajı göndererek sohbeti başlat!</p>
+                </div>
+            }
+        </div>
+
+        <!-- YENİ MESAJ BUTONU -->
+        <button type="button" class="scroll-down-btn" id="scrollDownBtn">
+            <i class="fa-solid fa-arrow-down me-1"></i> Yeni mesaj
+        </button>
+
+        <!-- MESAJ GİRİŞİ -->
+        <div class="chat-footer">
+            <form id="chatForm" class="chat-form" onsubmit="sendMessage(event)">
+                <input type="text" id="msgInput" class="chat-input" placeholder="Mesaj yazın..." autocomplete="off" maxlength="1000" required>
+                <button type="submit" class="chat-send-btn" id="sendBtn" aria-label="Gönder">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script>
+        var receiverId = @otherUser.Id;
+        var chatBox = document.getElementById("chatBox");
+        var scrollDownBtn = document.getElementById("scrollDownBtn");
+
+        // ===== KAYDIRMA YARDIMCILARI =====
+        function isNearBottom() {
+            if(!chatBox) return true;
+            return chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
+        }
+
+        function scrollToBottom() {
+            if(!chatBox) return;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            if(scrollDownBtn) scrollDownBtn.style.display = 'none';
+        }
+
+        if(scrollDownBtn && chatBox) {
+            chatBox.addEventListener('scroll', function () {
+                if (isNearBottom()) scrollDownBtn.style.display = 'none';
+            });
+            scrollDownBtn.addEventListener('click', scrollToBottom);
+        }
+
+        // 1. SignalR Bağlantısını Kur
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .withAutomaticReconnect()
+            .build();
+
+        // 2. Olay Dinleyicileri (Receivers)
+        connection.on("ReceiveMessage", function (msg) {
+            if (msg.senderId == receiverId) {
+                appendMessage(msg.id, msg.content, msg.createdAt, false);
+                connection.invoke("MarkMessagesAsRead", receiverId.toString());
+            }
+        });
+
+        connection.on("UserOnline", function (userId) {
+            if (userId == receiverId) {
+                // UI'da çevrimiçi göster
+                var statusEl = document.getElementById('onlineStatus');
+                if(statusEl) { statusEl.className = 'bg-success rounded-circle'; }
+            }
+        });
+
+        connection.on("UserOffline", function (userId) {
+            if (userId == receiverId) {
+                // UI'da çevrimdışı göster
+                var statusEl = document.getElementById('onlineStatus');
+                if(statusEl) { statusEl.className = 'bg-secondary rounded-circle'; }
+            }
+        });
+
+        connection.on("ReceiveTyping", function (senderId) {
+            if (senderId == receiverId) {
+                var ind = $('#typingIndicator');
+                if(ind.length) ind.stop(true, true).fadeIn().delay(1500).fadeOut();
+            }
+        });
+
+        connection.on("MessagesRead", function (readerId) {
+            if (readerId == receiverId) {
+                $('.bubble-sent').find('.bubble-time:not(:has(i))').append(' <i class="fas fa-check-double text-primary ms-1"></i>');
+            }
+        });
+
+        // 3. Bağlantıyı Başlat
+        connection.start().then(function () {
+            console.log("SignalR Bağlantısı Başarılı");
+            scrollToBottom();
+            connection.invoke("MarkMessagesAsRead", receiverId.toString());
+        }).catch(function (err) {
+            console.error(err.toString());
+        });
+
+        // 4. Yardımcı Metodlar
+        function appendMessage(id, content, time, isSent) {
+            var cssClass = isSent ? "bubble-sent" : "bubble-received";
+            var safeContent = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            var html = `<div class="bubble ${cssClass}" data-id="${id}">
+                            <div>${safeContent}</div>
+                            <div class="bubble-time">${time}</div>
+                        </div>`;
+            
+            var emptyState = document.getElementById('chatEmpty');
+            if(emptyState) emptyState.remove();
+
+            var wasNearBottom = isNearBottom();
+            $('#chatBox').append(html);
+
+            if (isSent || wasNearBottom) {
+                scrollToBottom();
+            } else {
+                if(scrollDownBtn) scrollDownBtn.style.display = 'block';
+            }
+        }
+
+        // 5. Mesaj Gönder
+        function sendMessage(e) {
+            e.preventDefault();
+            var input = $('#msgInput');
+            var btn = $('#sendBtn');
+            var content = input.val().trim();
+            if(!content) return;
+            
+            btn.prop('disabled', true);
+            input.val('');
+
+            connection.invoke("SendMessage", receiverId.toString(), content).then(function (res) {
+                if(res.success) {
+                    appendMessage(res.message.id, res.message.content, res.message.createdAt, true);
+                } else {
+                    alert(res.message);
+                }
+            }).catch(function (err) {
+                console.error(err.toString());
+            }).finally(function() {
+                btn.prop('disabled', false);
+                input.focus();
+            });
+        }
+
+        // 6. Yazıyor... (Typing) Tetikleyici
+        let typingTimer;
+        $('#msgInput').on('input', function() {
+            clearTimeout(typingTimer);
+            if(connection.state === signalR.HubConnectionState.Connected) {
+                connection.invoke("SendTyping", receiverId.toString());
+            }
+            typingTimer = setTimeout(function() {}, 1500);
+        });
+
+        $(document).ready(function () {
+            scrollToBottom();
+        });
+    </script>
+}

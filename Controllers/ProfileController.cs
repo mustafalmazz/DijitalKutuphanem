@@ -133,7 +133,8 @@ namespace BookManagementApp.Controllers
                 // --- YENİ EKLENEN DEĞERLERİ MODELE AKTARIYORUZ ---
                 TodayStudyMinutes = todayStudyMins,
                 ThisMonthStudyMinutes = monthStudyMins,
-                TotalPomodoroCompleted = completedPomodoros
+                TotalPomodoroCompleted = completedPomodoros,
+                User = user
             };
             // --- ÇERÇEVE BİLGİLERİ ---
             var ownedFrames = _context.UserFrames
@@ -144,7 +145,14 @@ namespace BookManagementApp.Controllers
 
             ViewBag.OwnedFrames = ownedFrames;
             ViewBag.ActiveFrameImageUrl = user.ActiveFrameImageUrl;
-            ViewBag.Avatars = _context.ProfileAvatars.ToList();
+            var ownedAvatarIds = _context.UserAvatars
+                .Where(ua => ua.UserId == userId)
+                .Select(ua => ua.ProfileAvatarId)
+                .ToList();
+
+            ViewBag.Avatars = _context.ProfileAvatars
+                .Where(a => ownedAvatarIds.Contains(a.Id))
+                .ToList();
 
             return View(model);
         }
@@ -205,6 +213,65 @@ namespace BookManagementApp.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = "Sunucu hatası: " + ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult PublicProfile(int id)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return RedirectToAction("Login", "Account");
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == id);
+            if (user == null) return NotFound();
+
+            if (loggedInUserId == id)
+            {
+                // Kendi profiliyse normal profile yönlendir
+                return RedirectToAction("Index");
+            }
+
+            var followersCount = _context.Follows.Count(f => f.FollowingId == id);
+            var followingCount = _context.Follows.Count(f => f.FollowerId == id);
+            var isFollowing = _context.Follows.Any(f => f.FollowerId == loggedInUserId && f.FollowingId == id);
+
+            ViewBag.FollowersCount = followersCount;
+            ViewBag.FollowingCount = followingCount;
+            ViewBag.IsFollowing = isFollowing;
+            ViewBag.LoggedInUserId = loggedInUserId;
+
+            return View(user);
+        }
+
+        [HttpPost]
+        public IActionResult ToggleFollow(int targetId)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            if (loggedInUserId == targetId) return Json(new { success = false, message = "Kendinizi takip edemezsiniz." });
+
+            var existingFollow = _context.Follows.FirstOrDefault(f => f.FollowerId == loggedInUserId && f.FollowingId == targetId);
+
+            if (existingFollow != null)
+            {
+                // Takipten Çık
+                _context.Follows.Remove(existingFollow);
+                _context.SaveChanges();
+                return Json(new { success = true, isFollowing = false });
+            }
+            else
+            {
+                // Takip Et
+                var newFollow = new Follow
+                {
+                    FollowerId = loggedInUserId.Value,
+                    FollowingId = targetId,
+                    CreatedAt = DateTime.Now
+                };
+                _context.Follows.Add(newFollow);
+                _context.SaveChanges();
+                return Json(new { success = true, isFollowing = true });
             }
         }
     }

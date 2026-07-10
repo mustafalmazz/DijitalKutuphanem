@@ -552,18 +552,24 @@
 
     <!-- SEKME YAPISI (TABS) -->
     <div class="store-container" style="max-width: 1300px; margin: 0 auto; padding: 0 20px 20px;">
+        @{
+            string activeTab = TempData["ActiveTab"] as string ?? "frames";
+        }
         <ul class="nav nav-pills mb-4 justify-content-center" id="storeTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="frames-tab" data-bs-toggle="pill" data-bs-target="#frames" type="button" role="tab" aria-controls="frames" aria-selected="true">Çerçeveler</button>
+                <button class="nav-link @(activeTab == "frames" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="frames-tab" data-bs-toggle="pill" data-bs-target="#frames" type="button" role="tab" aria-controls="frames" aria-selected="@(activeTab == "frames" ? "true" : "false")">Çerçeveler</button>
             </li>
             <li class="nav-item ms-2" role="presentation">
-                <button class="nav-link fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="avatars-tab" data-bs-toggle="pill" data-bs-target="#avatars" type="button" role="tab" aria-controls="avatars" aria-selected="false">Avatarlar</button>
+                <button class="nav-link @(activeTab == "avatars" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="avatars-tab" data-bs-toggle="pill" data-bs-target="#avatars" type="button" role="tab" aria-controls="avatars" aria-selected="@(activeTab == "avatars" ? "true" : "false")">Avatarlar</button>
+            </li>
+            <li class="nav-item ms-2" role="presentation">
+                <button class="nav-link @(activeTab == "packs" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="packs-tab" data-bs-toggle="pill" data-bs-target="#packs" type="button" role="tab" aria-controls="packs" aria-selected="@(activeTab == "packs" ? "true" : "false")">Sürpriz Paketler 🎁</button>
             </li>
         </ul>
 
         <div class="tab-content" id="storeTabsContent">
             <!-- ÇERÇEVELER SEKME İÇERİĞİ -->
-            <div class="tab-pane fade show active" id="frames" role="tabpanel" aria-labelledby="frames-tab">
+            <div class="tab-pane fade @(activeTab == "frames" ? "show active" : "")" id="frames" role="tabpanel" aria-labelledby="frames-tab">
                 <div class="store-grid">
                     @foreach (var frame in Model.Frames)
                     {
@@ -681,7 +687,7 @@
             </div>
 
             <!-- AVATARLAR SEKME İÇERİĞİ -->
-            <div class="tab-pane fade" id="avatars" role="tabpanel" aria-labelledby="avatars-tab">
+            <div class="tab-pane fade @(activeTab == "avatars" ? "show active" : "")" id="avatars" role="tabpanel" aria-labelledby="avatars-tab">
                 <div class="store-grid">
                     @foreach (var avatar in Model.Avatars)
                     {
@@ -779,6 +785,272 @@
                     }
                 </div>
             </div>
+
+            <!-- SÜRPRİZ PAKETLER SEKME İÇERİĞİ -->
+            <div class="tab-pane fade" id="packs" role="tabpanel" aria-labelledby="packs-tab">
+                @{
+                    var packTotal = Model.PackAvatars.Count();
+                    var packOwned = Model.PackAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
+                    bool canBuyPack = packOwned < packTotal && user != null && user.WisdomStones >= 300;
+                }
+                
+                <div class="gacha-banner-wrapper" style="background: linear-gradient(135deg, #fff, #fef8f0); border-radius: 20px; border: 2px solid #ffcc80; padding: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); margin-bottom: 40px; position: relative; overflow: hidden;">
+                    <!-- Banner Arkaplan Deseni -->
+                    <div style="position: absolute; right: -50px; top: -50px; opacity: 0.1; font-size: 15rem; color: #ff9800;">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    
+                    <div class="row align-items-center position-relative" style="z-index: 2;">
+                        <div class="col-md-7 text-center text-md-start mb-4 mb-md-0">
+                            <h2 style="color: #e65100; font-weight: 800; font-size: 2.2rem; margin-bottom: 15px;">
+                                <i class="fa-solid fa-paw"></i> Hayvanlar Paketi
+                            </h2>
+                            <p style="color: #6b5541; font-size: 1.1rem; margin-bottom: 25px;">
+                                İçerisinden rastgele ve sadece sende <strong>olmayan</strong> bir hayvan avatarı çıkar! Bütün koleksiyonu tamamlayabilecek misin?
+                            </p>
+                            
+                            <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-4">
+                                <div style="background: rgba(255,152,0,0.1); padding: 10px 20px; border-radius: 50px; font-weight: bold; font-size: 1.2rem; color: #d35400;">
+                                    <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> 300 Taş
+                                </div>
+                                
+                                @Html.AntiForgeryToken()
+                                <button onclick="buyAnimalPack(this)" class="btn btn-lg" style="background: linear-gradient(135deg, #ff9800, #ff5722); color: white; border-radius: 50px; padding: 12px 30px; font-weight: bold; box-shadow: 0 8px 20px rgba(255,87,34,0.3); transition: transform 0.2s;" @(canBuyPack ? "" : "disabled")>
+                                    @if(packOwned >= packTotal && packTotal > 0)
+                                    {
+                                        <text><i class="fa-solid fa-check-double"></i> Koleksiyon Tamamlandı</text>
+                                    }
+                                    else if(user != null && user.WisdomStones < 300)
+                                    {
+                                        <text><i class="fa-solid fa-lock"></i> Yetersiz Bakiye</text>
+                                    }
+                                    else
+                                    {
+                                        <text><i class="fa-solid fa-cube"></i> Paketi Aç</text>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-5 text-center">
+                            <!-- Sabit Kutu Görseli -->
+                            <div style="font-size: 8rem; color: #ff9800; text-shadow: 0 10px 30px rgba(255,152,0,0.4);" class="main-pack-icon">
+                                <i class="fa-solid fa-box"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Koleksiyon Panosu -->
+                <h4 style="color: #4a3f35; font-weight: 800; margin-bottom: 20px; border-bottom: 2px solid rgba(74,63,53,0.1); padding-bottom: 10px;">
+                    Koleksiyonum (@packOwned / @packTotal)
+                </h4>
+                
+                <div class="store-grid" id="packCollectionGrid">
+                    @foreach(var item in Model.PackAvatars)
+                    {
+                        bool isItemOwned = ownedAvatarIds.Contains(item.Id);
+                        
+                        <div class="frame-card" style="@(isItemOwned ? "opacity: 0.5; filter: grayscale(80%); border-color: rgba(0,0,0,0.1);" : "border-color: rgba(255,152,0,0.4); box-shadow: 0 0 15px rgba(255,152,0,0.1);")" id="packItem-@item.Id">
+                            <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 120px;">
+                                <img src="@item.ImageUrl" alt="@item.Name" style="width: 80px; height: 80px; object-fit: contain; border-radius: 10px;" />
+                            </div>
+                            <div class="frame-info text-center" style="padding: 10px;">
+                                <div style="font-size: 0.85rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">@item.Name</div>
+                                @if (isItemOwned)
+                                {
+                                    <div style="font-weight: bold; color: #6c757d; font-size: 0.8rem;"><i class="fa-solid fa-check"></i> Sende Var</div>
+                                }
+                                else
+                                {
+                                    <div style="font-weight: bold; color: #ff9800; font-size: 0.8rem;"><i class="fa-solid fa-star"></i> Çıkmadı</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Gacha Animasyon Overlay -->
+<style>
+    #gachaOverlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 999999;
+        display: none; flex-direction: column; justify-content: center; align-items: center;
+        backdrop-filter: blur(10px);
+    }
+    .gacha-box {
+        font-size: 8rem; color: #ff9800;
+        animation: shake 0.5s infinite alternate;
+        filter: drop-shadow(0 0 20px #ff9800);
+    }
+    .gacha-box.burst {
+        animation: burst 0.6s forwards;
+    }
+    .gacha-result {
+        display: none; flex-direction: column; align-items: center;
+        transform: scale(0);
+        animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .gacha-card {
+        background: linear-gradient(135deg, #fff, #fef8f0);
+        border: 4px solid #ffcc80; border-radius: 20px;
+        padding: 30px; box-shadow: 0 0 50px rgba(255,204,128,0.5);
+        display: flex; flex-direction: column; align-items: center;
+    }
+    @@keyframes shake {
+        0% { transform: rotate(-5deg) scale(1); }
+        100% { transform: rotate(5deg) scale(1.1); filter: drop-shadow(0 0 40px #ff9800); }
+    }
+    @@keyframes burst {
+        0% { transform: scale(1.1); opacity: 1; }
+        50% { transform: scale(2); filter: brightness(2) drop-shadow(0 0 100px #fff); }
+        100% { transform: scale(0); opacity: 0; }
+    }
+    @@keyframes popIn {
+        0% { transform: scale(0) rotateY(-180deg); opacity: 0; }
+        100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+    }
+    
+    @@media (max-width: 768px) {
+        .gacha-banner-wrapper {
+            padding: 25px 15px !important;
+            margin-bottom: 25px !important;
+        }
+        .gacha-banner-wrapper h2 {
+            font-size: 1.6rem !important;
+            margin-bottom: 10px !important;
+        }
+        .gacha-banner-wrapper p {
+            font-size: 0.95rem !important;
+            margin-bottom: 15px !important;
+        }
+        .gacha-banner-wrapper .main-pack-icon {
+            font-size: 6rem !important;
+            margin-top: 15px;
+        }
+        .gacha-banner-wrapper .d-flex {
+            flex-direction: column;
+            gap: 15px !important;
+        }
+        .gacha-banner-wrapper .btn {
+            width: 100%;
+        }
+        .gacha-box {
+            font-size: 5rem !important;
+        }
+        .gacha-result h2 {
+            font-size: 2.2rem !important;
+        }
+        .gacha-card img {
+            width: 100px !important;
+            height: 100px !important;
+        }
+        .gacha-card h3 {
+            font-size: 1.2rem !important;
+        }
+    }
+</style>
+
+<div id="gachaOverlay">
+    <div class="gacha-box" id="gachaBox">
+        <i class="fa-solid fa-box"></i>
+    </div>
+    <div class="gacha-result" id="gachaResult">
+        <h2 style="color: #ff9800; font-weight: 900; font-size: 3rem; text-shadow: 0 4px 20px rgba(0,0,0,0.5); margin-bottom: 20px;">
+            TEBRİKLER!
+        </h2>
+        <div class="gacha-card">
+            <img id="gachaAvatarImage" src="" style="width: 150px; height: 150px; object-fit: contain; margin-bottom: 15px;" />
+            <h3 id="gachaAvatarName" style="color: #4a3f35; font-weight: 700; margin: 0;">Gizemli Hayvan</h3>
+        </div>
+        <button class="btn btn-light mt-4 px-5 py-2 fw-bold rounded-pill" onclick="closeGacha()" style="font-size: 1.2rem;">Harika!</button>
+    </div>
+</div>
+
+<script>
+    function buyAnimalPack(btn) {
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Açılıyor...';
+        btn.disabled = true;
+
+        fetch('/Store/BuyAnimalPack', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                // Bakiyeyi güncelle
+                document.querySelectorAll('.navbar .fa-gem').forEach(function(gemIcon) {
+                    var textNode = gemIcon.nextSibling;
+                    if(textNode && textNode.nodeType === 3 && textNode.nodeValue.trim().length > 0) {
+                        var valStr = textNode.nodeValue.replace('+', '').trim();
+                        if(!isNaN(parseInt(valStr))) {
+                            textNode.nodeValue = ' ' + data.newBalance;
+                        }
+                    }
+                });
+
+                // Gacha Animasyonunu Başlat
+                var overlay = document.getElementById('gachaOverlay');
+                var box = document.getElementById('gachaBox');
+                var result = document.getElementById('gachaResult');
+                
+                // Reset
+                box.className = 'gacha-box';
+                box.style.display = 'block';
+                result.style.display = 'none';
+                overlay.style.display = 'flex';
+                
+                // Result datasını doldur
+                document.getElementById('gachaAvatarImage').src = data.avatarImage;
+                document.getElementById('gachaAvatarName').innerText = data.avatarName || 'Gizemli Hayvan';
+
+                // Koleksiyon gridindeki silik durumu uygula
+                var card = document.getElementById('packItem-' + data.avatarId);
+                if(card) {
+                    card.style = "opacity: 0.5; filter: grayscale(80%); border-color: rgba(0,0,0,0.1);";
+                    card.querySelector('img').style = "width: 80px; height: 80px; object-fit: contain; border-radius: 10px;";
+                    card.querySelector('.frame-info').innerHTML = '<div style="font-size: 0.85rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">' + (data.avatarName || 'Gizemli Hayvan') + '</div><div style="font-weight: bold; color: #6c757d; font-size: 0.8rem;"><i class="fa-solid fa-check"></i> Sende Var</div>';
+                }
+
+                // Butonu düzelt
+                btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
+                btn.disabled = false;
+
+                // Animasyon Akışı
+                setTimeout(function() {
+                    box.classList.add('burst'); // Kutu patlar
+                    setTimeout(function() {
+                        box.style.display = 'none'; // Kutu yok olur
+                        result.style.display = 'flex'; // Kart belirir (popIn)
+                    }, 500);
+                }, 2000); // 2 saniye sallanma süresi
+
+            } else {
+                alert("Hata: " + data.message);
+                btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Paket açılırken bir hata oluştu!");
+            btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
+            btn.disabled = false;
+        });
+    }
+
+    function closeGacha() {
+        document.getElementById('gachaOverlay').style.display = 'none';
+        // Reload page to reflect exact collection counts if preferred, or just let user stay.
+        // window.location.reload(); 
+    }
+</script>

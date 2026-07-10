@@ -37,6 +37,15 @@ namespace BookManagementApp.Areas.Admin.Controllers
 
                 ViewBag.OwnedFrames = ownedFrames;
                 ViewBag.ActiveFrameImageUrl = model.ActiveFrameImageUrl;
+                
+                var ownedAvatarIds = _context.UserAvatars
+                    .Where(ua => ua.UserId == userId)
+                    .Select(ua => ua.ProfileAvatarId)
+                    .ToList();
+
+                ViewBag.Avatars = _context.ProfileAvatars
+                    .Where(a => ownedAvatarIds.Contains(a.Id))
+                    .ToList();
             }
 
             return View(model);

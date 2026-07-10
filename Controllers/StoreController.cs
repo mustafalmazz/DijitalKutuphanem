@@ -26,8 +26,19 @@ namespace BookManagementApp.Controllers
 
             var viewModel = new StoreViewModel
             {
-                Frames = await _context.ProfileFrames.ToListAsync(),
-                Avatars = await _context.ProfileAvatars.ToListAsync()
+                Frames = await _context.ProfileFrames
+                    .OrderBy(f => f.PriceInStones)
+                    .ThenBy(f => f.RequiredBookCount)
+                    .ToListAsync(),
+                Avatars = await _context.ProfileAvatars
+                    .Where(a => a.PackCategory == null)
+                    .OrderBy(a => a.PriceInStones)
+                    .ThenBy(a => a.RequiredBookCount)
+                    .ToListAsync(),
+                PackAvatars = await _context.ProfileAvatars
+                    .Where(a => a.PackCategory == "AnimalPack")
+                    .OrderBy(a => a.Id)
+                    .ToListAsync()
             };
 
             var ownedFrameIds = await _context.UserFrames
@@ -48,6 +59,56 @@ namespace BookManagementApp.Controllers
             ViewBag.UserBookCount = userBookCount;
 
             return View(viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BuyAnimalPack()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false, message = "Oturum süresi doldu." });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return Json(new { success = false, message = "Kullanıcı bulunamadı." });
+
+            if (user.WisdomStones < 300)
+                return Json(new { success = false, message = "Yeterli Bilgelik Taşınız yok! En az 300 taşa ihtiyacınız var." });
+
+            // Paketteki tüm hayvanlar
+            var packItems = await _context.ProfileAvatars
+                .Where(a => a.PackCategory == "AnimalPack")
+                .ToListAsync();
+
+            if (!packItems.Any())
+                return Json(new { success = false, message = "Bu pakette henüz hiç avatar yok!" });
+
+            // Kullanıcının sahip olduğu hayvanlar
+            var ownedAvatarIds = await _context.UserAvatars
+                .Where(ua => ua.UserId == userId)
+                .Select(ua => ua.ProfileAvatarId)
+                .ToListAsync();
+
+            // Sadece sahip OLMADIĞI hayvanlar
+            var unownedItems = packItems.Where(a => !ownedAvatarIds.Contains(a.Id)).ToList();
+
+            if (!unownedItems.Any())
+                return Json(new { success = false, message = "Tebrikler! Bu paketteki TÜM hayvanlara zaten sahipsiniz. Başka çekiliş yapamazsınız." });
+
+            // Rastgele seçim
+            var random = new Random();
+            var drawnAvatar = unownedItems[random.Next(unownedItems.Count)];
+
+            // Satın almayı gerçekleştir
+            user.WisdomStones -= 300;
+            _context.UserAvatars.Add(new UserAvatar { UserId = userId.Value, ProfileAvatarId = drawnAvatar.Id });
+            await _context.SaveChangesAsync();
+
+            return Json(new { 
+                success = true, 
+                newBalance = user.WisdomStones,
+                avatarId = drawnAvatar.Id,
+                avatarName = drawnAvatar.Name,
+                avatarImage = drawnAvatar.ImageUrl
+            });
         }
 
         [HttpPost]
@@ -135,6 +196,7 @@ namespace BookManagementApp.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"\"{avatar.Name}\" başarıyla satın alındı!";
+            TempData["ActiveTab"] = "avatars";
             return RedirectToAction("Index");
         }
 
@@ -163,6 +225,7 @@ namespace BookManagementApp.Controllers
             else user.ActiveFrameImageUrl = frame.ImageUrl;
 
             await _context.SaveChangesAsync();
+            if(string.IsNullOrEmpty(returnUrl)) TempData["ActiveTab"] = "frames";
             return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Index") : Redirect(returnUrl);
         }
 
@@ -183,6 +246,7 @@ namespace BookManagementApp.Controllers
             TempData["SuccessMessage"] = "Avatar değiştirildi!";
             await _context.SaveChangesAsync();
 
+            if(string.IsNullOrEmpty(returnUrl)) TempData["ActiveTab"] = "avatars";
             return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Index") : Redirect(returnUrl);
         }
     }

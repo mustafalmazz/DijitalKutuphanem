@@ -1,0 +1,791 @@
+@model BookManagementApp.Models.LeaderboardViewModel
+@{
+    ViewData["Title"] = "🏆 Sıralama Tablosu";
+}
+
+<style>
+    /* ===== GENEL ===== */
+    body {
+        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
+        font-family: 'Georgia', serif;
+        color: #4a3f35;
+    }
+
+    .leaderboard-page {
+        min-height: 100vh;
+        padding-bottom: 80px;
+    }
+
+    /* ===== HERO BAŞLIK (Mağaza ile aynı dil) ===== */
+    .leaderboard-hero {
+        background: linear-gradient(135deg, #4a3f35 0%, #6b5541 40%, #8b6f47 100%);
+        padding: 40px 20px 60px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+        .leaderboard-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255,215,130,0.12) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(255,215,130,0.08) 0%, transparent 50%);
+        }
+
+        .leaderboard-hero h1 {
+            color: #f5f0e8;
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            position: relative;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+            letter-spacing: 1px;
+        }
+
+        .leaderboard-hero p {
+            color: rgba(245, 240, 232, 0.75);
+            font-size: 1.05rem;
+            font-style: italic;
+            position: relative;
+            margin: 0;
+        }
+
+    /* ===== ANA KONTEYNER ===== */
+    .leaderboard-container {
+        max-width: 900px;
+        margin: -35px auto 0;
+        padding: 0 20px;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* ===== SEKMELER ===== */
+    .leaderboard-tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+        .leaderboard-tabs .nav-pills {
+            background: #fff9f0;
+            border-radius: 50px;
+            padding: 6px;
+            box-shadow: 0 8px 25px rgba(107, 85, 65, 0.15);
+            border: 1px solid rgba(139, 111, 71, 0.15);
+            gap: 4px;
+        }
+
+        .leaderboard-tabs .nav-link {
+            color: #8b6f47;
+            font-weight: 600;
+            font-family: 'Georgia', serif;
+            border-radius: 50px;
+            padding: 10px 24px;
+            border: none;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-size: 0.95rem;
+        }
+
+            .leaderboard-tabs .nav-link.active {
+                background: linear-gradient(135deg, #8b6f47 0%, #6b5541 100%);
+                color: #f5f0e8;
+                box-shadow: 0 5px 15px rgba(107, 85, 65, 0.4);
+            }
+
+            .leaderboard-tabs .nav-link:not(.active):hover {
+                background: rgba(139, 111, 71, 0.1);
+                color: #6b5541;
+            }
+
+    /* ===== LİDERLİK KARTI ===== */
+    .leaderboard-card {
+        background: #fff9f0;
+        border-radius: 20px;
+        box-shadow: 0 10px 35px rgba(107, 85, 65, 0.15);
+        padding: 26px 22px;
+        margin-top: 22px;
+        border: 1px solid rgba(139, 111, 71, 0.12);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .leaderboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #8b6f47, #ffd782, #8b6f47);
+        }
+
+    .leaderboard-card-title {
+        color: #4a3f35;
+        font-weight: 700;
+        font-size: 1.2rem;
+        text-align: center;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+        .leaderboard-card-title i {
+            color: #cda45e;
+        }
+
+    /* ===== KAYDIRILABİLİR LİSTE (İptal edildi, ilk 10 gösterimi yapılacak) ===== */
+    .rank-list {
+        padding-right: 0px;
+    }
+
+    /* ===== SIRA SATIRI ===== */
+    .rank-row {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        border-radius: 15px;
+        margin-bottom: 12px;
+        background: #fdfaf5;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(139, 111, 71, 0.1);
+    }
+
+        .rank-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .rank-row:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(107, 85, 65, 0.12);
+            border-color: #d4c5b0;
+        }
+
+    /* İlk 3 sıra özel arka planları */
+    .rank-1 {
+        background: linear-gradient(90deg, #fff8e1 0%, #ffedb8 100%);
+        border: 1px solid #ffd782;
+    }
+
+    .rank-2 {
+        background: linear-gradient(90deg, #f7f7f7 0%, #e9e9ec 100%);
+        border: 1px solid #c9ced4;
+    }
+
+    .rank-3 {
+        background: linear-gradient(90deg, #fdf3ec 0%, #f7e0cd 100%);
+        border: 1px solid #e0b48c;
+    }
+
+    /* ===== SIRA ROZETİ ===== */
+    .rank-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1rem;
+        color: #f5f0e8;
+        background: linear-gradient(135deg, #a0785a, #8b6f47);
+        margin-right: 16px;
+        flex-shrink: 0;
+        box-shadow: 0 3px 8px rgba(107, 85, 65, 0.25);
+    }
+
+    .rank-1 .rank-badge {
+        background: linear-gradient(135deg, #ffd700, #e8a800);
+        box-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
+        font-size: 1.2rem;
+        color: #5c4400;
+    }
+
+    .rank-2 .rank-badge {
+        background: linear-gradient(135deg, #c0c6cc, #96a0a8);
+        box-shadow: 0 0 10px rgba(150, 160, 168, 0.5);
+        color: #3d4449;
+    }
+
+    .rank-3 .rank-badge {
+        background: linear-gradient(135deg, #d68a52, #b3672e);
+        box-shadow: 0 0 10px rgba(211, 132, 71, 0.5);
+    }
+
+    /* ===== AVATAR + ÇERÇEVE ===== */
+    .user-avatar-wrapper {
+        position: relative;
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        margin-right: 16px;
+        flex-shrink: 0;
+    }
+
+    .user-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #fff9f0, #e6dac8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.3rem;
+        color: #8b6f47;
+    }
+
+    .user-frame {
+        position: absolute;
+        top: -15%;
+        left: -15%;
+        width: 130%;
+        height: 130%;
+        pointer-events: none;
+        z-index: 10;
+        object-fit: contain;
+    }
+
+    /* ===== KULLANICI BİLGİSİ ===== */
+    .user-info {
+        flex-grow: 1;
+        min-width: 0; /* Uzun isimlerde taşmayı önler */
+    }
+
+    .user-name {
+        font-weight: 700;
+        color: #4a3f35;
+        font-size: 1.05rem;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-title {
+        font-size: 0.82rem;
+        color: #8b6f47;
+        font-style: italic;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ===== SKOR ROZETİ ===== */
+    .score-badge {
+        background: #fff;
+        padding: 8px 18px;
+        border-radius: 50px;
+        font-weight: 800;
+        color: #6b5541;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(107, 85, 65, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid #e5d5c5;
+        flex-shrink: 0;
+        margin-left: 10px;
+    }
+
+        .score-badge i {
+            color: #cda45e;
+        }
+
+    /* ===== BOŞ DURUM ===== */
+    .empty-state {
+        text-align: center;
+        padding: 50px 20px;
+        color: #8b6f47;
+    }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #d4c5b0;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .empty-state h5 {
+            color: #6b5541;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-style: italic;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+    /* ========================
+           RESPONSIVE
+           ======================== */
+
+    /* Tablet */
+    @@media (max-width: 768px) {
+        .leaderboard-hero {
+            padding: 30px 15px 50px;
+        }
+
+            .leaderboard-hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .leaderboard-hero p {
+                font-size: 0.9rem;
+            }
+
+        .leaderboard-container {
+            padding: 0 12px;
+            margin-top: -30px;
+        }
+        /* Sekmeler yatay kaydırılabilir */
+        .leaderboard-tabs {
+            overflow-x: auto;
+            justify-content: flex-start;
+            padding-bottom: 6px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+            .leaderboard-tabs::-webkit-scrollbar {
+                height: 4px;
+            }
+
+            .leaderboard-tabs::-webkit-scrollbar-thumb {
+                background: #a0785a;
+                border-radius: 4px;
+            }
+
+            .leaderboard-tabs .nav-pills {
+                flex-wrap: nowrap;
+                margin: 0 auto;
+            }
+
+            .leaderboard-tabs .nav-link {
+                padding: 9px 16px;
+                font-size: 0.82rem;
+            }
+
+        .leaderboard-card {
+            padding: 18px 12px;
+            border-radius: 16px;
+        }
+
+        .leaderboard-card-title {
+            font-size: 1.05rem;
+            margin-bottom: 15px;
+        }
+        /* Mobilde ~10 satır daha kompakt olduğu için yükseklik ayarı */
+        .rank-list {
+            padding-right: 0px;
+        }
+
+        .rank-row {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+        }
+            /* Mobilde hover kayması olmasın */
+            .rank-row:hover {
+                transform: none;
+            }
+
+        .rank-badge {
+            width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+            margin-right: 10px;
+        }
+
+        .rank-1 .rank-badge {
+            font-size: 1rem;
+        }
+
+        .user-avatar-wrapper {
+            width: 44px;
+            height: 44px;
+            margin-right: 10px;
+            border-radius: 11px;
+        }
+
+        .user-avatar {
+            border-radius: 11px;
+            font-size: 1.1rem;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+        }
+
+        .user-title {
+            font-size: 0.72rem;
+        }
+
+        .score-badge {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            gap: 5px;
+            margin-left: 6px;
+        }
+    }
+
+    /* Çok küçük ekranlar */
+    @@media (max-width: 420px) {
+        .leaderboard-hero h1 {
+            font-size: 1.5rem;
+        }
+
+        .user-title {
+            display: none; /* Dar ekranda unvan gizlenir, isim öne çıkar */
+        }
+
+        .rank-badge {
+            width: 28px;
+            height: 28px;
+            font-size: 0.78rem;
+            margin-right: 8px;
+        }
+
+        .user-avatar-wrapper {
+            width: 40px;
+            height: 40px;
+        }
+
+        .score-badge {
+            font-size: 0.78rem;
+            padding: 5px 10px;
+        }
+    }
+</style>
+
+<div class="leaderboard-page">
+
+    <!-- HERO BAŞLIK -->
+    <div class="leaderboard-hero">
+        <h1><i class="fa-solid fa-trophy"></i> Liderlik Tablosu</h1>
+        <p>Rekabete katıl, çalış, oku ve zirveye yerleş!</p>
+    </div>
+
+    <div class="leaderboard-container">
+
+        <!-- SEKMELER -->
+        <div class="leaderboard-tabs">
+            <ul class="nav nav-pills" id="leaderboard-tab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="bookworms-tab" data-bs-toggle="pill" data-bs-target="#bookworms" type="button" role="tab" aria-controls="bookworms" aria-selected="true">
+                        <i class="fa-solid fa-book-open-reader"></i> Ayın Kitap Kurtları
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="studiers-tab" data-bs-toggle="pill" data-bs-target="#studiers" type="button" role="tab" aria-controls="studiers" aria-selected="false">
+                        <i class="fa-solid fa-stopwatch"></i> En Çalışkanlar
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="streaks-tab" data-bs-toggle="pill" data-bs-target="#streaks" type="button" role="tab" aria-controls="streaks" aria-selected="false">
+                        <i class="fa-solid fa-fire"></i> En Uzun Seriler
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content" id="leaderboard-tabContent">
+
+            <!-- AYIN KİTAP KURTLARI -->
+            <div class="tab-pane fade show active" id="bookworms" role="tabpanel" aria-labelledby="bookworms-tab">
+                <div class="leaderboard-card">
+                    <div class="leaderboard-card-title">
+                        <i class="fa-solid fa-award"></i> Bu Ay En Çok Kitap Ekleyenler
+                    </div>
+                    @if (Model.TopBookworms.Any())
+                    {
+                        <div class="rank-list">
+                            @foreach (var item in Model.TopBookworms)
+                            {
+                                <div class="rank-row @(item.Rank <= 3 ? "rank-" + item.Rank : "")">
+                                    <div class="rank-badge">
+                                        @if (item.Rank == 1)
+                                        {
+                                            <i class="fa-solid fa-crown"></i>
+                                        }
+                                        else
+                                        {
+                                            @item.Rank
+                                        }
+                                    </div>
+
+                                    <div class="user-avatar-wrapper">
+                                        @if (!string.IsNullOrEmpty(item.ProfileImageUrl))
+                                        {
+                                            <img src="@item.ProfileImageUrl" class="user-avatar" />
+                                        }
+                                        else
+                                        {
+                                            <div class="user-avatar">@(item.UserName?.Substring(0, 1).ToUpper())</div>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(item.ActiveFrameImageUrl))
+                                        {
+                                            <img src="@item.ActiveFrameImageUrl" class="user-frame" />
+                                        }
+                                    </div>
+
+                                    <div class="user-info">
+                                        <div class="user-name">
+                                            <a href="/Profile/PublicProfile?id=@item.UserId" style="text-decoration: none; color: inherit;">@item.UserName</a>
+                                        </div>
+                                        <div class="user-title">
+                                            @(item.Rank == 1 ? "🥇 Aylık Şampiyon" : item.Rank == 2 ? "🥈 Üstün Başarı" : item.Rank == 3 ? "🥉 Harika İlerleme" : "📚 İstikrarlı Okur")
+                                        </div>
+                                    </div>
+
+                                    <div class="score-badge">
+                                        @item.Score <i class="fa-solid fa-book"></i>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        
+                        @if (Model.CurrentUserBookworm != null)
+                        {
+                            <div class="current-user-rank mt-3 pt-3" style="border-top: 2px dashed #e5d5c5;">
+                                <div class="rank-row" style="background: linear-gradient(90deg, #fdfaf6 0%, #f5f0e8 100%); border: 1px solid #c89666;">
+                                    <div class="rank-badge" style="background: #6b5541; font-size: 0.95rem;">
+                                        @Model.CurrentUserBookworm.Rank
+                                    </div>
+                                    <div class="user-avatar-wrapper">
+                                        @if (!string.IsNullOrEmpty(Model.CurrentUserBookworm.ProfileImageUrl))
+                                        {
+                                            <img src="@Model.CurrentUserBookworm.ProfileImageUrl" class="user-avatar" />
+                                        }
+                                        else
+                                        {
+                                            <div class="user-avatar">@(Model.CurrentUserBookworm.UserName?.Substring(0, 1).ToUpper())</div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(Model.CurrentUserBookworm.ActiveFrameImageUrl))
+                                        {
+                                            <img src="@Model.CurrentUserBookworm.ActiveFrameImageUrl" class="user-frame" />
+                                        }
+                                    </div>
+                                    <div class="user-info">
+                                        <div class="user-name">Siz (@Model.CurrentUserBookworm.UserName)</div>
+                                        <div class="user-title">Okuma Yolculuğu Devam Ediyor</div>
+                                    </div>
+                                    <div class="score-badge">
+                                        @Model.CurrentUserBookworm.Score <i class="fa-solid fa-book"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <i class="fa-solid fa-book-open"></i>
+                            <h5>Bu ay henüz kimse kitap eklememiş.</h5>
+                            <p>İlk kitabı ekleyip 1. sıraya yerleşmek için harika bir fırsat!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- EN ÇALIŞKANLAR -->
+            <div class="tab-pane fade" id="studiers" role="tabpanel" aria-labelledby="studiers-tab">
+                <div class="leaderboard-card">
+                    <div class="leaderboard-card-title">
+                        <i class="fa-solid fa-award"></i> Bu Ayın Toplam Çalışma Süresi (Dakika)
+                    </div>
+                    @if (Model.TopStudiers.Any())
+                    {
+                        <div class="rank-list">
+                            @foreach (var item in Model.TopStudiers)
+                            {
+                                <div class="rank-row @(item.Rank <= 3 ? "rank-" + item.Rank : "")">
+                                    <div class="rank-badge">
+                                        @if (item.Rank == 1)
+                                        {
+                                            <i class="fa-solid fa-crown"></i>
+                                        }
+                                        else
+                                        {
+                                            @item.Rank
+                                        }
+                                    </div>
+
+                                    <div class="user-avatar-wrapper">
+                                        @if (!string.IsNullOrEmpty(item.ProfileImageUrl))
+                                        {
+                                            <img src="@item.ProfileImageUrl" class="user-avatar" />
+                                        }
+                                        else
+                                        {
+                                            <div class="user-avatar">@(item.UserName?.Substring(0, 1).ToUpper())</div>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(item.ActiveFrameImageUrl))
+                                        {
+                                            <img src="@item.ActiveFrameImageUrl" class="user-frame" />
+                                        }
+                                    </div>
+
+                                    <div class="user-info">
+                                        <div class="user-name">
+                                            <a href="/Profile/PublicProfile?id=@item.UserId" style="text-decoration: none; color: inherit;">@item.UserName</a>
+                                        </div>
+                                        <div class="user-title">Odaklanma Ustası</div>
+                                    </div>
+
+                                    <div class="score-badge">
+                                        @item.Score <i class="fa-solid fa-clock"></i>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        
+                        @if (Model.CurrentUserStudier != null)
+                        {
+                            <div class="current-user-rank mt-3 pt-3" style="border-top: 2px dashed #e5d5c5;">
+                                <div class="rank-row" style="background: linear-gradient(90deg, #fdfaf6 0%, #f5f0e8 100%); border: 1px solid #c89666;">
+                                    <div class="rank-badge" style="background: #6b5541; font-size: 0.95rem;">
+                                        @Model.CurrentUserStudier.Rank
+                                    </div>
+                                    <div class="user-avatar-wrapper">
+                                        @if (!string.IsNullOrEmpty(Model.CurrentUserStudier.ProfileImageUrl))
+                                        {
+                                            <img src="@Model.CurrentUserStudier.ProfileImageUrl" class="user-avatar" />
+                                        }
+                                        else
+                                        {
+                                            <div class="user-avatar">@(Model.CurrentUserStudier.UserName?.Substring(0, 1).ToUpper())</div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(Model.CurrentUserStudier.ActiveFrameImageUrl))
+                                        {
+                                            <img src="@Model.CurrentUserStudier.ActiveFrameImageUrl" class="user-frame" />
+                                        }
+                                    </div>
+                                    <div class="user-info">
+                                        <div class="user-name">Siz (@Model.CurrentUserStudier.UserName)</div>
+                                        <div class="user-title">Odaklanma Ustası Olma Yolunda</div>
+                                    </div>
+                                    <div class="score-badge">
+                                        @Model.CurrentUserStudier.Score <i class="fa-solid fa-clock"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <i class="fa-solid fa-stopwatch"></i>
+                            <h5>Henüz odaklanma kaydı yok.</h5>
+                            <p>Kronometre veya Pomodoro ile çalışıp liderliğe oturabilirsin!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- EN UZUN SERİLER -->
+            <div class="tab-pane fade" id="streaks" role="tabpanel" aria-labelledby="streaks-tab">
+                <div class="leaderboard-card">
+                    <div class="leaderboard-card-title">
+                        <i class="fa-solid fa-award"></i> En Uzun Günlük Giriş Serileri
+                    </div>
+                    @if (Model.LongestStreaks.Any())
+                    {
+                        <div class="rank-list">
+                            @foreach (var item in Model.LongestStreaks)
+                            {
+                                <div class="rank-row @(item.Rank <= 3 ? "rank-" + item.Rank : "")">
+                                    <div class="rank-badge">
+                                        @if (item.Rank == 1)
+                                        {
+                                            <i class="fa-solid fa-crown"></i>
+                                        }
+                                        else
+                                        {
+                                            @item.Rank
+                                        }
+                                    </div>
+
+                                    <div class="user-avatar-wrapper">
+                                        @if (!string.IsNullOrEmpty(item.ProfileImageUrl))
+                                        {
+                                            <img src="@item.ProfileImageUrl" class="user-avatar" />
+                                        }
+                                        else
+                                        {
+                                            <div class="user-avatar">@(item.UserName?.Substring(0, 1).ToUpper())</div>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(item.ActiveFrameImageUrl))
+                                        {
+                                            <img src="@item.ActiveFrameImageUrl" class="user-frame" />
+                                        }
+                                    </div>
+
+                                    <div class="user-info">
+                                        <div class="user-name">
+                                            <a href="/Profile/PublicProfile?id=@item.UserId" style="text-decoration: none; color: inherit;">@item.UserName</a>
+                                        </div>
+                                        <div class="user-title">Disiplin Timsali</div>
+                                    </div>
+
+                                    <div class="score-badge">
+                                        @item.Score <i class="fa-solid fa-fire" style="color: #e74c3c;"></i>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        
+                        @if (Model.CurrentUserStreak != null)
+                        {
+                            <div class="current-user-rank mt-3 pt-3" style="border-top: 2px dashed #e5d5c5;">
+                                <div class="rank-row" style="background: linear-gradient(90deg, #fdfaf6 0%, #f5f0e8 100%); border: 1px solid #c89666;">
+                                    <div class="rank-badge" style="background: #6b5541; font-size: 0.95rem;">
+                                        @Model.CurrentUserStreak.Rank
+                                    </div>
+                                    <div class="user-avatar-wrapper">
+                                        @if (!string.IsNullOrEmpty(Model.CurrentUserStreak.ProfileImageUrl))
+                                        {
+                                            <img src="@Model.CurrentUserStreak.ProfileImageUrl" class="user-avatar" />
+                                        }
+                                        else
+                                        {
+                                            <div class="user-avatar">@(Model.CurrentUserStreak.UserName?.Substring(0, 1).ToUpper())</div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(Model.CurrentUserStreak.ActiveFrameImageUrl))
+                                        {
+                                            <img src="@Model.CurrentUserStreak.ActiveFrameImageUrl" class="user-frame" />
+                                        }
+                                    </div>
+                                    <div class="user-info">
+                                        <div class="user-name">Siz (@Model.CurrentUserStreak.UserName)</div>
+                                        <div class="user-title">Disiplin Yolcusu</div>
+                                    </div>
+                                    <div class="score-badge">
+                                        @Model.CurrentUserStreak.Score <i class="fa-solid fa-fire" style="color: #e74c3c;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <i class="fa-solid fa-fire-extinguisher"></i>
+                            <h5>Herkesin serisi sıfırlanmış gibi görünüyor.</h5>
+                            <p>Her gün düzenli girerek zirveyi kap!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

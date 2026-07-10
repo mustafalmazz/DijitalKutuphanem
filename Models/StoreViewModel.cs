@@ -7,5 +7,6 @@ namespace BookManagementApp.Models
     {
         public IEnumerable<ProfileFrame> Frames { get; set; }
         public IEnumerable<ProfileAvatar> Avatars { get; set; }
+        public IEnumerable<ProfileAvatar> PackAvatars { get; set; }
     }
 }

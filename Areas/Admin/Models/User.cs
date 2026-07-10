@@ -31,7 +31,11 @@ namespace BookManagementApp.Areas.Admin.Models
         public int MonthlyPagesRead { get; set; }
         
         public int WisdomStones { get; set; } = 0;
-
+        
+        public DateTime? LastLoginDate { get; set; }
+        public int CurrentStreak { get; set; } = 0;
+        public int LongestStreak { get; set; } = 0;
+        public DateTime? LastRewardClaimDate { get; set; }
         [StringLength(255)]
         public string? ActiveFrameImageUrl { get; set; }
 

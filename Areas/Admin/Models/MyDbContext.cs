@@ -19,6 +19,8 @@ namespace BookManagementApp.Models
         public DbSet<UserFrame> UserFrames { get; set; }
         public DbSet<ProfileAvatar> ProfileAvatars { get; set; }
         public DbSet<UserAvatar> UserAvatars { get; set; }
+        public DbSet<Follow> Follows { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +53,30 @@ namespace BookManagementApp.Models
                 .WithMany()
                 .HasForeignKey(uf => uf.ProfileFrameId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Follow>()
+                .HasOne(f => f.Follower)
+                .WithMany()
+                .HasForeignKey(f => f.FollowerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Follow>()
+                .HasOne(f => f.Following)
+                .WithMany()
+                .HasForeignKey(f => f.FollowingId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatMessage>()
+                .HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatMessage>()
+                .HasOne(m => m.Receiver)
+                .WithMany()
+                .HasForeignKey(m => m.ReceiverId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // --- MAĞAZA SEED DATA ---
             modelBuilder.Entity<ProfileFrame>().HasData(

@@ -1,0 +1,222 @@
+@using BookManagementApp.Areas.Admin.Models
+@model User
+@{
+    bool isClaimedToday = Model.LastRewardClaimDate.HasValue && Model.LastRewardClaimDate.Value.Date == DateTime.Today;
+    int currentDayInWeek = (Model.CurrentStreak % 7 == 0 && Model.CurrentStreak > 0) ? 7 : (Model.CurrentStreak % 7);
+    if (Model.CurrentStreak == 0) currentDayInWeek = 1; // Güvenlik kontrolü
+}
+
+<style>
+    /* Neon Yeşil - Toplandı */
+    .streak-row.claimed {
+        background: rgba(46, 204, 113, 0.08);
+        border: 2px solid rgba(46, 204, 113, 0.6);
+        box-shadow: 0 0 12px rgba(46, 204, 113, 0.2);
+    }
+    .streak-row.claimed .day-text { color: #27ae60; }
+    
+    /* Turuncu/Altın - Bekleyen (Pulsing) */
+    .streak-row.ready {
+        background: rgba(255, 152, 0, 0.08);
+        border: 2px solid #ff9800;
+        box-shadow: 0 0 15px rgba(255, 152, 0, 0.3);
+        animation: pulseOrange 2s infinite;
+    }
+    .streak-row.ready .day-text { color: #d35400; font-weight: 800; }
+    
+    @@keyframes pulseOrange {
+        0% { box-shadow: 0 0 8px rgba(255, 152, 0, 0.2); }
+        50% { box-shadow: 0 0 20px rgba(255, 152, 0, 0.5); }
+        100% { box-shadow: 0 0 8px rgba(255, 152, 0, 0.2); }
+    }
+
+    /* Gri - Kilitli */
+    .streak-row.locked {
+        background: #f8f9fa;
+        border: 1px dashed #dee2e6;
+        opacity: 0.7;
+    }
+    .streak-row.locked .day-text { color: #6c757d; }
+    
+    /* Topla Butonu */
+    .btn-claim {
+        background: linear-gradient(135deg, #ff9800, #ff5722);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 6px 18px;
+        font-weight: bold;
+        transition: transform 0.2s;
+        box-shadow: 0 4px 10px rgba(255, 87, 34, 0.3);
+    }
+    .btn-claim:hover {
+        transform: scale(1.05);
+        color: white;
+        box-shadow: 0 6px 15px rgba(255, 87, 34, 0.4);
+    }
+    .btn-claim:active {
+        transform: scale(0.95);
+    }
+    /* Yüzen Ödül Animasyonu */
+    .floating-reward {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: #00bcd4;
+        font-family: 'Georgia', serif;
+        font-weight: 900;
+        font-size: 2.5rem;
+        z-index: 999999;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-shadow: 0 0 15px rgba(0, 188, 212, 0.8), 0 0 30px rgba(0, 188, 212, 0.5);
+        animation: floatUpFadeOut 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    
+    @@keyframes floatUpFadeOut {
+        0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+        20% { transform: translate(-50%, -40px) scale(1.2); opacity: 1; }
+        40% { transform: translate(-50%, -60px) scale(1.1); opacity: 1; }
+        100% { transform: translate(-50%, -150px) scale(0.9); opacity: 0; }
+    }
+</style>
+
+<div class="modal fade" id="streakModal" tabindex="-1" aria-labelledby="streakModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: linear-gradient(135deg, #ffffff 0%, #fef8f0 100%); color: #4a3f35; border: 1px solid #ffcc80; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255, 152, 0, 0.2);">
+                <h5 class="modal-title fw-bold" id="streakModalLabel" style="color: #e65100;">
+                    <i class="fa-solid fa-gift" style="color: #ff5722;"></i> Haftalık Seri Ödülleri
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat" style="z-index: 1055;"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-4 text-center" style="color: #6b5541; font-weight: 500; font-size: 0.95rem;">
+                    Her gün giriş yaparak Bilgelik Taşı kazanın. Ödülünüzü almayı unutursanız seriniz 1. güne döner!
+                </p>
+                
+                <div class="d-flex flex-column gap-3">
+                    @for (int i = 1; i <= 7; i++)
+                    {
+                        int reward = 10 + ((i - 1) * 5);
+                        bool isPast = i < currentDayInWeek || (i == currentDayInWeek && isClaimedToday);
+                        bool isCurrent = i == currentDayInWeek && !isClaimedToday;
+                        bool isFuture = i > currentDayInWeek;
+
+                        string rowClass = isPast ? "claimed" : (isCurrent ? "ready" : "locked");
+                        
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded streak-row @rowClass">
+                            <div class="fw-bold day-text">
+                                @if(isPast) { <i class="fa-solid fa-circle-check text-success me-1"></i> }
+                                else if(isFuture) { <i class="fa-solid fa-lock me-1"></i> }
+                                @i. Gün
+                            </div>
+                            
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="color: #00838f; font-weight: bold; font-size: 1.1rem;">
+                                    <i class="fa-solid fa-gem"></i> +@reward
+                                </div>
+                                
+                                @if (isCurrent)
+                                {
+                                    <button class="btn btn-claim" onclick="claimReward(this)" id="claimBtn">Topla</button>
+                                }
+                                else if (isPast)
+                                {
+                                    <span class="badge bg-success"><i class="fa-solid fa-check"></i> Alındı</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function claimReward(btn) {
+        // Butonu disable et, yükleniyor göster
+        var originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        fetch('/Account/ClaimDailyReward', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                // UI Güncelleme - Satırı Yeşil Yap
+                var row = btn.closest('.streak-row');
+                row.classList.remove('ready');
+                row.classList.add('claimed');
+                
+                // Günü Checkmark yap
+                var dayText = row.querySelector('.day-text');
+                dayText.innerHTML = '<i class="fa-solid fa-circle-check text-success me-1"></i> ' + dayText.innerHTML.trim();
+                dayText.style.color = '#00ff66';
+
+                // Butonu "Alındı" badge'ine çevir
+                var parent = btn.parentElement;
+                btn.remove();
+                parent.innerHTML += '<span class="badge bg-success"><i class="fa-solid fa-check"></i> Alındı</span>';
+
+                // Profesyonel Yüzen Ödül Animasyonunu Tetikle
+                showFloatingRewardAnimation(data.reward);
+                
+                // Menüdeki (Header) bakiye miktarını görsel olarak güncelle (Sadece navbar içindeki elmasları seç)
+                document.querySelectorAll('.navbar .fa-gem').forEach(function(gemIcon) {
+                    var textNode = gemIcon.nextSibling;
+                    if(textNode && textNode.nodeType === 3 && textNode.nodeValue.trim().length > 0) {
+                        // Sadece sayı içeriyorsa güncelle (Örn: modal içindekileri bozmamak için ek kontrol)
+                        var valStr = textNode.nodeValue.replace('+', '').trim();
+                        if(!isNaN(parseInt(valStr))) {
+                            textNode.nodeValue = ' ' + data.newBalance;
+                        }
+                    }
+                });
+                
+            } else {
+                alert("Hata: " + data.message);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Bir hata oluştu!");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+
+    function showFloatingRewardAnimation(amount) {
+        var floatingDiv = document.createElement('div');
+        floatingDiv.className = 'floating-reward';
+        floatingDiv.innerHTML = '<i class="fa-solid fa-gem" style="color: #00bcd4;"></i> +' + amount + ' Bilgelik Taşı';
+        document.body.appendChild(floatingDiv);
+        
+        // Animasyon bitiminde (2.5sn sonra) elementi DOM'dan temizle
+        setTimeout(function() {
+            if (floatingDiv && floatingDiv.parentNode) {
+                floatingDiv.parentNode.removeChild(floatingDiv);
+            }
+        }, 2500);
+    }
+    
+    // Modal'ı body'nin en sonuna taşıyarak Navbar'ın Z-Index (kararma ve tıklanamama) bug'ını çözer
+    document.addEventListener('DOMContentLoaded', function() {
+        var streakModal = document.getElementById('streakModal');
+        if (streakModal) {
+            document.body.appendChild(streakModal);
+        }
+    });
+</script>

@@ -1,0 +1,1046 @@
+@model BookManagementApp.Areas.Admin.Models.User
+@{
+    ViewData["Title"] = Model.UserName + " - Profil";
+
+    // ============================================================
+    //  DÄ°NAMÄ°K HESAPLAMALAR (backend deÄŸiÅŸikliÄŸi gerektirmez)
+    // ============================================================
+
+    // Ãœyelik sÃ¼resi
+    int memberDays = (int)(DateTime.Now - Model.CreateDate).TotalDays;
+    if (memberDays < 1) { memberDays = 1; }
+
+    // Bilgelik TaÅŸÄ±'na gÃ¶re seviye sistemi
+    int stones = Model.WisdomStones;
+    string levelName;
+    string levelIcon;
+    int levelMin;
+    int levelMax;
+
+    if (stones < 250) { levelName = "Ã‡Ä±rak Okur"; levelIcon = "fa-seedling"; levelMin = 0; levelMax = 250; }
+    else if (stones < 750) { levelName = "MeraklÄ± Okur"; levelIcon = "fa-book-open"; levelMin = 250; levelMax = 750; }
+    else if (stones < 2000) { levelName = "Kitap Dostu"; levelIcon = "fa-feather-pointed"; levelMin = 750; levelMax = 2000; }
+    else if (stones < 5000) { levelName = "Bilge Okur"; levelIcon = "fa-graduation-cap"; levelMin = 2000; levelMax = 5000; }
+    else if (stones < 12000) { levelName = "Ãœstat"; levelIcon = "fa-crown"; levelMin = 5000; levelMax = 12000; }
+    else { levelName = "Efsane"; levelIcon = "fa-star"; levelMin = 12000; levelMax = stones; }
+
+    int levelProgress = levelMax > levelMin
+        ? Math.Min(100, (int)((double)(stones - levelMin) / (levelMax - levelMin) * 100))
+        : 100;
+
+    int stonesToNext = Math.Max(0, levelMax - stones);
+
+    // Seri durumuna gÃ¶re rozet
+    string streakLabel = Model.CurrentStreak >= 30 ? "Demir Disiplin"
+                       : Model.CurrentStreak >= 7 ? "Ä°stikrarlÄ±"
+                       : Model.CurrentStreak >= 1 ? "Yolun BaÅŸÄ±nda"
+                       : "Seri Bekleniyor";
+}
+
+<style>
+    /* ============================================================
+           GENEL SAYFA
+           ============================================================ */
+    body {
+        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
+        font-family: 'Georgia', serif;
+        color: #4a3f35;
+    }
+
+    .pp-page {
+        min-height: 100vh;
+        padding: 30px 0 90px;
+    }
+
+    .pp-wrap {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    /* GiriÅŸ animasyonlarÄ± */
+    @@keyframes ppFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes ppFadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    .pp-anim-1 {
+        animation: ppFadeUp 0.55s ease-out both;
+    }
+
+    .pp-anim-2 {
+        animation: ppFadeUp 0.55s 0.12s ease-out both;
+    }
+
+    .pp-anim-3 {
+        animation: ppFadeUp 0.55s 0.24s ease-out both;
+    }
+
+    /* ============================================================
+           HERO (KAPAK)
+           ============================================================ */
+    .pp-hero {
+        background: linear-gradient(135deg, #3d3329 0%, #5c4936 35%, #8b6f47 75%, #a0785a 100%);
+        height: 190px;
+        border-radius: 28px 28px 0 0;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+        /* AltÄ±n Ä±ÅŸÄ±k huzmeleri */
+        .pp-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 65%, rgba(255,215,130,0.18) 0%, transparent 45%), radial-gradient(circle at 78% 30%, rgba(255,215,130,0.12) 0%, transparent 50%);
+        }
+
+        /* Kitap sÄ±rtÄ± deseni hissi */
+        .pp-hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(90deg, transparent, transparent 70px, rgba(245,240,232,0.035) 70px, rgba(245,240,232,0.035) 73px);
+        }
+
+    /* Hero Ã¼zerinde sÃ¼zÃ¼len parÃ§acÄ±klar */
+    .pp-hero-dust {
+        position: absolute;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,225,160,0.9), rgba(255,200,110,0.3));
+        pointer-events: none;
+        animation: ppDust 7s linear infinite;
+        opacity: 0;
+    }
+
+        .pp-hero-dust:nth-child(1) {
+            left: 12%;
+            bottom: 10%;
+            width: 6px;
+            height: 6px;
+            animation-delay: 0s;
+        }
+
+        .pp-hero-dust:nth-child(2) {
+            left: 35%;
+            bottom: 5%;
+            width: 4px;
+            height: 4px;
+            animation-delay: 1.6s;
+        }
+
+        .pp-hero-dust:nth-child(3) {
+            left: 58%;
+            bottom: 12%;
+            width: 5px;
+            height: 5px;
+            animation-delay: 3.2s;
+        }
+
+        .pp-hero-dust:nth-child(4) {
+            left: 80%;
+            bottom: 8%;
+            width: 4px;
+            height: 4px;
+            animation-delay: 4.8s;
+        }
+
+    @@keyframes ppDust {
+        0% {
+            transform: translateY(0) scale(1);
+            opacity: 0;
+        }
+
+        15% {
+            opacity: 0.85;
+        }
+
+        100% {
+            transform: translateY(-160px) scale(0.3);
+            opacity: 0;
+        }
+    }
+
+    /* ============================================================
+           ANA KART
+           ============================================================ */
+    .pp-card {
+        background: #fff9f0;
+        border-radius: 0 0 28px 28px;
+        box-shadow: 0 18px 55px rgba(107, 85, 65, 0.22);
+        border: 1px solid rgba(139, 111, 71, 0.15);
+        border-top: none;
+    }
+
+    .pp-card-top {
+        padding: 0 34px 30px;
+        text-align: center;
+        position: relative;
+    }
+
+    /* ============================================================
+           AVATAR â€” KARE, Ã‡ERÃ‡EVEYE UYUMLU (daireye zorlanmaz)
+           ============================================================ */
+    .pp-avatar-zone {
+        position: relative;
+        display: inline-block;
+        margin-top: -78px;
+        margin-bottom: 14px;
+        z-index: 5;
+    }
+
+    .pp-avatar-box {
+        width: 150px;
+        height: 150px;
+        border-radius: 18px; /* MaÄŸazadaki Ã¶nizlemeyle aynÄ± form */
+        background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3.4rem;
+        font-weight: 700;
+        color: #5c4b3d;
+        box-shadow: 0 12px 32px rgba(74, 63, 53, 0.35);
+        border: 4px solid #fff9f0;
+        overflow: hidden;
+        position: relative;
+    }
+
+        .pp-avatar-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    /* Ã‡erÃ§eve overlay â€” orijinal oranÄ±nda, kÄ±rpÄ±lmadan biner */
+    .pp-frame-overlay {
+        position: absolute;
+        top: -15%;
+        left: -15%;
+        width: 130%;
+        height: 130%;
+        pointer-events: none;
+        z-index: 10;
+        object-fit: contain;
+    }
+
+    /* ============================================================
+           Ä°SÄ°M, SEVÄ°YE ROZETÄ°, KATILIM
+           ============================================================ */
+    .pp-name {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #4a3f35;
+        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    .pp-level-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: linear-gradient(135deg, #8b6f47, #6b5541);
+        color: #ffe9b8;
+        padding: 6px 18px;
+        border-radius: 50px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        box-shadow: 0 5px 15px rgba(107, 85, 65, 0.3);
+        margin-bottom: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        /* Rozet Ã¼zerinde kayan parlama */
+        .pp-level-badge::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%);
+            background-size: 250% 250%;
+            animation: ppBadgeShine 3.4s ease-in-out infinite;
+        }
+
+    @@keyframes ppBadgeShine {
+        0% {
+            background-position: 140% 140%;
+        }
+
+        55%, 100% {
+            background-position: -60% -60%;
+        }
+    }
+
+    .pp-join {
+        color: #8b6f47;
+        font-style: italic;
+        font-size: 0.92rem;
+        margin-bottom: 4px;
+    }
+
+    .pp-member-days {
+        color: #a08b6d;
+        font-size: 0.8rem;
+        margin-bottom: 22px;
+    }
+
+        .pp-member-days b {
+            color: #8b6f47;
+        }
+
+    /* ============================================================
+           SAYAÃ‡LAR (TAKÄ°PÃ‡Ä° / TAKÄ°P / GÃœN)
+           ============================================================ */
+    .pp-counters {
+        display: flex;
+        justify-content: center;
+        background: linear-gradient(180deg, #f7f0e4, #f2e9da);
+        border: 1px solid rgba(139, 111, 71, 0.12);
+        border-radius: 18px;
+        padding: 14px 8px;
+        margin: 0 auto 24px;
+        max-width: 440px;
+        box-shadow: inset 0 2px 6px rgba(107, 85, 65, 0.06);
+    }
+
+    .pp-counter {
+        flex: 1;
+        text-align: center;
+        padding: 2px 10px;
+    }
+
+        .pp-counter + .pp-counter {
+            border-left: 2px solid rgba(139, 111, 71, 0.14);
+        }
+
+    .pp-counter-value {
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #6b5541;
+        line-height: 1.1;
+    }
+
+    .pp-counter-label {
+        font-size: 0.68rem;
+        color: #8b6f47;
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
+        font-weight: 600;
+        margin-top: 2px;
+    }
+
+    /* ============================================================
+           AKSÄ°YON BUTONLARI
+           ============================================================ */
+    .pp-actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .pp-btn {
+        border-radius: 50px;
+        padding: 12px 30px;
+        font-family: 'Georgia', serif;
+        font-weight: 700;
+        font-size: 0.93rem;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        border: 2px solid transparent;
+    }
+
+    .pp-btn-follow {
+        background: linear-gradient(135deg, #8b6f47 0%, #6b5541 100%);
+        color: #f5f0e8;
+        box-shadow: 0 6px 18px rgba(107, 85, 65, 0.32);
+    }
+
+        .pp-btn-follow:hover {
+            background: linear-gradient(135deg, #a0785a 0%, #8b6f47 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(107, 85, 65, 0.42);
+        }
+
+        .pp-btn-follow.following {
+            background: transparent;
+            color: #8b6f47;
+            border-color: #8b6f47;
+            box-shadow: none;
+        }
+
+            .pp-btn-follow.following:hover {
+                background: rgba(139, 111, 71, 0.08);
+            }
+
+        .pp-btn-follow.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+    .pp-btn-message {
+        background: transparent;
+        color: #8b6f47;
+        border-color: #cda45e;
+    }
+
+        .pp-btn-message:hover {
+            background: linear-gradient(135deg, #cda45e, #b8935a);
+            color: #fff;
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(205, 164, 94, 0.35);
+        }
+
+    .pp-btn-share {
+        background: transparent;
+        color: #a08b6d;
+        border-color: rgba(139, 111, 71, 0.35);
+        padding: 12px 16px;
+    }
+
+        .pp-btn-share:hover {
+            color: #6b5541;
+            border-color: #8b6f47;
+            transform: translateY(-2px);
+        }
+
+    /* ============================================================
+           SEVÄ°YE Ä°LERLEME BÃ–LÃœMÃœ
+           ============================================================ */
+    .pp-level-section {
+        margin: 26px auto 0;
+        max-width: 520px;
+        background: #fff;
+        border: 1px solid rgba(139, 111, 71, 0.14);
+        border-radius: 18px;
+        padding: 18px 22px;
+        box-shadow: 0 4px 16px rgba(107, 85, 65, 0.08);
+        text-align: left;
+    }
+
+    .pp-level-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .pp-level-name {
+        font-weight: 700;
+        color: #4a3f35;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .pp-level-name i {
+            color: #cda45e;
+        }
+
+    .pp-level-next {
+        font-size: 0.75rem;
+        color: #8b6f47;
+        font-style: italic;
+    }
+
+    .pp-progress-track {
+        background: #efe6d6;
+        border-radius: 12px;
+        height: 14px;
+        overflow: hidden;
+        box-shadow: inset 0 2px 4px rgba(107, 85, 65, 0.12);
+    }
+
+    .pp-progress-fill {
+        height: 100%;
+        width: 0%; /* JS animasyonla dolar */
+        border-radius: 12px;
+        background: linear-gradient(90deg, #cda45e, #ffd782, #cda45e);
+        background-size: 200% 100%;
+        transition: width 1.2s cubic-bezier(0.25, 0.8, 0.35, 1);
+        animation: ppProgressFlow 3s linear infinite;
+        position: relative;
+    }
+
+    @@keyframes ppProgressFlow {
+        from {
+            background-position: 0% 0;
+        }
+
+        to {
+            background-position: 200% 0;
+        }
+    }
+
+    .pp-progress-percent {
+        text-align: right;
+        font-size: 0.72rem;
+        color: #a08b6d;
+        margin-top: 6px;
+        font-weight: 600;
+    }
+
+    /* ============================================================
+           Ä°STATÄ°STÄ°K KAROLARI
+           ============================================================ */
+    .pp-stats {
+        background: linear-gradient(180deg, #f5ede0 0%, #efe4d1 100%);
+        border-top: 1px solid rgba(139, 111, 71, 0.12);
+        border-radius: 0 0 28px 28px;
+        padding: 28px 34px 34px;
+    }
+
+    .pp-stats-title {
+        color: #4a3f35;
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+        .pp-stats-title i {
+            color: #cda45e;
+        }
+
+    .pp-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .pp-tile {
+        background: #fff9f0;
+        border-radius: 18px;
+        padding: 20px 12px 18px;
+        text-align: center;
+        border: 1px solid rgba(139, 111, 71, 0.12);
+        box-shadow: 0 4px 14px rgba(107, 85, 65, 0.08);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .pp-tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #ffd782, transparent);
+        }
+
+        .pp-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 26px rgba(107, 85, 65, 0.16);
+            border-color: rgba(205, 164, 94, 0.4);
+        }
+
+    .pp-tile-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        margin: 0 auto 12px;
+        color: #fff;
+        box-shadow: 0 5px 12px rgba(0,0,0,0.14);
+    }
+
+    .pp-tile-fire .pp-tile-icon {
+        background: linear-gradient(135deg, #ff9a56, #e2643b);
+    }
+
+    .pp-tile-gem .pp-tile-icon {
+        background: linear-gradient(135deg, #56c4d8, #2e93a8);
+    }
+
+    .pp-tile-cal .pp-tile-icon {
+        background: linear-gradient(135deg, #a0785a, #7a5c3e);
+    }
+
+    .pp-tile-level .pp-tile-icon {
+        background: linear-gradient(135deg, #ffd782, #d9a441);
+        color: #6b4a12;
+    }
+
+    .pp-tile-value {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #4a3f35;
+        margin-bottom: 2px;
+        line-height: 1.2;
+    }
+
+    .pp-tile-label {
+        font-size: 0.76rem;
+        color: #8b6f47;
+        font-style: italic;
+    }
+
+    .pp-tile-sub {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #8b6f47;
+        background: rgba(139, 111, 71, 0.1);
+        padding: 3px 10px;
+        border-radius: 20px;
+        text-transform: uppercase;
+    }
+
+    /* ============================================================
+           KOPYALAMA TOAST'I
+           ============================================================ */
+    .pp-toast {
+        position: fixed;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: linear-gradient(135deg, #6b5541, #4a3f35);
+        color: #f5f0e8;
+        padding: 12px 26px;
+        border-radius: 50px;
+        font-family: 'Georgia', serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .pp-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .pp-toast i {
+            color: #ffd782;
+        }
+
+    /* ============================================================
+           RESPONSIVE â€” TABLET
+           ============================================================ */
+    @@media (max-width: 900px) {
+        .pp-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* ============================================================
+           RESPONSIVE â€” MOBÄ°L
+           ============================================================ */
+    @@media (max-width: 768px) {
+        .pp-page {
+            padding: 14px 0 60px;
+        }
+
+        .pp-wrap {
+            padding: 0 12px;
+        }
+
+        .pp-hero {
+            height: 140px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .pp-card {
+            border-radius: 0 0 20px 20px;
+        }
+
+        .pp-card-top {
+            padding: 0 16px 24px;
+        }
+
+        .pp-avatar-zone {
+            margin-top: -64px;
+        }
+
+        .pp-avatar-box {
+            width: 126px;
+            height: 126px;
+            border-radius: 15px;
+            font-size: 2.8rem;
+        }
+
+        .pp-name {
+            font-size: 1.55rem;
+        }
+
+        .pp-level-badge {
+            font-size: 0.72rem;
+            padding: 5px 14px;
+        }
+
+        .pp-join {
+            font-size: 0.84rem;
+        }
+
+        .pp-member-days {
+            font-size: 0.74rem;
+            margin-bottom: 18px;
+        }
+
+        .pp-counters {
+            padding: 11px 4px;
+            border-radius: 15px;
+        }
+
+        .pp-counter-value {
+            font-size: 1.25rem;
+        }
+
+        .pp-counter-label {
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+        }
+
+        .pp-btn {
+            padding: 11px 20px;
+            font-size: 0.84rem;
+        }
+
+        .pp-level-section {
+            padding: 15px 16px;
+            border-radius: 15px;
+        }
+
+        .pp-level-name {
+            font-size: 0.86rem;
+        }
+
+        .pp-level-next {
+            font-size: 0.68rem;
+        }
+
+        .pp-stats {
+            padding: 22px 16px 26px;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .pp-stats-title {
+            font-size: 1.05rem;
+        }
+
+        .pp-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .pp-tile {
+            padding: 16px 10px 14px;
+            border-radius: 15px;
+        }
+
+            .pp-tile:hover {
+                transform: none; /* Dokunmatikte kayma yok */
+            }
+
+        .pp-tile-icon {
+            width: 44px;
+            height: 44px;
+            font-size: 1.1rem;
+        }
+
+        .pp-tile-value {
+            font-size: 1.15rem;
+        }
+
+        .pp-tile-label {
+            font-size: 0.7rem;
+        }
+    }
+
+    /* ============================================================
+           RESPONSIVE â€” Ã‡OK KÃœÃ‡ÃœK EKRANLAR
+           ============================================================ */
+    @@media (max-width: 420px) {
+        .pp-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pp-btn {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .pp-btn-share {
+            padding: 11px 16px;
+        }
+
+        .pp-avatar-box {
+            width: 112px;
+            height: 112px;
+        }
+
+        .pp-avatar-zone {
+            margin-top: -58px;
+        }
+
+        .pp-name {
+            font-size: 1.35rem;
+        }
+
+        .pp-counter {
+            padding: 2px 6px;
+        }
+    }
+</style>
+
+<div class="pp-page">
+    <div class="pp-wrap">
+
+        <!-- ============ HERO (KAPAK) ============ -->
+        <div class="pp-hero pp-anim-1">
+            <span class="pp-hero-dust"></span>
+            <span class="pp-hero-dust"></span>
+            <span class="pp-hero-dust"></span>
+            <span class="pp-hero-dust"></span>
+        </div>
+
+        <!-- ============ ANA KART ============ -->
+        <div class="pp-card">
+
+            <div class="pp-card-top pp-anim-2">
+
+                <!-- AVATAR (kare, Ã§erÃ§eve orijinal formuyla Ã¼stÃ¼nde) -->
+                <div class="pp-avatar-zone">
+                    <div class="pp-avatar-box">
+                        @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                        {
+                            <img src="@Model.ProfileImageUrl" alt="@Model.UserName" />
+                        }
+                        else
+                        {
+                            @(Model.UserName?.Substring(0, 1).ToUpper())
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.ActiveFrameImageUrl))
+                    {
+                        <img src="@Model.ActiveFrameImageUrl" class="pp-frame-overlay" alt="" />
+                    }
+                </div>
+
+                <!-- Ä°SÄ°M & SEVÄ°YE -->
+                <h1 class="pp-name">@Model.UserName</h1>
+
+                
+
+                <p class="pp-join">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    @Model.CreateDate.ToString("MMMM yyyy") tarihinden beri Ã¼ye
+                </p>
+                <p class="pp-member-days">
+                    KÃ¼tÃ¼phane yolculuÄŸunun <b>@memberDays. gÃ¼nÃ¼</b>
+                </p>
+
+                <!-- SAYAÃ‡LAR -->
+                <div class="pp-counters">
+                    <div class="pp-counter">
+                        <div class="pp-counter-value pp-countup" id="followersCount" data-target="@ViewBag.FollowersCount">0</div>
+                        <div class="pp-counter-label">TakipÃ§i</div>
+                    </div>
+                    <div class="pp-counter">
+                        <div class="pp-counter-value pp-countup" data-target="@ViewBag.FollowingCount">0</div>
+                        <div class="pp-counter-label">Takip Edilen</div>
+                    </div>
+                    
+                </div>
+
+                <!-- AKSÄ°YONLAR -->
+                <div class="pp-actions">
+                    <button id="btnFollow"
+                            class="pp-btn pp-btn-follow @(ViewBag.IsFollowing ? "following" : "")"
+                            onclick="toggleFollow(@Model.Id)">
+                        <i class="fas @(ViewBag.IsFollowing ? "fa-user-check" : "fa-user-plus")"></i>
+                        <span id="followText">@(ViewBag.IsFollowing ? "Takiptesin" : "Takip Et")</span>
+                    </button>
+
+                    <a href="/Message/Chat?userId=@Model.Id" class="pp-btn pp-btn-message">
+                        <i class="fas fa-comment-dots"></i> Mesaj GÃ¶nder
+                    </a>
+
+                    <button type="button" class="pp-btn pp-btn-share" id="btnShare" title="Profil baÄŸlantÄ±sÄ±nÄ± kopyala">
+                        <i class="fas fa-share-nodes"></i>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- ============ İSTATİSTİKLER ============ -->
+            <div class="pp-stats pp-anim-3">
+                <div class="pp-stats-title">
+                    <i class="fas fa-trophy"></i> İstatistikler
+                </div>
+
+                <div class="pp-stats-grid">
+                    <div class="pp-tile pp-tile-fire">
+                        <div class="pp-tile-icon"><i class="fas fa-fire"></i></div>
+                        <div class="pp-tile-value">@Model.CurrentStreak Gün</div>
+                        <div class="pp-tile-label">Mevcut Seri</div>
+                        <span class="pp-tile-sub">@streakLabel</span>
+                    </div>
+
+                    <div class="pp-tile pp-tile-gem">
+                        <div class="pp-tile-icon"><i class="fas fa-gem"></i></div>
+                        <div class="pp-tile-value">@Model.WisdomStones.ToString("N0")</div>
+                        <div class="pp-tile-label">Bilgelik Taşı</div>
+                        <span class="pp-tile-sub">Hazine</span>
+                    </div>
+
+                    <div class="pp-tile pp-tile-cal">
+                        <div class="pp-tile-icon"><i class="fas fa-calendar-days"></i></div>
+                        <div class="pp-tile-value">@memberDays Gün</div>
+                        <div class="pp-tile-label">Üyelik Süresi</div>
+                        <span class="pp-tile-sub">Yolculuk</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- BaÄŸlantÄ± kopyalandÄ± bildirimi -->
+<div class="pp-toast" id="ppToast">
+    <i class="fas fa-check-circle"></i> Profil baÄŸlantÄ±sÄ± kopyalandÄ±!
+</div>
+
+@section Scripts {
+    <script>
+        // ============================================================
+        //  SAYAÃ‡ COUNT-UP ANÄ°MASYONU
+        // ============================================================
+        function animateCounter(el) {
+            var target = parseInt(el.getAttribute('data-target')) || 0;
+            if (target === 0) { el.textContent = '0'; return; }
+
+            var duration = 900;
+            var start = performance.now();
+
+            function tick(now) {
+                var progress = Math.min((now - start) / duration, 1);
+                // easeOutCubic
+                var eased = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.round(target * eased);
+                if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // SayaÃ§larÄ± canlandÄ±r
+            document.querySelectorAll('.pp-countup').forEach(animateCounter);
+
+            // Seviye Ã§ubuÄŸunu doldur
+            setTimeout(function () {
+                var bar = document.getElementById('levelProgressBar');
+                if (bar) bar.style.width = bar.getAttribute('data-width') + '%';
+            }, 350);
+        });
+
+        // ============================================================
+        //  TAKÄ°P ET / BIRAK (canlÄ± sayaÃ§ gÃ¼ncellemeli)
+        // ============================================================
+        function toggleFollow(targetId) {
+            var btn = $('#btnFollow');
+            var icon = btn.find('i');
+            var text = $('#followText');
+            var counter = $('#followersCount');
+
+            btn.addClass('disabled');
+
+            $.post('/Profile/ToggleFollow', { targetId: targetId }, function (res) {
+                btn.removeClass('disabled');
+                if (res.success) {
+                    var count = parseInt(counter.text()) || 0;
+
+                    if (res.isFollowing) {
+                        btn.addClass('following');
+                        icon.removeClass('fa-user-plus').addClass('fa-user-check');
+                        text.text('Takiptesin');
+                        counter.text(count + 1);
+                    } else {
+                        btn.removeClass('following');
+                        icon.removeClass('fa-user-check').addClass('fa-user-plus');
+                        text.text('Takip Et');
+                        counter.text(Math.max(0, count - 1));
+                    }
+                } else {
+                    alert(res.message);
+                }
+            }).fail(function () {
+                btn.removeClass('disabled');
+                alert("Ä°ÅŸlem sÄ±rasÄ±nda bir hata oluÅŸtu.");
+            });
+        }
+
+        // ============================================================
+        //  PROFÄ°L BAÄLANTISINI KOPYALA
+        // ============================================================
+        document.getElementById('btnShare').addEventListener('click', function () {
+            var url = window.location.href;
+
+            function showToast() {
+                var toast = document.getElementById('ppToast');
+                toast.classList.add('show');
+                setTimeout(function () { toast.classList.remove('show'); }, 2200);
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(showToast);
+            } else {
+                // Eski tarayÄ±cÄ±lar iÃ§in geriye dÃ¶nÃ¼k yÃ¶ntem
+                var input = document.createElement('input');
+                input.value = url;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast();
+            }
+        });
+    </script>
+}
