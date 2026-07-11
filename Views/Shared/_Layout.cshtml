@@ -194,6 +194,23 @@
         });
     </script>
 
+    @if (TempData["EarnedStones"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var earnedStones = parseInt('@TempData["EarnedStones"]');
+                if (!isNaN(earnedStones) && earnedStones > 0) {
+                    // Script yüklendiğinden emin olmak için küçük bir gecikme ekliyoruz
+                    setTimeout(function() {
+                        if (typeof showFloatingRewardAnimation === 'function') {
+                            showFloatingRewardAnimation(earnedStones);
+                        }
+                    }, 100);
+                }
+            });
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

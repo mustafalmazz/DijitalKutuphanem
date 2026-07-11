@@ -29,6 +29,7 @@
                         <tr>
                             <th>Önizleme</th>
                             <th>Ad & Açıklama</th>
+                            <th>Paket</th>
                             <th>Fiyat (Taş)</th>
                             <th>Kitap Şartı</th>
                             <th class="text-end">İşlemler</th>
@@ -48,7 +49,17 @@
                                     <br />
                                     <small class="text-muted">@avatar.Description</small>
                                 </td>
-                                <td><i class="fa-solid fa-gem text-warning"></i> @avatar.PriceInStones</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(avatar.PackCategory))
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-box"></i> @avatar.PackCategory</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Paketsiz</span>
+                                    }
+                                </td>
+                                <td><i class="fa-solid fa-gem text-info"></i> @avatar.PriceInStones</td>
                                 <td><i class="fa-solid fa-book text-info"></i> @avatar.RequiredBookCount</td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editAvatarModal-@avatar.Id">
@@ -77,6 +88,26 @@
                                                 <div class="mb-3">
                                                     <label class="form-label">Avatar Adı</label>
                                                     <input type="text" class="form-control bg-secondary text-light border-0" name="Name" value="@avatar.Name" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Paket (Opsiyonel)</label>
+                                                    <select class="form-select bg-secondary text-light border-0" name="PackCategory">
+                                                        <option value="">-- Paketsiz (Normal Mağaza) --</option>
+                                                        @if(ViewBag.Packages != null)
+                                                        {
+                                                            foreach(var pkg in ViewBag.Packages)
+                                                            {
+                                                                if(avatar.PackCategory == pkg.CategoryCode)
+                                                                {
+                                                                    <option value="@pkg.CategoryCode" selected>@pkg.Title (@pkg.CategoryCode)</option>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <option value="@pkg.CategoryCode">@pkg.Title (@pkg.CategoryCode)</option>
+                                                                }
+                                                            }
+                                                        }
+                                                    </select>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="form-label">Açıklama</label>
@@ -126,6 +157,20 @@
                     <div class="mb-3">
                         <label class="form-label">Avatar Adı</label>
                         <input type="text" class="form-control bg-secondary text-light border-0" name="Name" placeholder="Örn: Mistik Büyücü" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hangi Pakete Eklensin? (Opsiyonel)</label>
+                        <select class="form-select bg-secondary text-light border-0" name="PackCategory">
+                            <option value="">-- Paketsiz (Normal Mağaza) --</option>
+                            @if(ViewBag.Packages != null)
+                            {
+                                foreach(var pkg in ViewBag.Packages)
+                                {
+                                    <option value="@pkg.CategoryCode">@pkg.Title (@pkg.CategoryCode)</option>
+                                }
+                            }
+                        </select>
+                        <small class="text-muted">Bir paket seçerseniz, bu avatar mağazada o paketin içinde rastgele çıkar.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Açıklama</label>

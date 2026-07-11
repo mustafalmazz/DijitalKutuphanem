@@ -1,0 +1,216 @@
+@model IEnumerable<BookManagementApp.Models.StorePackage>
+@{
+    ViewData["Title"] = "Paket Yönetimi";
+    Layout = "~/Areas/SuperAdmin/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-warning mb-0"><i class="fa-solid fa-boxes-packing"></i> Paket Yönetimi</h2>
+        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+            <i class="fa-solid fa-plus"></i> Yeni Paket Ekle
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    <div class="card shadow-sm border-0 bg-dark text-light">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-dark align-middle">
+                    <thead class="table-secondary text-dark">
+                        <tr>
+                            <th>İkon & Kod</th>
+                            <th>Başlık & Açıklama</th>
+                            <th>Fiyat (Taş)</th>
+                            <th>Tema Rengi</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var package in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="p-2 border border-secondary rounded bg-secondary bg-opacity-25 d-inline-block text-center me-2" style="width: 50px; height: 50px; color: @(package.ThemeColor ?? "#ff9800"); font-size: 1.5rem;">
+                                        <i class="@package.IconClass"></i>
+                                    </div>
+                                    <code>@package.CategoryCode</code>
+                                </td>
+                                <td>
+                                    <strong>@package.Title</strong>
+                                    <br />
+                                    <small class="text-muted">@package.Description</small>
+                                </td>
+                                <td><i class="fa-solid fa-gem text-info"></i> @package.PriceInStones</td>
+                                <td>
+                                    <span class="badge" style="background-color: @(package.ThemeColor ?? "#666");">@package.ThemeColor</span>
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#managePackageModal-@package.Id" title="İçeriği Yönet">
+                                        <i class="fa-solid fa-list-check"></i> İçeriği Yönet
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#editPackageModal-@package.Id" title="Düzenle">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <form asp-action="DeletePackage" asp-route-id="@package.Id" method="post" class="d-inline" onsubmit="return confirm('Bu paketi silmek istediğinize emin misiniz? (İçindeki avatarlar etkilenmez, sadece mağaza görünümü silinir)');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editPackageModal-@package.Id" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content bg-dark text-light">
+                                        <form asp-action="EditPackage" method="post">
+                                            <div class="modal-header border-secondary">
+                                                <h5 class="modal-title">Paketi Düzenle</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <input type="hidden" name="Id" value="@package.Id" />
+                                                <div class="mb-3">
+                                                    <label class="form-label">Paket Kodu (İngilizce & Bitişik, Örn: AnimalPack)</label>
+                                                    <input type="text" name="CategoryCode" class="form-control bg-secondary text-light border-0" value="@package.CategoryCode" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Başlık</label>
+                                                    <input type="text" name="Title" class="form-control bg-secondary text-light border-0" value="@package.Title" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Açıklama</label>
+                                                    <textarea name="Description" class="form-control bg-secondary text-light border-0" rows="3">@package.Description</textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Fiyat (Taş)</label>
+                                                    <input type="number" name="PriceInStones" class="form-control bg-secondary text-light border-0" value="@package.PriceInStones" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">İkon (FontAwesome Class, Örn: fa-solid fa-box)</label>
+                                                    <input type="text" name="IconClass" class="form-control bg-secondary text-light border-0" value="@package.IconClass" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Tema Rengi (HEX, Örn: #ff9800)</label>
+                                                    <input type="color" name="ThemeColor" class="form-control form-control-color bg-secondary border-0" value="@(package.ThemeColor ?? "#ff9800")" title="Renk seçin" />
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                                <button type="submit" class="btn btn-warning">Kaydet</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Manage Contents Modal -->
+                            <div class="modal fade" id="managePackageModal-@package.Id" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-scrollable">
+                                    <div class="modal-content bg-dark text-light">
+                                        <form asp-action="UpdatePackageAvatars" method="post">
+                                            <div class="modal-header border-secondary">
+                                                <h5 class="modal-title text-info"><i class="fa-solid fa-list-check"></i> @package.Title - İçeriği Yönet</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body p-0">
+                                                <div class="p-3 border-bottom border-secondary">
+                                                    <input type="hidden" name="categoryCode" value="@package.CategoryCode" />
+                                                    <p class="text-muted mb-0">Hangi avatarların bu paketten çıkmasını istiyorsunuz? Buradan kolayca seçebilirsiniz.</p>
+                                                </div>
+                                                
+                                                <div class="list-group list-group-flush">
+                                                    @if(ViewBag.AllAvatars != null)
+                                                    {
+                                                        foreach(var avatar in (IEnumerable<BookManagementApp.Models.ProfileAvatar>)ViewBag.AllAvatars)
+                                                        {
+                                                            bool isChecked = avatar.PackCategory == package.CategoryCode;
+                                                            bool isOtherPackage = !string.IsNullOrEmpty(avatar.PackCategory) && avatar.PackCategory != package.CategoryCode;
+
+                                                            <label class="list-group-item bg-dark text-light border-secondary d-flex align-items-center gap-3 py-3" style="cursor: pointer;">
+                                                                <input class="form-check-input flex-shrink-0" style="width: 1.5em; height: 1.5em;" type="checkbox" name="avatarIds" value="@avatar.Id" @(isChecked ? "checked" : "")>
+                                                                <div class="bg-light rounded p-1" style="width: 50px; height: 50px; display: flex; justify-content: center; align-items: center;">
+                                                                    <img src="@avatar.ImageUrl" alt="@avatar.Name" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                                                                </div>
+                                                                <div class="flex-grow-1">
+                                                                    <strong class="fs-5">@(string.IsNullOrEmpty(avatar.Name) ? "İsimsiz" : avatar.Name)</strong>
+                                                                    @if(isOtherPackage)
+                                                                    {
+                                                                        <br/><small class="text-warning"><i class="fa-solid fa-triangle-exclamation"></i> Şu an @avatar.PackCategory paketinde!</small>
+                                                                    }
+                                                                </div>
+                                                            </label>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                                <button type="submit" class="btn btn-info"><i class="fa-solid fa-floppy-disk"></i> Değişiklikleri Kaydet</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4">Henüz hiç paket eklenmemiş.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createPackageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <form asp-action="CreatePackage" method="post">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Yeni Paket Ekle</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Paket Kodu (İngilizce & Bitişik, Örn: AnimalPack)</label>
+                        <input type="text" name="CategoryCode" class="form-control bg-secondary text-light border-0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Başlık</label>
+                        <input type="text" name="Title" class="form-control bg-secondary text-light border-0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="Description" class="form-control bg-secondary text-light border-0" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fiyat (Taş)</label>
+                        <input type="number" name="PriceInStones" class="form-control bg-secondary text-light border-0" value="300" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">İkon (FontAwesome Class, Örn: fa-solid fa-paw)</label>
+                        <input type="text" name="IconClass" class="form-control bg-secondary text-light border-0" value="fa-solid fa-box" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tema Rengi (HEX, Örn: #ff9800)</label>
+                        <input type="color" name="ThemeColor" class="form-control form-control-color bg-secondary border-0" value="#ff9800" title="Renk seçin" />
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-warning">Oluştur</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

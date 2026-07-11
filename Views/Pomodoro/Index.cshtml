@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Odaklanma & Çalışma";
 }
 
@@ -1229,6 +1229,11 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Taş kazanıldıysa animasyonu göster
+                if (data.earnedStones && data.earnedStones > 0 && typeof showFloatingRewardAnimation === 'function') {
+                    showFloatingRewardAnimation(data.earnedStones);
+                }
+
                 elapsedSeconds = 0;
                 btnSave.style.display = 'none';
 

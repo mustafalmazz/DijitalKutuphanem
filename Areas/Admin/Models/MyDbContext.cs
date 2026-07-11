@@ -18,6 +18,7 @@ namespace BookManagementApp.Models
         public DbSet<ProfileFrame> ProfileFrames { get; set; }
         public DbSet<UserFrame> UserFrames { get; set; }
         public DbSet<ProfileAvatar> ProfileAvatars { get; set; }
+        public DbSet<StorePackage> StorePackages { get; set; }
         public DbSet<UserAvatar> UserAvatars { get; set; }
         public DbSet<Follow> Follows { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }

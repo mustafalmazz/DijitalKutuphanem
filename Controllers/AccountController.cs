@@ -243,8 +243,19 @@ namespace BookManagementApp.Controllers
                 }
                 else if (lastLoginDay < today.AddDays(-1))
                 {
-                    user.CurrentStreak = 1;
-                    streakUpdated = true;
+                    int missedDays = (today - lastLoginDay).Days - 1;
+                    if (user.StreakFreezes >= missedDays)
+                    {
+                        user.StreakFreezes -= missedDays;
+                        user.CurrentStreak++;
+                        streakUpdated = true;
+                        TempData["FreezeUsedMessage"] = $"Giriş yapmadığınız {missedDays} gün için Seri Dondurma hakkınız kullanıldı! Seriniz bozulmadı.";
+                    }
+                    else
+                    {
+                        user.CurrentStreak = 1;
+                        streakUpdated = true;
+                    }
                 }
             }
             else

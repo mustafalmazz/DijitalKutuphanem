@@ -2,6 +2,7 @@
 @{
     var otherUser = ViewBag.OtherUser as BookManagementApp.Areas.Admin.Models.User;
     ViewData["Title"] = otherUser.UserName + " ile Sohbet";
+    var isOnline = ViewBag.IsOnline == true;
 }
 
 <style>
@@ -149,6 +150,32 @@
         font-size: 0.95rem;
         line-height: 1.45;
         animation: bubbleIn 0.25s ease-out;
+    }
+
+    .typing-dots {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 20px;
+        gap: 4px;
+        padding: 0 4px;
+    }
+    
+    .typing-dots span {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background-color: #8b6f47;
+        border-radius: 50%;
+        animation: typingBounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+    
+    @@keyframes typingBounce { 
+        0%, 80%, 100% { transform: scale(0.4); opacity: 0.5; } 
+        40% { transform: scale(1); opacity: 1; } 
     }
 
     @@keyframes bubbleIn {
@@ -377,17 +404,16 @@
 
         <!-- ÜST BAR -->
         <div class="chat-header">
-            <a href="/Message" class="chat-back-btn"><i class="fas fa-arrow-left"></i></a>
+            <a href="/Message/Index" class="chat-back-btn"><i class="fas fa-arrow-left"></i></a>
             <div class="position-relative">
                 <img src="@(string.IsNullOrEmpty(otherUser.ProfileImageUrl) ? "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" : otherUser.ProfileImageUrl)"
                      class="chat-header-avatar" alt="@otherUser.UserName">
-                <div id="onlineStatus" class="bg-secondary rounded-circle" style="width:12px; height:12px; position:absolute; bottom:0; right:0; border:2px solid #fff;"></div>
+                <div id="onlineStatus" class="@(isOnline ? "bg-success" : "bg-secondary") rounded-circle" style="width:12px; height:12px; position:absolute; bottom:0; right:0; border:2px solid #fff;"></div>
             </div>
             <div class="chat-header-info">
                 <a href="/Profile/PublicProfile?id=@otherUser.Id" class="chat-header-name">@otherUser.UserName</a>
                 <div class="chat-header-sub">
-                    <span id="onlineText">Çevrimdışı</span>
-                    <span id="typingIndicator" class="ms-2 fst-italic" style="display:none; color:#198754;"><small>yazıyor...</small></span>
+                    <span id="onlineText">@(isOnline ? "Çevrimiçi" : "Çevrimdışı")</span>
                 </div>
             </div>
         </div>
@@ -414,11 +440,31 @@
                     var isSent = msg.SenderId == ViewBag.CurrentUserId;
                     <div class="bubble @(isSent ? "bubble-sent" : "bubble-received")" data-id="@msg.Id">
                         <div>@msg.Content</div>
-                        <div class="bubble-time">@msg.CreatedAt.ToString("HH:mm")</div>
+                        <div class="bubble-time">
+                            @msg.CreatedAt.ToString("HH:mm")
+                            @if(isSent)
+                            {
+                                if(msg.IsRead)
+                                {
+                                    <i class="fas fa-check-double ms-1" style="color: #34b7f1;"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-check text-light ms-1 opacity-75"></i>
+                                }
+                            }
+                        </div>
                     </div>
                 }
             }
-            else
+            <!-- Yazıyor Simülasyonu -->
+            <div class="bubble bubble-received" id="typingBubble" style="display:none;">
+                <div class="typing-dots">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+
+            @if (!Model.Any())
             {
                 <div class="chat-empty" id="chatEmpty">
                     <i class="fa-regular fa-comments"></i>
@@ -487,30 +533,49 @@
 
         connection.on("UserOnline", function (userId) {
             if (userId == receiverId) {
-                // UI'da çevrimiçi göster
                 var statusEl = document.getElementById('onlineStatus');
                 if(statusEl) { statusEl.className = 'bg-success rounded-circle'; }
+                var textEl = document.getElementById('onlineText');
+                if(textEl) { textEl.innerText = 'Çevrimiçi'; }
             }
         });
 
         connection.on("UserOffline", function (userId) {
             if (userId == receiverId) {
-                // UI'da çevrimdışı göster
                 var statusEl = document.getElementById('onlineStatus');
                 if(statusEl) { statusEl.className = 'bg-secondary rounded-circle'; }
+                var textEl = document.getElementById('onlineText');
+                if(textEl) { textEl.innerText = 'Çevrimdışı'; }
             }
         });
 
+        var bubbleTimer;
         connection.on("ReceiveTyping", function (senderId) {
             if (senderId == receiverId) {
-                var ind = $('#typingIndicator');
-                if(ind.length) ind.stop(true, true).fadeIn().delay(1500).fadeOut();
+                // Alttaki Balon
+                var bubble = $('#typingBubble');
+                if(bubble.length) {
+                    bubble.show();
+                    scrollToBottom();
+                    clearTimeout(bubbleTimer);
+                    bubbleTimer = setTimeout(() => { bubble.hide(); }, 2000);
+                }
             }
         });
 
+        function markMessagesAsReadUI() {
+            $('.bubble-sent .bubble-time i')
+                .removeClass('fa-check fa-check-double text-light opacity-75 tick-sent tick-delivered')
+                .addClass('fa-check-double tick-read')
+                .css('color', ''); // color CSS'ten alınıyor (#4db8ff)
+        }
+
+        var markAsReadTimer = null;
         connection.on("MessagesRead", function (readerId) {
             if (readerId == receiverId) {
-                $('.bubble-sent').find('.bubble-time:not(:has(i))').append(' <i class="fas fa-check-double text-primary ms-1"></i>');
+                markMessagesAsReadUI();
+                clearTimeout(markAsReadTimer);
+                markAsReadTimer = setTimeout(markMessagesAsReadUI, 300);
             }
         });
 
@@ -527,16 +592,17 @@
         function appendMessage(id, content, time, isSent) {
             var cssClass = isSent ? "bubble-sent" : "bubble-received";
             var safeContent = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            var tickHtml = isSent ? ' <i class="fas fa-check text-light ms-1 opacity-75"></i>' : '';
             var html = `<div class="bubble ${cssClass}" data-id="${id}">
                             <div>${safeContent}</div>
-                            <div class="bubble-time">${time}</div>
+                            <div class="bubble-time">${time}${tickHtml}</div>
                         </div>`;
             
             var emptyState = document.getElementById('chatEmpty');
             if(emptyState) emptyState.remove();
 
             var wasNearBottom = isNearBottom();
-            $('#chatBox').append(html);
+            $(html).insertBefore('#typingBubble');
 
             if (isSent || wasNearBottom) {
                 scrollToBottom();

@@ -380,3 +380,29 @@ body {
     66% { box-shadow: 0 0 20px rgba(231, 76, 60, 0.4), 0 0 35px rgba(52, 152, 219, 0.2); border-color: #e74c3c; }
     100% { box-shadow: 0 0 15px rgba(155, 89, 182, 0.4), 0 0 30px rgba(52, 152, 219, 0.15); border-color: #9b59b6; }
 }
+
+/* Yüzen Ödül Animasyonu (Global) */
+.floating-reward {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #00bcd4;
+    font-family: 'Georgia', serif;
+    font-weight: 900;
+    font-size: 2.5rem;
+    z-index: 999999;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-shadow: 0 0 15px rgba(0, 188, 212, 0.8), 0 0 30px rgba(0, 188, 212, 0.5);
+    animation: floatUpFadeOut 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes floatUpFadeOut {
+    0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+    20% { transform: translate(-50%, -40px) scale(1.2); opacity: 1; }
+    40% { transform: translate(-50%, -60px) scale(1.1); opacity: 1; }
+    100% { transform: translate(-50%, -150px) scale(0.9); opacity: 0; }
+}

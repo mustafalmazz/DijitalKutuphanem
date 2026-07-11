@@ -565,9 +565,37 @@
             <li class="nav-item ms-2" role="presentation">
                 <button class="nav-link @(activeTab == "packs" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="packs-tab" data-bs-toggle="pill" data-bs-target="#packs" type="button" role="tab" aria-controls="packs" aria-selected="@(activeTab == "packs" ? "true" : "false")">Sürpriz Paketler 🎁</button>
             </li>
+            <li class="nav-item ms-2" role="presentation">
+                <button class="nav-link @(activeTab == "specials" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="specials-tab" data-bs-toggle="pill" data-bs-target="#specials" type="button" role="tab" aria-controls="specials" aria-selected="@(activeTab == "specials" ? "true" : "false")">Özel Eşyalar ✨</button>
+            </li>
         </ul>
 
         <div class="tab-content" id="storeTabsContent">
+            <!-- ÖZEL EŞYALAR SEKME İÇERİĞİ -->
+            <div class="tab-pane fade @(activeTab == "specials" ? "show active" : "")" id="specials" role="tabpanel" aria-labelledby="specials-tab">
+                <div class="store-grid">
+                    <div class="frame-card" style="border-color: #00bcd4; box-shadow: 0 0 15px rgba(0, 188, 212, 0.2);">
+                        <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 150px; background: linear-gradient(135deg, #e0f7fa, #b2ebf2);">
+                            <span style="font-size: 5rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">🧊</span>
+                        </div>
+                        <div class="frame-info text-center" style="padding: 15px;">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">Seri Dondurma</div>
+                            <div style="font-size: 0.85rem; color: #8b6f47; margin-bottom: 15px;">Giriş yapmayı unutsan bile serin (streak) bozulmasın!</div>
+                            
+                            <div style="font-size: 1rem; font-weight: bold; color: #4a3f35; margin-bottom: 15px;">
+                                <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> 100 Taş
+                            </div>
+
+                            <form id="buyFreezeForm">
+                                @Html.AntiForgeryToken()
+                                <button type="button" onclick="buyStreakFreeze(this)" class="btn-buy btn-buy-available w-100" style="padding: 12px; font-size: 1rem; background: linear-gradient(135deg, #00acc1, #00838f);">
+                                    <i class="fa-solid fa-cart-shopping"></i> Satın Al
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- ÇERÇEVELER SEKME İÇERİĞİ -->
             <div class="tab-pane fade @(activeTab == "frames" ? "show active" : "")" id="frames" role="tabpanel" aria-labelledby="frames-tab">
                 <div class="store-grid">
@@ -788,90 +816,147 @@
 
             <!-- SÜRPRİZ PAKETLER SEKME İÇERİĞİ -->
             <div class="tab-pane fade" id="packs" role="tabpanel" aria-labelledby="packs-tab">
-                @{
-                    var packTotal = Model.PackAvatars.Count();
-                    var packOwned = Model.PackAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
-                    bool canBuyPack = packOwned < packTotal && user != null && user.WisdomStones >= 300;
+                @if (Model.Packages == null || !Model.Packages.Any())
+                {
+                    <div class="text-center" style="padding: 50px; color: #8b6f47;">
+                        <i class="fa-solid fa-box-open" style="font-size: 4rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <h4>Şu an hiç sürpriz paket bulunmuyor.</h4>
+                    </div>
                 }
-                
-                <div class="gacha-banner-wrapper" style="background: linear-gradient(135deg, #fff, #fef8f0); border-radius: 20px; border: 2px solid #ffcc80; padding: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); margin-bottom: 40px; position: relative; overflow: hidden;">
-                    <!-- Banner Arkaplan Deseni -->
-                    <div style="position: absolute; right: -50px; top: -50px; opacity: 0.1; font-size: 15rem; color: #ff9800;">
-                        <i class="fa-solid fa-box-open"></i>
-                    </div>
-                    
-                    <div class="row align-items-center position-relative" style="z-index: 2;">
-                        <div class="col-md-7 text-center text-md-start mb-4 mb-md-0">
-                            <h2 style="color: #e65100; font-weight: 800; font-size: 2.2rem; margin-bottom: 15px;">
-                                <i class="fa-solid fa-paw"></i> Hayvanlar Paketi
-                            </h2>
-                            <p style="color: #6b5541; font-size: 1.1rem; margin-bottom: 25px;">
-                                İçerisinden rastgele ve sadece sende <strong>olmayan</strong> bir hayvan avatarı çıkar! Bütün koleksiyonu tamamlayabilecek misin?
-                            </p>
-                            
-                            <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-4">
-                                <div style="background: rgba(255,152,0,0.1); padding: 10px 20px; border-radius: 50px; font-weight: bold; font-size: 1.2rem; color: #d35400;">
-                                    <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> 300 Taş
-                                </div>
-                                
-                                @Html.AntiForgeryToken()
-                                <button onclick="buyAnimalPack(this)" class="btn btn-lg" style="background: linear-gradient(135deg, #ff9800, #ff5722); color: white; border-radius: 50px; padding: 12px 30px; font-weight: bold; box-shadow: 0 8px 20px rgba(255,87,34,0.3); transition: transform 0.2s;" @(canBuyPack ? "" : "disabled")>
-                                    @if(packOwned >= packTotal && packTotal > 0)
-                                    {
-                                        <text><i class="fa-solid fa-check-double"></i> Koleksiyon Tamamlandı</text>
-                                    }
-                                    else if(user != null && user.WisdomStones < 300)
-                                    {
-                                        <text><i class="fa-solid fa-lock"></i> Yetersiz Bakiye</text>
-                                    }
-                                    else
-                                    {
-                                        <text><i class="fa-solid fa-cube"></i> Paketi Aç</text>
-                                    }
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-5 text-center">
-                            <!-- Sabit Kutu Görseli -->
-                            <div style="font-size: 8rem; color: #ff9800; text-shadow: 0 10px 30px rgba(255,152,0,0.4);" class="main-pack-icon">
-                                <i class="fa-solid fa-box"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                else
+                {
+                    @foreach(var package in Model.Packages)
+                    {
+                        var packAvatars = Model.PackAvatars.Where(a => a.PackCategory == package.CategoryCode).ToList();
+                        var packTotal = packAvatars.Count();
+                        var packOwned = packAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
+                        bool canBuyPack = packOwned < packTotal && user != null && user.WisdomStones >= package.PriceInStones;
+                        var themeColor = package.ThemeColor ?? "#ff9800";
+                        var iconClass = package.IconClass ?? "fa-solid fa-box";
 
-                <!-- Koleksiyon Panosu -->
-                <h4 style="color: #4a3f35; font-weight: 800; margin-bottom: 20px; border-bottom: 2px solid rgba(74,63,53,0.1); padding-bottom: 10px;">
-                    Koleksiyonum (@packOwned / @packTotal)
-                </h4>
+                        <div class="gacha-banner-wrapper" style="background: linear-gradient(135deg, #fff, #fef8f0); border-radius: 20px; border: 2px solid @themeColor; padding: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); margin-bottom: 40px; position: relative; overflow: hidden;">
+                            <!-- Banner Arkaplan Deseni -->
+                            <div style="position: absolute; right: -50px; top: -50px; opacity: 0.1; font-size: 15rem; color: @themeColor;">
+                                <i class="@iconClass"></i>
+                            </div>
+                            
+                            <div class="row align-items-center position-relative" style="z-index: 2;">
+                                <div class="col-md-7 text-center text-md-start mb-4 mb-md-0">
+                                    <h2 style="color: @themeColor; font-weight: 800; font-size: 2.2rem; margin-bottom: 15px;">
+                                        <i class="@iconClass"></i> @package.Title
+                                    </h2>
+                                    <p style="color: #6b5541; font-size: 1.1rem; margin-bottom: 25px;">
+                                        @package.Description <br />
+                                        Koleksiyonu tamamlayabilecek misin? (@packOwned / @packTotal)
+                                    </p>
+                                    
+                                    <div class="d-flex flex-row align-items-center justify-content-center justify-content-md-start gap-2 gap-md-4" style="flex-wrap: wrap;">
+                                        <div style="background: rgba(255,152,0,0.1); padding: 10px 20px; border-radius: 50px; font-weight: bold; font-size: 1.2rem; color: #d35400;">
+                                            <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> @package.PriceInStones Taş
+                                        </div>
+                                        
+                                        <button type="button" class="btn btn-lg" data-bs-toggle="modal" data-bs-target="#packModal-@package.Id" style="background: linear-gradient(135deg, @themeColor, #ff5722); color: white; border-radius: 50px; padding: 12px 30px; font-weight: bold; box-shadow: 0 8px 20px rgba(255,87,34,0.3); transition: transform 0.2s;">
+                                            <i class="fa-solid fa-box-open"></i> Paketi İncele
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-5 text-center d-none d-md-block">
+                                    <div class="d-flex justify-content-center align-items-center gap-3">
+                                        @foreach(var item in packAvatars.Take(3))
+                                        {
+                                            <div style="width: 75px; height: 75px; background: white; border: 2px solid @themeColor; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(255,152,0,0.15); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                                                <img src="@item.ImageUrl" alt="@item.Name" style="width: 55px; height: 55px; object-fit: contain; border-radius: 8px;" />
+                                            </div>
+                                        }
+                                        @if (packAvatars.Count() > 3)
+                                        {
+                                            <div style="width: 75px; height: 75px; background: rgba(255,152,0,0.05); border: 2px dashed @themeColor; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: @themeColor; font-weight: 800; font-size: 1.3rem; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,152,0,0.15)'" onmouseout="this.style.background='rgba(255,152,0,0.05)'" data-bs-toggle="modal" data-bs-target="#packModal-@package.Id">
+                                                +@(packAvatars.Count() - 3)
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Packages != null)
+{
+    foreach(var package in Model.Packages)
+    {
+        var packAvatars = Model.PackAvatars.Where(a => a.PackCategory == package.CategoryCode).ToList();
+        var packTotal = packAvatars.Count();
+        var packOwned = packAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
+        bool canBuyPack = packOwned < packTotal && user != null && user.WisdomStones >= package.PriceInStones;
+        var themeColor = package.ThemeColor ?? "#ff9800";
+        var iconClass = package.IconClass ?? "fa-solid fa-box";
+
+        <!-- Paket Modal -->
+        <div class="modal fade" id="packModal-@package.Id" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
+                <div class="modal-header" style="background: linear-gradient(135deg, @themeColor, #e65100); color: white; border-bottom: none; padding: 25px;">
+                <h5 class="modal-title" style="font-weight: 800; font-size: 1.5rem;"><i class="@iconClass"></i> @package.Title İçeriği</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body" style="background: #fdfbf7; padding: 30px;">
+                <p style="color: #6b5541; font-weight: 600; margin-bottom: 20px; text-align: center;">Koleksiyon Durumu: @packOwned / @packTotal</p>
                 
-                <div class="store-grid" id="packCollectionGrid">
-                    @foreach(var item in Model.PackAvatars)
+                <div class="store-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
+                    @foreach(var item in packAvatars)
                     {
                         bool isItemOwned = ownedAvatarIds.Contains(item.Id);
                         
-                        <div class="frame-card" style="@(isItemOwned ? "opacity: 0.5; filter: grayscale(80%); border-color: rgba(0,0,0,0.1);" : "border-color: rgba(255,152,0,0.4); box-shadow: 0 0 15px rgba(255,152,0,0.1);")" id="packItem-@item.Id">
-                            <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 120px;">
-                                <img src="@item.ImageUrl" alt="@item.Name" style="width: 80px; height: 80px; object-fit: contain; border-radius: 10px;" />
+                        <div class="frame-card" style="@(isItemOwned ? "opacity: 0.5; filter: grayscale(100%); border-color: rgba(0,0,0,0.1);" : $"border-color: {themeColor}; box-shadow: 0 0 15px rgba(255,152,0,0.1); background: white;")" id="packItem-@item.Id">
+                            <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 100px;">
+                                <img src="@item.ImageUrl" alt="@item.Name" style="width: 70px; height: 70px; object-fit: contain; border-radius: 10px;" />
                             </div>
                             <div class="frame-info text-center" style="padding: 10px;">
-                                <div style="font-size: 0.85rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">@item.Name</div>
+                                <div style="font-size: 0.8rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">@item.Name</div>
                                 @if (isItemOwned)
                                 {
-                                    <div style="font-weight: bold; color: #6c757d; font-size: 0.8rem;"><i class="fa-solid fa-check"></i> Sende Var</div>
+                                    <div style="font-weight: bold; color: #6c757d; font-size: 0.75rem;"><i class="fa-solid fa-check"></i> Alındı</div>
                                 }
                                 else
                                 {
-                                    <div style="font-weight: bold; color: #ff9800; font-size: 0.8rem;"><i class="fa-solid fa-star"></i> Çıkmadı</div>
+                                    <div style="font-weight: bold; color: @themeColor; font-size: 0.75rem;"><i class="fa-solid fa-star"></i> Çıkmadı</div>
                                 }
                             </div>
                         </div>
                     }
                 </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between align-items-center" style="background: #f5f0e8; border-top: 1px solid rgba(139,111,71,0.1); padding: 20px;">
+                <div style="font-weight: bold; font-size: 1.1rem; color: #d35400;">
+                    <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> @package.PriceInStones Taş
+                </div>
+                
+                @Html.AntiForgeryToken()
+                <button onclick="buyPack(this, @package.Id)" class="btn btn-lg" style="background: linear-gradient(135deg, @themeColor, #ff5722); color: white; border-radius: 50px; padding: 10px 25px; font-weight: bold; box-shadow: 0 8px 20px rgba(255,87,34,0.3); transition: transform 0.2s;" @(canBuyPack ? "" : "disabled")>
+                    @if(packOwned >= packTotal && packTotal > 0)
+                    {
+                        <text><i class="fa-solid fa-check-double"></i> Koleksiyon Tamamlandı</text>
+                    }
+                    else if(user != null && user.WisdomStones < package.PriceInStones)
+                    {
+                        <text><i class="fa-solid fa-lock"></i> Yetersiz Bakiye</text>
+                    }
+                    else
+                    {
+                        <text><i class="fa-solid fa-cube"></i> Paketi Aç</text>
+                    }
+                </button>
+                </div>
+            </div>
             </div>
         </div>
-    </div>
-</div>
+    }
+}
 
 <!-- Gacha Animasyon Overlay -->
 <style>
@@ -971,13 +1056,13 @@
 </div>
 
 <script>
-    function buyAnimalPack(btn) {
+    function buyPack(btn, packageId) {
         var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
         
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Açılıyor...';
         btn.disabled = true;
 
-        fetch('/Store/BuyAnimalPack', {
+        fetch('/Store/BuyPack?packageId=' + packageId, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1045,6 +1130,53 @@
             alert("Paket açılırken bir hata oluştu!");
             btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
             btn.disabled = false;
+        });
+    }
+
+    function buyStreakFreeze(btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
+
+        var token = document.querySelector('#buyFreezeForm input[name="__RequestVerificationToken"]').value;
+
+        fetch('/Store/BuyStreakFreeze', {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                // Bakiyeyi güncelle
+                document.querySelectorAll('.navbar .fa-gem').forEach(function(gemIcon) {
+                    var textNode = gemIcon.nextSibling;
+                    if(textNode && textNode.nodeType === 3 && textNode.nodeValue.trim().length > 0) {
+                        var valStr = textNode.nodeValue.replace('+', '').trim();
+                        if(!isNaN(parseInt(valStr))) {
+                            textNode.nodeValue = ' ' + data.newBalance;
+                        }
+                    }
+                });
+
+                // Header'daki dondurma sayısını güncelle (Varsa)
+                var freezeCountEl = document.getElementById('headerFreezeCount');
+                if(freezeCountEl) {
+                    freezeCountEl.innerText = data.newFreezes + '/2';
+                }
+
+                alert(data.message);
+            } else {
+                alert("Hata: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Satın alma işlemi sırasında bir hata oluştu!");
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Satın Al';
         });
     }
 

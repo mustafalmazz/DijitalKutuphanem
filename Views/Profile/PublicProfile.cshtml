@@ -3,25 +3,25 @@
     ViewData["Title"] = Model.UserName + " - Profil";
 
     // ============================================================
-    //  DÄ°NAMÄ°K HESAPLAMALAR (backend deÄŸiÅŸikliÄŸi gerektirmez)
+    //  DİNAMİK HESAPLAMALAR (backend değişikliği gerektirmez)
     // ============================================================
 
-    // Ãœyelik sÃ¼resi
+    // Üyelik süresi
     int memberDays = (int)(DateTime.Now - Model.CreateDate).TotalDays;
     if (memberDays < 1) { memberDays = 1; }
 
-    // Bilgelik TaÅŸÄ±'na gÃ¶re seviye sistemi
+    // Bilgelik Taşı'na göre seviye sistemi
     int stones = Model.WisdomStones;
     string levelName;
     string levelIcon;
     int levelMin;
     int levelMax;
 
-    if (stones < 250) { levelName = "Ã‡Ä±rak Okur"; levelIcon = "fa-seedling"; levelMin = 0; levelMax = 250; }
-    else if (stones < 750) { levelName = "MeraklÄ± Okur"; levelIcon = "fa-book-open"; levelMin = 250; levelMax = 750; }
+    if (stones < 250) { levelName = "Çırak Okur"; levelIcon = "fa-seedling"; levelMin = 0; levelMax = 250; }
+    else if (stones < 750) { levelName = "Meraklı Okur"; levelIcon = "fa-book-open"; levelMin = 250; levelMax = 750; }
     else if (stones < 2000) { levelName = "Kitap Dostu"; levelIcon = "fa-feather-pointed"; levelMin = 750; levelMax = 2000; }
     else if (stones < 5000) { levelName = "Bilge Okur"; levelIcon = "fa-graduation-cap"; levelMin = 2000; levelMax = 5000; }
-    else if (stones < 12000) { levelName = "Ãœstat"; levelIcon = "fa-crown"; levelMin = 5000; levelMax = 12000; }
+    else if (stones < 12000) { levelName = "Üstat"; levelIcon = "fa-crown"; levelMin = 5000; levelMax = 12000; }
     else { levelName = "Efsane"; levelIcon = "fa-star"; levelMin = 12000; levelMax = stones; }
 
     int levelProgress = levelMax > levelMin
@@ -30,17 +30,17 @@
 
     int stonesToNext = Math.Max(0, levelMax - stones);
 
-    // Seri durumuna gÃ¶re rozet
+    // Seri durumuna göre rozet
     string streakLabel = Model.CurrentStreak >= 30 ? "Demir Disiplin"
-                       : Model.CurrentStreak >= 7 ? "Ä°stikrarlÄ±"
-                       : Model.CurrentStreak >= 1 ? "Yolun BaÅŸÄ±nda"
+                       : Model.CurrentStreak >= 7 ? "İstikrarlı"
+                       : Model.CurrentStreak >= 1 ? "Yolun Başında"
                        : "Seri Bekleniyor";
 }
 
 <style>
     /* ============================================================
-           GENEL SAYFA
-           ============================================================ */
+               GENEL SAYFA
+               ============================================================ */
     body {
         background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
         font-family: 'Georgia', serif;
@@ -58,7 +58,7 @@
         padding: 0 20px;
     }
 
-    /* GiriÅŸ animasyonlarÄ± */
+    /* Giriş animasyonları */
     @@keyframes ppFadeUp {
         from {
             opacity: 0;
@@ -93,9 +93,15 @@
         animation: ppFadeUp 0.55s 0.24s ease-out both;
     }
 
+    @@media (prefers-reduced-motion: reduce) {
+        .pp-anim-1, .pp-anim-2, .pp-anim-3 {
+            animation: none;
+        }
+    }
+
     /* ============================================================
-           HERO (KAPAK)
-           ============================================================ */
+               HERO (KAPAK)
+               ============================================================ */
     .pp-hero {
         background: linear-gradient(135deg, #3d3329 0%, #5c4936 35%, #8b6f47 75%, #a0785a 100%);
         height: 190px;
@@ -105,7 +111,7 @@
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
 
-        /* AltÄ±n Ä±ÅŸÄ±k huzmeleri */
+        /* Altın ışık huzmeleri */
         .pp-hero::before {
             content: '';
             position: absolute;
@@ -113,7 +119,7 @@
             background: radial-gradient(circle at 20% 65%, rgba(255,215,130,0.18) 0%, transparent 45%), radial-gradient(circle at 78% 30%, rgba(255,215,130,0.12) 0%, transparent 50%);
         }
 
-        /* Kitap sÄ±rtÄ± deseni hissi */
+        /* Kitap sırtı deseni hissi */
         .pp-hero::after {
             content: '';
             position: absolute;
@@ -121,7 +127,7 @@
             background: repeating-linear-gradient(90deg, transparent, transparent 70px, rgba(245,240,232,0.035) 70px, rgba(245,240,232,0.035) 73px);
         }
 
-    /* Hero Ã¼zerinde sÃ¼zÃ¼len parÃ§acÄ±klar */
+    /* Hero üzerinde süzülen parçacıklar */
     .pp-hero-dust {
         position: absolute;
         border-radius: 50%;
@@ -180,8 +186,8 @@
     }
 
     /* ============================================================
-           ANA KART
-           ============================================================ */
+               ANA KART
+               ============================================================ */
     .pp-card {
         background: #fff9f0;
         border-radius: 0 0 28px 28px;
@@ -191,14 +197,14 @@
     }
 
     .pp-card-top {
-        padding: 0 34px 30px;
+        padding: 0 34px 26px;
         text-align: center;
         position: relative;
     }
 
     /* ============================================================
-           AVATAR â€” KARE, Ã‡ERÃ‡EVEYE UYUMLU (daireye zorlanmaz)
-           ============================================================ */
+               AVATAR — KARE, ÇERÇEVEYE UYUMLU (daireye zorlanmaz)
+               ============================================================ */
     .pp-avatar-zone {
         position: relative;
         display: inline-block;
@@ -210,7 +216,7 @@
     .pp-avatar-box {
         width: 150px;
         height: 150px;
-        border-radius: 18px; /* MaÄŸazadaki Ã¶nizlemeyle aynÄ± form */
+        border-radius: 18px; /* Mağazadaki önizlemeyle aynı form */
         background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%);
         display: flex;
         align-items: center;
@@ -230,7 +236,7 @@
             object-fit: cover;
         }
 
-    /* Ã‡erÃ§eve overlay â€” orijinal oranÄ±nda, kÄ±rpÄ±lmadan biner */
+    /* Çerçeve overlay — orijinal oranında, kırpılmadan biner */
     .pp-frame-overlay {
         position: absolute;
         top: -15%;
@@ -243,8 +249,8 @@
     }
 
     /* ============================================================
-           Ä°SÄ°M, SEVÄ°YE ROZETÄ°, KATILIM
-           ============================================================ */
+               İSİM, SEVİYE ROZETİ, KATILIM
+               ============================================================ */
     .pp-name {
         font-size: 2rem;
         font-weight: 800;
@@ -271,7 +277,7 @@
         overflow: hidden;
     }
 
-        /* Rozet Ã¼zerinde kayan parlama */
+        /* Rozet üzerinde kayan parlama */
         .pp-level-badge::after {
             content: '';
             position: absolute;
@@ -301,7 +307,7 @@
     .pp-member-days {
         color: #a08b6d;
         font-size: 0.8rem;
-        margin-bottom: 22px;
+        margin-bottom: 16px;
     }
 
         .pp-member-days b {
@@ -309,70 +315,75 @@
         }
 
     /* ============================================================
-           SAYAÃ‡LAR (TAKÄ°PÃ‡Ä° / TAKÄ°P / GÃœN)
-           ============================================================ */
+               SAYAÇLAR — kutusuz, tek satır, zarif ayraçlı
+               ============================================================ */
     .pp-counters {
         display: flex;
         justify-content: center;
-        background: linear-gradient(180deg, #f7f0e4, #f2e9da);
-        border: 1px solid rgba(139, 111, 71, 0.12);
-        border-radius: 18px;
-        padding: 14px 8px;
-        margin: 0 auto 24px;
-        max-width: 440px;
-        box-shadow: inset 0 2px 6px rgba(107, 85, 65, 0.06);
+        align-items: baseline;
+        gap: 14px;
+        margin-bottom: 18px;
+        font-size: 0.86rem;
+        color: #8b6f47;
+        letter-spacing: 0.3px;
     }
 
     .pp-counter {
-        flex: 1;
-        text-align: center;
-        padding: 2px 10px;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
     }
 
-        .pp-counter + .pp-counter {
-            border-left: 2px solid rgba(139, 111, 71, 0.14);
-        }
-
     .pp-counter-value {
-        font-size: 1.55rem;
+        font-size: 1.2rem;
         font-weight: 800;
         color: #6b5541;
-        line-height: 1.1;
+        line-height: 1;
     }
 
     .pp-counter-label {
-        font-size: 0.68rem;
-        color: #8b6f47;
+        font-size: 0.72rem;
         text-transform: uppercase;
-        letter-spacing: 1.4px;
+        letter-spacing: 1.2px;
         font-weight: 600;
-        margin-top: 2px;
+    }
+
+    .pp-counter-sep {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: rgba(139, 111, 71, 0.35);
+        align-self: center;
     }
 
     /* ============================================================
-           AKSÄ°YON BUTONLARI
-           ============================================================ */
+               AKSİYON BUTONLARI — her ekranda tek satır
+               ============================================================ */
     .pp-actions {
         display: flex;
         justify-content: center;
-        gap: 12px;
-        flex-wrap: wrap;
+        align-items: stretch;
+        gap: 10px;
+        max-width: 480px;
+        margin: 0 auto;
     }
 
     .pp-btn {
         border-radius: 50px;
-        padding: 12px 30px;
+        padding: 11px 26px;
         font-family: 'Georgia', serif;
         font-weight: 700;
-        font-size: 0.93rem;
-        letter-spacing: 0.5px;
+        font-size: 0.9rem;
+        letter-spacing: 0.4px;
         cursor: pointer;
         transition: all 0.3s ease;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
         text-decoration: none;
         border: 2px solid transparent;
+        white-space: nowrap;
     }
 
     .pp-btn-follow {
@@ -417,11 +428,16 @@
             box-shadow: 0 8px 20px rgba(205, 164, 94, 0.35);
         }
 
+    /* Paylaş: her zaman kompakt daire ikon */
     .pp-btn-share {
         background: transparent;
         color: #a08b6d;
         border-color: rgba(139, 111, 71, 0.35);
-        padding: 12px 16px;
+        width: 46px;
+        height: 46px;
+        padding: 0;
+        border-radius: 50%;
+        flex: 0 0 46px;
     }
 
         .pp-btn-share:hover {
@@ -431,8 +447,8 @@
         }
 
     /* ============================================================
-           SEVÄ°YE Ä°LERLEME BÃ–LÃœMÃœ
-           ============================================================ */
+               SEVİYE İLERLEME BÖLÜMÜ
+               ============================================================ */
     .pp-level-section {
         margin: 26px auto 0;
         max-width: 520px;
@@ -510,20 +526,20 @@
     }
 
     /* ============================================================
-           Ä°STATÄ°STÄ°K KAROLARI
-           ============================================================ */
+               İSTATİSTİK KAROLARI
+               ============================================================ */
     .pp-stats {
         background: linear-gradient(180deg, #f5ede0 0%, #efe4d1 100%);
         border-top: 1px solid rgba(139, 111, 71, 0.12);
         border-radius: 0 0 28px 28px;
-        padding: 28px 34px 34px;
+        padding: 24px 34px 30px;
     }
 
     .pp-stats-title {
         color: #4a3f35;
         font-weight: 700;
-        font-size: 1.2rem;
-        margin-bottom: 20px;
+        font-size: 1.1rem;
+        margin-bottom: 16px;
         display: flex;
         align-items: center;
         gap: 9px;
@@ -535,14 +551,14 @@
 
     .pp-stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
     }
 
     .pp-tile {
         background: #fff9f0;
         border-radius: 18px;
-        padding: 20px 12px 18px;
+        padding: 18px 12px 16px;
         text-align: center;
         border: 1px solid rgba(139, 111, 71, 0.12);
         box-shadow: 0 4px 14px rgba(107, 85, 65, 0.08);
@@ -568,16 +584,17 @@
         }
 
     .pp-tile-icon {
-        width: 50px;
-        height: 50px;
+        width: 46px;
+        height: 46px;
         border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.3rem;
-        margin: 0 auto 12px;
+        font-size: 1.2rem;
+        margin: 0 auto 10px;
         color: #fff;
         box-shadow: 0 5px 12px rgba(0,0,0,0.14);
+        flex-shrink: 0;
     }
 
     .pp-tile-fire .pp-tile-icon {
@@ -598,7 +615,7 @@
     }
 
     .pp-tile-value {
-        font-size: 1.4rem;
+        font-size: 1.3rem;
         font-weight: 800;
         color: #4a3f35;
         margin-bottom: 2px;
@@ -622,11 +639,12 @@
         padding: 3px 10px;
         border-radius: 20px;
         text-transform: uppercase;
+        white-space: nowrap;
     }
 
     /* ============================================================
-           KOPYALAMA TOAST'I
-           ============================================================ */
+               KOPYALAMA TOAST'I
+               ============================================================ */
     .pp-toast {
         position: fixed;
         bottom: 28px;
@@ -659,17 +677,8 @@
         }
 
     /* ============================================================
-           RESPONSIVE â€” TABLET
-           ============================================================ */
-    @@media (max-width: 900px) {
-        .pp-stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    /* ============================================================
-           RESPONSIVE â€” MOBÄ°L
-           ============================================================ */
+               RESPONSIVE — MOBİL
+               ============================================================ */
     @@media (max-width: 768px) {
         .pp-page {
             padding: 14px 0 60px;
@@ -689,7 +698,7 @@
         }
 
         .pp-card-top {
-            padding: 0 16px 24px;
+            padding: 0 16px 20px;
         }
 
         .pp-avatar-zone {
@@ -718,26 +727,40 @@
 
         .pp-member-days {
             font-size: 0.74rem;
-            margin-bottom: 18px;
+            margin-bottom: 14px;
         }
 
         .pp-counters {
-            padding: 11px 4px;
-            border-radius: 15px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
 
         .pp-counter-value {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
         }
 
         .pp-counter-label {
-            font-size: 0.6rem;
+            font-size: 0.66rem;
             letter-spacing: 1px;
         }
+        /* Butonlar tek satırda kalır: ikisi alanı paylaşır, paylaş ikon olarak sabit */
+        .pp-actions {
+            gap: 8px;
+        }
 
-        .pp-btn {
-            padding: 11px 20px;
-            font-size: 0.84rem;
+        .pp-btn-follow,
+        .pp-btn-message {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 11px 8px;
+            font-size: 0.82rem;
+        }
+
+        .pp-btn-share {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+            align-self: center;
         }
 
         .pp-level-section {
@@ -754,61 +777,73 @@
         }
 
         .pp-stats {
-            padding: 22px 16px 26px;
+            padding: 18px 14px 20px;
             border-radius: 0 0 20px 20px;
         }
 
         .pp-stats-title {
-            font-size: 1.05rem;
+            font-size: 1rem;
+            margin-bottom: 12px;
         }
-
+        /* Karolar mobilde zarif yatay satırlara dönüşür */
         .pp-stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            grid-template-columns: 1fr;
+            gap: 10px;
         }
 
         .pp-tile {
-            padding: 16px 10px 14px;
-            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-align: left;
+            padding: 12px 14px;
+            border-radius: 14px;
         }
 
             .pp-tile:hover {
                 transform: none; /* Dokunmatikte kayma yok */
             }
 
+            .pp-tile::before {
+                width: 3px;
+                height: auto;
+                bottom: 0;
+                right: auto;
+                background: linear-gradient(180deg, transparent, #ffd782, transparent);
+            }
+
         .pp-tile-icon {
-            width: 44px;
-            height: 44px;
-            font-size: 1.1rem;
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+            margin: 0;
+            border-radius: 12px;
+        }
+
+        .pp-tile-body {
+            flex: 1;
+            min-width: 0;
         }
 
         .pp-tile-value {
-            font-size: 1.15rem;
+            font-size: 1.05rem;
+            margin-bottom: 0;
         }
 
         .pp-tile-label {
-            font-size: 0.7rem;
+            font-size: 0.72rem;
+        }
+
+        .pp-tile-sub {
+            margin-top: 0;
+            font-size: 0.6rem;
         }
     }
 
     /* ============================================================
-           RESPONSIVE â€” Ã‡OK KÃœÃ‡ÃœK EKRANLAR
-           ============================================================ */
-    @@media (max-width: 420px) {
-        .pp-actions {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .pp-btn {
-            justify-content: center;
-            width: 100%;
-        }
-
-        .pp-btn-share {
-            padding: 11px 16px;
-        }
-
+               RESPONSIVE — ÇOK KÜÇÜK EKRANLAR
+               ============================================================ */
+    @@media (max-width: 380px) {
         .pp-avatar-box {
             width: 112px;
             height: 112px;
@@ -822,8 +857,21 @@
             font-size: 1.35rem;
         }
 
-        .pp-counter {
-            padding: 2px 6px;
+        .pp-btn-follow,
+        .pp-btn-message {
+            font-size: 0.76rem;
+            padding: 10px 6px;
+        }
+
+            .pp-btn-follow i,
+            .pp-btn-message i {
+                display: none; /* Çok dar ekranda metin öncelikli */
+            }
+
+        .pp-btn-share {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
         }
     }
 </style>
@@ -844,7 +892,7 @@
 
             <div class="pp-card-top pp-anim-2">
 
-                <!-- AVATAR (kare, Ã§erÃ§eve orijinal formuyla Ã¼stÃ¼nde) -->
+                <!-- AVATAR (kare, çerçeve orijinal formuyla üstünde) -->
                 <div class="pp-avatar-zone">
                     <div class="pp-avatar-box">
                         @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
@@ -863,33 +911,36 @@
                     }
                 </div>
 
-                <!-- Ä°SÄ°M & SEVÄ°YE -->
+                <!-- İSİM & SEVİYE -->
                 <h1 class="pp-name">@Model.UserName</h1>
-
-                
 
                 <p class="pp-join">
                     <i class="fas fa-calendar-alt me-1"></i>
-                    @Model.CreateDate.ToString("MMMM yyyy") tarihinden beri Ã¼ye
+                    @Model.CreateDate.ToString("MMMM yyyy") tarihinden beri üye
                 </p>
                 <p class="pp-member-days">
-                    KÃ¼tÃ¼phane yolculuÄŸunun <b>@memberDays. gÃ¼nÃ¼</b>
+                    Kütüphane yolculuğunun <b>@memberDays. günü</b>
                 </p>
 
-                <!-- SAYAÃ‡LAR -->
+                <!-- SAYACLAR (kompakt, tek satır) -->
                 <div class="pp-counters">
-                    <div class="pp-counter">
-                        <div class="pp-counter-value pp-countup" id="followersCount" data-target="@ViewBag.FollowersCount">0</div>
-                        <div class="pp-counter-label">TakipÃ§i</div>
-                    </div>
-                    <div class="pp-counter">
-                        <div class="pp-counter-value pp-countup" data-target="@ViewBag.FollowingCount">0</div>
-                        <div class="pp-counter-label">Takip Edilen</div>
-                    </div>
-                    
+                    <span class="pp-counter">
+                        <span class="pp-counter-value pp-countup" id="followersCount" data-target="@ViewBag.FollowersCount">0</span>
+                        <span class="pp-counter-label">Takipçi</span>
+                    </span>
+                    <span class="pp-counter-sep"></span>
+                    <span class="pp-counter">
+                        <span class="pp-counter-value pp-countup" data-target="@ViewBag.FollowingCount">0</span>
+                        <span class="pp-counter-label">Takip Edilen</span>
+                    </span>
+                    <span class="pp-counter-sep"></span>
+                    <span class="pp-counter">
+                        <span class="pp-counter-value pp-countup" data-target="@ViewBag.BookCount">0</span>
+                        <span class="pp-counter-label">Kitap</span>
+                    </span>
                 </div>
 
-                <!-- AKSÄ°YONLAR -->
+                <!-- AKSİYONLAR -->
                 <div class="pp-actions">
                     <button id="btnFollow"
                             class="pp-btn pp-btn-follow @(ViewBag.IsFollowing ? "following" : "")"
@@ -899,10 +950,10 @@
                     </button>
 
                     <a href="/Message/Chat?userId=@Model.Id" class="pp-btn pp-btn-message">
-                        <i class="fas fa-comment-dots"></i> Mesaj GÃ¶nder
+                        <i class="fas fa-comment-dots"></i> Mesaj Gönder
                     </a>
 
-                    <button type="button" class="pp-btn pp-btn-share" id="btnShare" title="Profil baÄŸlantÄ±sÄ±nÄ± kopyala">
+                    <button type="button" class="pp-btn pp-btn-share" id="btnShare" title="Profil bağlantısını kopyala" aria-label="Profil bağlantısını kopyala">
                         <i class="fas fa-share-nodes"></i>
                     </button>
                 </div>
@@ -918,22 +969,28 @@
                 <div class="pp-stats-grid">
                     <div class="pp-tile pp-tile-fire">
                         <div class="pp-tile-icon"><i class="fas fa-fire"></i></div>
-                        <div class="pp-tile-value">@Model.CurrentStreak Gün</div>
-                        <div class="pp-tile-label">Mevcut Seri</div>
+                        <div class="pp-tile-body">
+                            <div class="pp-tile-value">@Model.CurrentStreak Gün</div>
+                            <div class="pp-tile-label">Mevcut Seri</div>
+                        </div>
                         <span class="pp-tile-sub">@streakLabel</span>
                     </div>
 
                     <div class="pp-tile pp-tile-gem">
                         <div class="pp-tile-icon"><i class="fas fa-gem"></i></div>
-                        <div class="pp-tile-value">@Model.WisdomStones.ToString("N0")</div>
-                        <div class="pp-tile-label">Bilgelik Taşı</div>
+                        <div class="pp-tile-body">
+                            <div class="pp-tile-value">@Model.WisdomStones.ToString("N0")</div>
+                            <div class="pp-tile-label">Bilgelik Taşı</div>
+                        </div>
                         <span class="pp-tile-sub">Hazine</span>
                     </div>
 
                     <div class="pp-tile pp-tile-cal">
                         <div class="pp-tile-icon"><i class="fas fa-calendar-days"></i></div>
-                        <div class="pp-tile-value">@memberDays Gün</div>
-                        <div class="pp-tile-label">Üyelik Süresi</div>
+                        <div class="pp-tile-body">
+                            <div class="pp-tile-value">@memberDays Gün</div>
+                            <div class="pp-tile-label">Üyelik Süresi</div>
+                        </div>
                         <span class="pp-tile-sub">Yolculuk</span>
                     </div>
                 </div>
@@ -943,15 +1000,15 @@
     </div>
 </div>
 
-<!-- BaÄŸlantÄ± kopyalandÄ± bildirimi -->
+<!-- Bağlantı kopyalandı bildirimi -->
 <div class="pp-toast" id="ppToast">
-    <i class="fas fa-check-circle"></i> Profil baÄŸlantÄ±sÄ± kopyalandÄ±!
+    <i class="fas fa-check-circle"></i> Profil bağlantısı kopyalandı!
 </div>
 
 @section Scripts {
     <script>
         // ============================================================
-        //  SAYAÃ‡ COUNT-UP ANÄ°MASYONU
+        //  SAYAÇ COUNT-UP ANİMASYONU
         // ============================================================
         function animateCounter(el) {
             var target = parseInt(el.getAttribute('data-target')) || 0;
@@ -971,10 +1028,10 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            // SayaÃ§larÄ± canlandÄ±r
+            // Sayaçları canlandır
             document.querySelectorAll('.pp-countup').forEach(animateCounter);
 
-            // Seviye Ã§ubuÄŸunu doldur
+            // Seviye çubuğunu doldur
             setTimeout(function () {
                 var bar = document.getElementById('levelProgressBar');
                 if (bar) bar.style.width = bar.getAttribute('data-width') + '%';
@@ -982,7 +1039,7 @@
         });
 
         // ============================================================
-        //  TAKÄ°P ET / BIRAK (canlÄ± sayaÃ§ gÃ¼ncellemeli)
+        //  TAKİP ET / BIRAK (canlı sayaç güncellemeli)
         // ============================================================
         function toggleFollow(targetId) {
             var btn = $('#btnFollow');
@@ -1013,12 +1070,12 @@
                 }
             }).fail(function () {
                 btn.removeClass('disabled');
-                alert("Ä°ÅŸlem sÄ±rasÄ±nda bir hata oluÅŸtu.");
+                alert("İşlem sırasında bir hata oluştu.");
             });
         }
 
         // ============================================================
-        //  PROFÄ°L BAÄLANTISINI KOPYALA
+        //  PROFİL BAĞLANTISINI KOPYALA
         // ============================================================
         document.getElementById('btnShare').addEventListener('click', function () {
             var url = window.location.href;
@@ -1032,7 +1089,7 @@
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(url).then(showToast);
             } else {
-                // Eski tarayÄ±cÄ±lar iÃ§in geriye dÃ¶nÃ¼k yÃ¶ntem
+                // Eski tarayıcılar için geriye dönük yöntem
                 var input = document.createElement('input');
                 input.value = url;
                 document.body.appendChild(input);

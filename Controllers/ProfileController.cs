@@ -234,10 +234,12 @@ namespace BookManagementApp.Controllers
             var followersCount = _context.Follows.Count(f => f.FollowingId == id);
             var followingCount = _context.Follows.Count(f => f.FollowerId == id);
             var isFollowing = _context.Follows.Any(f => f.FollowerId == loggedInUserId && f.FollowingId == id);
+            var bookCount = _context.Books.Count(b => b.UserId == id);
 
             ViewBag.FollowersCount = followersCount;
             ViewBag.FollowingCount = followingCount;
             ViewBag.IsFollowing = isFollowing;
+            ViewBag.BookCount = bookCount;
             ViewBag.LoggedInUserId = loggedInUserId;
 
             return View(user);
@@ -273,6 +275,39 @@ namespace BookManagementApp.Controllers
                 _context.SaveChanges();
                 return Json(new { success = true, isFollowing = true });
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Community(string q)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var query = _context.Users.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                query = query.Where(u => u.UserName.Contains(q));
+            }
+
+            var users = await query
+                .OrderByDescending(u => u.WisdomStones)
+                .ToListAsync();
+
+            ViewBag.SearchQuery = q;
+            ViewBag.CurrentUserId = loggedInUserId;
+
+            var followings = await _context.Follows
+                .Where(f => f.FollowerId == loggedInUserId.Value)
+                .Select(f => f.FollowingId)
+                .ToListAsync();
+
+            ViewBag.Followings = followings;
+
+            return View(users);
         }
     }
 }

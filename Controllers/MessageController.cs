@@ -3,15 +3,19 @@ using BookManagementApp.Models;
 using BookManagementApp.Areas.Admin.Models;
 using Microsoft.EntityFrameworkCore;
 
+using Microsoft.AspNetCore.SignalR;
+
 namespace BookManagementApp.Controllers
 {
     public class MessageController : Controller
     {
         private readonly MyDbContext _context;
+        private readonly IHubContext<BookManagementApp.Hubs.ChatHub> _hubContext;
 
-        public MessageController(MyDbContext context)
+        public MessageController(MyDbContext context, IHubContext<BookManagementApp.Hubs.ChatHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         public IActionResult Index()
@@ -44,6 +48,7 @@ namespace BookManagementApp.Controllers
 
             ViewBag.OtherUser = otherUser;
             ViewBag.CurrentUserId = myId;
+            ViewBag.IsOnline = BookManagementApp.Hubs.ChatHub.IsUserOnline(userId.ToString());
 
             // Mesajları çek
             var messages = _context.ChatMessages

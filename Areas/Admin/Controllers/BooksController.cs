@@ -102,6 +102,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 if (currentUser != null)
                 {
                     currentUser.WisdomStones += 10;
+                    TempData["EarnedStones"] = 10;
                     await _context.SaveChangesAsync();
                 }
             }
@@ -425,6 +426,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 if (currentUser != null)
                 {
                     currentUser.WisdomStones += 10;
+                    TempData["EarnedStones"] = 10;
                     await _context.SaveChangesAsync();
                 }
             }

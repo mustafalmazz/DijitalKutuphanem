@@ -57,31 +57,6 @@
     .btn-claim:active {
         transform: scale(0.95);
     }
-    /* Yüzen Ödül Animasyonu */
-    .floating-reward {
-        position: fixed;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        color: #00bcd4;
-        font-family: 'Georgia', serif;
-        font-weight: 900;
-        font-size: 2.5rem;
-        z-index: 999999;
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        text-shadow: 0 0 15px rgba(0, 188, 212, 0.8), 0 0 30px rgba(0, 188, 212, 0.5);
-        animation: floatUpFadeOut 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    }
-    
-    @@keyframes floatUpFadeOut {
-        0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
-        20% { transform: translate(-50%, -40px) scale(1.2); opacity: 1; }
-        40% { transform: translate(-50%, -60px) scale(1.1); opacity: 1; }
-        100% { transform: translate(-50%, -150px) scale(0.9); opacity: 0; }
-    }
 </style>
 
 <div class="modal fade" id="streakModal" tabindex="-1" aria-labelledby="streakModalLabel" aria-hidden="true">
@@ -172,18 +147,6 @@
                 // Profesyonel Yüzen Ödül Animasyonunu Tetikle
                 showFloatingRewardAnimation(data.reward);
                 
-                // Menüdeki (Header) bakiye miktarını görsel olarak güncelle (Sadece navbar içindeki elmasları seç)
-                document.querySelectorAll('.navbar .fa-gem').forEach(function(gemIcon) {
-                    var textNode = gemIcon.nextSibling;
-                    if(textNode && textNode.nodeType === 3 && textNode.nodeValue.trim().length > 0) {
-                        // Sadece sayı içeriyorsa güncelle (Örn: modal içindekileri bozmamak için ek kontrol)
-                        var valStr = textNode.nodeValue.replace('+', '').trim();
-                        if(!isNaN(parseInt(valStr))) {
-                            textNode.nodeValue = ' ' + data.newBalance;
-                        }
-                    }
-                });
-                
             } else {
                 alert("Hata: " + data.message);
                 btn.innerHTML = originalText;
@@ -198,20 +161,6 @@
         });
     }
 
-    function showFloatingRewardAnimation(amount) {
-        var floatingDiv = document.createElement('div');
-        floatingDiv.className = 'floating-reward';
-        floatingDiv.innerHTML = '<i class="fa-solid fa-gem" style="color: #00bcd4;"></i> +' + amount + ' Bilgelik Taşı';
-        document.body.appendChild(floatingDiv);
-        
-        // Animasyon bitiminde (2.5sn sonra) elementi DOM'dan temizle
-        setTimeout(function() {
-            if (floatingDiv && floatingDiv.parentNode) {
-                floatingDiv.parentNode.removeChild(floatingDiv);
-            }
-        }, 2500);
-    }
-    
     // Modal'ı body'nin en sonuna taşıyarak Navbar'ın Z-Index (kararma ve tıklanamama) bug'ını çözer
     document.addEventListener('DOMContentLoaded', function() {
         var streakModal = document.getElementById('streakModal');

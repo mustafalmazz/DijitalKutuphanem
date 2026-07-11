@@ -325,6 +325,9 @@
                     <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#streakModal" style="color: #ff9800; text-decoration: none;" title="Seri Giriş (Detaylar için tıkla)">
                         <i class="fa-solid fa-fire" style="color: #ff5722; text-shadow: 0 0 8px rgba(255, 87, 34, 0.6);"></i> @(Model.User.CurrentStreak % 7 == 0 && Model.User.CurrentStreak > 0 ? 7 : Model.User.CurrentStreak % 7)/7
                     </a>
+                    <a asp-area="" asp-controller="Store" asp-action="Index" style="color: #b2ebf2; text-decoration: none;" title="Seri Dondurma Hakları">
+                        🧊 <span id="headerFreezeCountMobile">@Model.User.StreakFreezes/2</span>
+                    </a>
                     <a asp-area="" asp-controller="Store" asp-action="Index" style="color: #ffd782; text-decoration: none;" title="Mağazaya Git">
                         <i class="fa-solid fa-gem" style="color: #00ffff; text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);"></i> @Model.User.WisdomStones
                     </a>
@@ -346,6 +349,9 @@
                         <li class="nav-item d-flex align-items-center gap-3">
                             <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#streakModal" class="nav-link" style="color: #ff9800 !important; font-weight: 700; letter-spacing: 1px;" title="Seri Giriş Detayları">
                                 <i class="fa-solid fa-fire" style="color: #ff5722; text-shadow: 0 0 8px rgba(255, 87, 34, 0.6);"></i> @(Model.User.CurrentStreak % 7 == 0 && Model.User.CurrentStreak > 0 ? 7 : Model.User.CurrentStreak % 7)/7
+                            </a>
+                            <a class="nav-link" asp-area="" asp-controller="Store" asp-action="Index" style="color: #b2ebf2 !important; font-weight: 700; letter-spacing: 1px;" title="Seri Dondurma Hakları">
+                                🧊 <span id="headerFreezeCount">@Model.User.StreakFreezes/2</span>
                             </a>
                             <a class="nav-link" asp-area="" asp-controller="Store" asp-action="Index" style="color: #ffd782 !important; font-weight: 700; letter-spacing: 1px;" title="Mağazaya Git">
                                 <i class="fa-solid fa-gem" style="color: #00ffff; text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);"></i> @Model.User.WisdomStones
@@ -467,8 +473,8 @@
                     </li>
 
                     <li>
-                        <a class="nav-link" asp-area="" asp-action="SendMeMessage" asp-controller="Home" role="button">
-                            İletişim
+                        <a class="nav-link" asp-area="" asp-action="Community" asp-controller="Profile" role="button">
+                            Topluluk
                         </a>
                     </li>
                 </ul>

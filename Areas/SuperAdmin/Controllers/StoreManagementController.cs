@@ -102,6 +102,7 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
         public async Task<IActionResult> AvatarsIndex()
         {
             var avatars = await _context.ProfileAvatars.ToListAsync();
+            ViewBag.Packages = await _context.StorePackages.ToListAsync();
             return View(avatars);
         }
 
@@ -151,6 +152,7 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
             existingAvatar.Description = avatar.Description;
             existingAvatar.PriceInStones = avatar.PriceInStones;
             existingAvatar.RequiredBookCount = avatar.RequiredBookCount;
+            existingAvatar.PackCategory = avatar.PackCategory;
 
             _context.ProfileAvatars.Update(existingAvatar);
             await _context.SaveChangesAsync();
@@ -170,6 +172,85 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
                 TempData["SuccessMessage"] = "Avatar silindi.";
             }
             return RedirectToAction(nameof(AvatarsIndex));
+        }
+
+        // --- PAKET YÖNETİMİ ---
+
+        public async Task<IActionResult> PackagesIndex()
+        {
+            var packages = await _context.StorePackages.ToListAsync();
+            ViewBag.AllAvatars = await _context.ProfileAvatars.ToListAsync();
+            return View(packages);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreatePackage(StorePackage package)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.StorePackages.Add(package);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Yeni paket başarıyla oluşturuldu.";
+            }
+            return RedirectToAction(nameof(PackagesIndex));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditPackage(StorePackage package)
+        {
+            var existingPackage = await _context.StorePackages.FindAsync(package.Id);
+            if (existingPackage == null) return NotFound();
+
+            existingPackage.CategoryCode = package.CategoryCode;
+            existingPackage.Title = package.Title;
+            existingPackage.Description = package.Description;
+            existingPackage.PriceInStones = package.PriceInStones;
+            existingPackage.IconClass = package.IconClass;
+            existingPackage.ThemeColor = package.ThemeColor;
+
+            _context.StorePackages.Update(existingPackage);
+            await _context.SaveChangesAsync();
+            
+            TempData["SuccessMessage"] = "Paket bilgileri güncellendi.";
+            return RedirectToAction(nameof(PackagesIndex));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeletePackage(int id)
+        {
+            var package = await _context.StorePackages.FindAsync(id);
+            if (package != null)
+            {
+                _context.StorePackages.Remove(package);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Paket silindi.";
+            }
+            return RedirectToAction(nameof(PackagesIndex));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePackageAvatars(string categoryCode, List<int> avatarIds)
+        {
+            if (string.IsNullOrEmpty(categoryCode)) return RedirectToAction(nameof(PackagesIndex));
+
+            var existingAvatars = await _context.ProfileAvatars.Where(a => a.PackCategory == categoryCode).ToListAsync();
+            foreach (var avatar in existingAvatars)
+            {
+                avatar.PackCategory = null;
+            }
+
+            if (avatarIds != null && avatarIds.Any())
+            {
+                var newAvatars = await _context.ProfileAvatars.Where(a => avatarIds.Contains(a.Id)).ToListAsync();
+                foreach (var avatar in newAvatars)
+                {
+                    avatar.PackCategory = categoryCode;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Paket içeriği başarıyla güncellendi.";
+            return RedirectToAction(nameof(PackagesIndex));
         }
     }
 }

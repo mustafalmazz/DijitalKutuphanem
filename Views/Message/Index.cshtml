@@ -1,73 +1,532 @@
 @model IEnumerable<BookManagementApp.Models.ChatMessage>
 @{
     ViewData["Title"] = "Mesajlarım";
+
+    // Okunmamış konuşma sayısı (başlık rozeti için)
+    int unreadCount = Model.Count(m => m.ReceiverId == (int)ViewBag.CurrentUserId && !m.IsRead);
 }
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow border-0 rounded-4">
-                <div class="card-header bg-warning text-dark py-3 rounded-top-4 border-0">
-                    <h4 class="mb-0 fw-bold"><i class="fas fa-inbox me-2"></i> Gelen Kutusu</h4>
-                </div>
-                <div class="card-body p-0">
-                    @if (!Model.Any())
-                    {
-                        <div class="text-center p-5">
-                            <i class="fas fa-comments text-muted mb-3" style="font-size: 3rem;"></i>
-                            <h5 class="text-muted">Henüz mesajlaştığınız kimse yok.</h5>
-                            <p>Sıralama listesinden arkadaş bulup sohbet başlatabilirsiniz!</p>
-                            <a href="/Leaderboard/Index" class="btn btn-warning mt-2">Sıralamaya Git</a>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="list-group list-group-flush rounded-bottom-4" id="inboxList">
-                            @foreach(var item in Model)
-                            {
-                                var otherUser = item.SenderId == ViewBag.CurrentUserId ? item.Receiver : item.Sender;
-                                var isUnread = (item.ReceiverId == ViewBag.CurrentUserId && !item.IsRead);
+<style>
+    /* ===== GENEL ===== */
+    body {
+        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
+        font-family: 'Georgia', serif;
+        color: #4a3f35;
+    }
 
-                                <a href="/Message/Chat?userId=@otherUser.Id" class="list-group-item list-group-item-action d-flex align-items-center p-3 @(isUnread ? "bg-light border-start border-warning border-4" : "")">
-                                    <img src="@(string.IsNullOrEmpty(otherUser.ProfileImageUrl) ? "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" : otherUser.ProfileImageUrl)" 
-                                         class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1 fw-bold @(isUnread ? "text-dark" : "text-secondary")">@otherUser.UserName</h6>
-                                        <p class="mb-0 small text-muted text-truncate" style="max-width: 200px;">
-                                            @if(item.SenderId == ViewBag.CurrentUserId) { <span>Sen: </span> }
-                                            @item.Content
-                                        </p>
-                                    </div>
-                                    <div class="text-end">
-                                        <small class="text-muted">@item.CreatedAt.ToString("HH:mm")</small>
-                                        @if(isUnread)
-                                        {
-                                            <div class="mt-1"><span class="badge bg-danger rounded-pill">Yeni</span></div>
-                                        }
-                                    </div>
-                                </a>
-                            }
-                        </div>
-                    }
-                </div>
+    .inbox-page {
+        min-height: 100vh;
+        padding: 30px 0 80px;
+    }
+
+    .inbox-wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    /* ===== KART ===== */
+    .inbox-card {
+        background: #fff9f0;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 15px 45px rgba(107, 85, 65, 0.18);
+        border: 1px solid rgba(139, 111, 71, 0.15);
+        animation: inboxFadeUp 0.5s ease-out;
+    }
+
+    @@keyframes inboxFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ===== BAŞLIK ===== */
+    .inbox-header {
+        background: linear-gradient(135deg, #8b6f47 0%, #6b5541 100%);
+        padding: 20px 26px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .inbox-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 80% 40%, rgba(255,215,130,0.15) 0%, transparent 55%);
+        }
+
+    .inbox-title {
+        color: #f5f0e8;
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+        letter-spacing: 0.5px;
+    }
+
+        .inbox-title i {
+            color: #ffd782;
+        }
+
+    .inbox-unread-badge {
+        background: #ffd782;
+        color: #5c4400;
+        font-size: 0.78rem;
+        font-weight: 800;
+        padding: 5px 14px;
+        border-radius: 50px;
+        position: relative;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        white-space: nowrap;
+    }
+
+    /* ===== KONUŞMA LİSTESİ ===== */
+    .inbox-list {
+        max-height: 66vh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #a0785a #f0e9df;
+    }
+
+        .inbox-list::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .inbox-list::-webkit-scrollbar-track {
+            background: #f0e9df;
+        }
+
+        .inbox-list::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #a0785a, #8b6f47);
+            border-radius: 10px;
+        }
+
+    /* ===== KONUŞMA SATIRI ===== */
+    .convo-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 15px 22px;
+        text-decoration: none;
+        color: inherit;
+        border-bottom: 1px solid rgba(139, 111, 71, 0.1);
+        transition: background 0.25s ease, transform 0.2s ease;
+        position: relative;
+    }
+
+        .convo-row:last-child {
+            border-bottom: none;
+        }
+
+        .convo-row:hover {
+            background: #f5ecdd;
+        }
+
+        /* Okunmamış: sol altın şerit + hafif dolgun zemin */
+        .convo-row.unread {
+            background: linear-gradient(90deg, rgba(255, 215, 130, 0.15), transparent 55%);
+        }
+
+            .convo-row.unread::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 4px;
+                background: linear-gradient(180deg, #ffd782, #cda45e);
+            }
+
+    /* ===== AVATAR + ÇERÇEVE ===== */
+    .convo-avatar-wrap {
+        position: relative;
+        width: 52px;
+        height: 52px;
+        flex-shrink: 0;
+    }
+
+    .convo-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 14px;
+        object-fit: cover;
+        background: linear-gradient(135deg, #fff9f0, #e6dac8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: #8b6f47;
+        border: 2px solid rgba(139, 111, 71, 0.15);
+    }
+
+    .convo-frame {
+        position: absolute;
+        top: -15%;
+        left: -15%;
+        width: 130%;
+        height: 130%;
+        pointer-events: none;
+        z-index: 5;
+        object-fit: contain;
+    }
+
+    /* ===== SATIR İÇERİĞİ ===== */
+    .convo-body {
+        flex: 1;
+        min-width: 0; /* Uzun içerikte taşmayı önler */
+    }
+
+    .convo-name {
+        font-weight: 700;
+        color: #4a3f35;
+        font-size: 1rem;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .convo-row.unread .convo-name {
+        color: #3d3127;
+    }
+
+    .convo-preview {
+        font-size: 0.85rem;
+        color: #8b6f47;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+        font-style: italic;
+    }
+
+        .convo-preview .convo-me {
+            color: #a08b6d;
+            font-weight: 600;
+            font-style: normal;
+        }
+
+    .convo-row.unread .convo-preview {
+        color: #6b5541;
+        font-weight: 600;
+    }
+
+    /* ===== SAĞ TARAF (SAAT + ROZET) ===== */
+    .convo-meta {
+        text-align: right;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5px;
+    }
+
+    .convo-time {
+        font-size: 0.72rem;
+        color: #a08b6d;
+        white-space: nowrap;
+    }
+
+    .convo-row.unread .convo-time {
+        color: #8b6f47;
+        font-weight: 700;
+    }
+
+    .convo-new-badge {
+        background: linear-gradient(135deg, #e2643b, #c74a24);
+        color: #fff;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        box-shadow: 0 3px 8px rgba(226, 100, 59, 0.35);
+        animation: newPulse 1.8s ease-in-out infinite;
+    }
+
+    @@keyframes newPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.08);
+        }
+    }
+
+    /* ===== BOŞ DURUM ===== */
+    .inbox-empty {
+        text-align: center;
+        padding: 60px 24px;
+    }
+
+        .inbox-empty i {
+            font-size: 3.4rem;
+            color: #d4c5b0;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .inbox-empty h5 {
+            color: #6b5541;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .inbox-empty p {
+            color: #8b6f47;
+            font-style: italic;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+    .inbox-empty-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #8b6f47 0%, #6b5541 100%);
+        color: #f5f0e8;
+        border-radius: 50px;
+        padding: 12px 30px;
+        font-family: 'Georgia', serif;
+        font-weight: 700;
+        font-size: 0.92rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 18px rgba(107, 85, 65, 0.3);
+    }
+
+        .inbox-empty-btn:hover {
+            background: linear-gradient(135deg, #a0785a 0%, #8b6f47 100%);
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(107, 85, 65, 0.4);
+        }
+
+    /* ========================
+           RESPONSIVE
+           ======================== */
+    @@media (max-width: 768px) {
+        .inbox-page {
+            padding: 14px 0 60px;
+        }
+
+        .inbox-wrap {
+            padding: 0 12px;
+        }
+
+        .inbox-card {
+            border-radius: 18px;
+        }
+
+        .inbox-header {
+            padding: 15px 16px;
+        }
+
+        .inbox-title {
+            font-size: 1.1rem;
+        }
+
+        .inbox-unread-badge {
+            font-size: 0.68rem;
+            padding: 4px 11px;
+        }
+
+        .inbox-list {
+            max-height: none; /* Mobilde sayfa kaydırması kullanılır */
+        }
+
+        .convo-row {
+            padding: 12px 14px;
+            gap: 11px;
+        }
+
+        .convo-avatar-wrap {
+            width: 46px;
+            height: 46px;
+        }
+
+        .convo-avatar {
+            border-radius: 12px;
+            font-size: 1.1rem;
+        }
+
+        .convo-name {
+            font-size: 0.92rem;
+        }
+
+        .convo-preview {
+            font-size: 0.78rem;
+        }
+
+        .convo-time {
+            font-size: 0.66rem;
+        }
+
+        .convo-new-badge {
+            font-size: 0.56rem;
+            padding: 2px 8px;
+        }
+
+        .inbox-empty {
+            padding: 45px 18px;
+        }
+
+            .inbox-empty i {
+                font-size: 2.8rem;
+            }
+    }
+</style>
+
+<div class="inbox-page">
+    <div class="inbox-wrap">
+        <div class="inbox-card">
+
+            <!-- BAŞLIK -->
+            <div class="inbox-header">
+                <h1 class="inbox-title">
+                    <i class="fas fa-inbox"></i> Gelen Kutusu
+                </h1>
+                @if (unreadCount > 0)
+                {
+                    <span class="inbox-unread-badge">@unreadCount okunmamış</span>
+                }
             </div>
+
+            <!-- İÇERİK -->
+            <div class="inbox-body" id="inboxBody">
+                @if (!Model.Any())
+                {
+                    <div class="inbox-empty">
+                        <i class="fa-regular fa-comments"></i>
+                        <h5>Henüz mesajlaştığınız kimse yok.</h5>
+                        <p>Sıralama listesinden arkadaş bulup sohbet başlatabilirsiniz!</p>
+                        <a href="/Leaderboard/Index" class="inbox-empty-btn">
+                            <i class="fas fa-trophy"></i> Sıralamaya Git
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="inbox-list" id="inboxList">
+                        @foreach (var item in Model)
+                        {
+                            var otherUser = item.SenderId == ViewBag.CurrentUserId ? item.Receiver : item.Sender;
+                            var isUnread = (item.ReceiverId == ViewBag.CurrentUserId && !item.IsRead);
+
+                            // Akıllı zaman etiketi
+                            string timeLabel = item.CreatedAt.Date == DateTime.Today
+                            ? item.CreatedAt.ToString("HH:mm")
+                            : item.CreatedAt.Date == DateTime.Today.AddDays(-1)
+                            ? "Dün"
+                            : item.CreatedAt.ToString("dd MMM");
+
+                            <a href="/Message/Chat?userId=@otherUser.Id" class="convo-row @(isUnread ? "unread" : "")">
+
+                                <!-- Avatar + varsa çerçeve -->
+                                <div class="convo-avatar-wrap">
+                                    @if (!string.IsNullOrEmpty(otherUser.ProfileImageUrl))
+                                    {
+                                        <img src="@otherUser.ProfileImageUrl" class="convo-avatar" alt="@otherUser.UserName" />
+                                    }
+                                    else
+                                    {
+                                        <div class="convo-avatar">@(otherUser.UserName?.Substring(0, 1).ToUpper())</div>
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(otherUser.ActiveFrameImageUrl))
+                                    {
+                                        <img src="@otherUser.ActiveFrameImageUrl" class="convo-frame" alt="" />
+                                    }
+                                </div>
+
+                                <!-- İsim + son mesaj -->
+                                <div class="convo-body">
+                                    <div class="convo-name d-flex align-items-center">
+                                        @otherUser.UserName
+                                        @{
+                                            var isOnline = BookManagementApp.Hubs.ChatHub.IsUserOnline(otherUser.Id.ToString());
+                                        }
+                                        <div class="rounded-circle ms-2 @(isOnline ? "bg-success" : "bg-secondary")" id="index-online-dot-@otherUser.Id" style="width: 8px; height: 8px; flex-shrink: 0; box-shadow: 0 0 2px rgba(0,0,0,0.2);"></div>
+                                    </div>
+                                    <p class="convo-preview">
+                                        @if (item.SenderId == ViewBag.CurrentUserId)
+                                        {
+                                            <span class="convo-me">Sen: </span>
+                                        }
+                                        @item.Content
+                                    </p>
+                                </div>
+
+                                <!-- Saat + Yeni rozeti -->
+                                <div class="convo-meta">
+                                    <span class="convo-time">@timeLabel</span>
+                                    @if (isUnread)
+                                    {
+                                        <span class="convo-new-badge">Yeni</span>
+                                    }
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+
         </div>
     </div>
 </div>
+
 @section Scripts {
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
+            // SignalR: yeni mesaj gelince kutuyu tazele
             if (window.globalConnection) {
                 window.globalConnection.on("ReceiveMessage", function (msg) {
-                    $.get('/Message/Index', function(html) {
-                        var newContent = $(html).find('#inboxList').html();
-                        if(newContent) {
-                            $('#inboxList').html(newContent);
-                        } else {
-                            var newBody = $(html).find('.card-body').html();
-                            $('.card-body').html(newBody);
+                    $.get('/Message/Index', function (html) {
+                        // İçeriğin tamamını (liste veya boş durum) tek seferde değiştir —
+                        // böylece "ilk mesaj geldi ama boş durum ekranda kaldı" hatası olmaz
+                        var newBody = $(html).find('#inboxBody').html();
+                        if (newBody) {
+                            $('#inboxBody').html(newBody);
+                        }
+
+                        // Başlıktaki okunmamış rozetini de tazele
+                        var newBadge = $(html).find('.inbox-unread-badge');
+                        $('.inbox-unread-badge').remove();
+                        if (newBadge.length) {
+                            $('.inbox-title').after(newBadge);
                         }
                     });
+                });
+
+                window.globalConnection.on("UserOnline", function (userId) {
+                    var dot = $('#index-online-dot-' + userId);
+                    if (dot.length) {
+                        dot.removeClass('bg-secondary').addClass('bg-success');
+                    }
+                });
+
+                window.globalConnection.on("UserOffline", function (userId) {
+                    var dot = $('#index-online-dot-' + userId);
+                    if (dot.length) {
+                        dot.removeClass('bg-success').addClass('bg-secondary');
+                    }
                 });
             }
         });

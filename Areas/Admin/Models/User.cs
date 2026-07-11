@@ -35,6 +35,7 @@ namespace BookManagementApp.Areas.Admin.Models
         public DateTime? LastLoginDate { get; set; }
         public int CurrentStreak { get; set; } = 0;
         public int LongestStreak { get; set; } = 0;
+        public int StreakFreezes { get; set; } = 0;
         public DateTime? LastRewardClaimDate { get; set; }
         [StringLength(255)]
         public string? ActiveFrameImageUrl { get; set; }

@@ -36,8 +36,11 @@ namespace BookManagementApp.Controllers
                     .ThenBy(a => a.RequiredBookCount)
                     .ToListAsync(),
                 PackAvatars = await _context.ProfileAvatars
-                    .Where(a => a.PackCategory == "AnimalPack")
+                    .Where(a => a.PackCategory != null)
                     .OrderBy(a => a.Id)
+                    .ToListAsync(),
+                Packages = await _context.StorePackages
+                    .OrderBy(p => p.Id)
                     .ToListAsync()
             };
 
@@ -62,7 +65,7 @@ namespace BookManagementApp.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> BuyAnimalPack()
+        public async Task<IActionResult> BuyPack(int packageId)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null) return Json(new { success = false, message = "Oturum süresi doldu." });
@@ -70,35 +73,38 @@ namespace BookManagementApp.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return Json(new { success = false, message = "Kullanıcı bulunamadı." });
 
-            if (user.WisdomStones < 300)
-                return Json(new { success = false, message = "Yeterli Bilgelik Taşınız yok! En az 300 taşa ihtiyacınız var." });
+            var package = await _context.StorePackages.FindAsync(packageId);
+            if (package == null) return Json(new { success = false, message = "Paket bulunamadı." });
 
-            // Paketteki tüm hayvanlar
+            if (user.WisdomStones < package.PriceInStones)
+                return Json(new { success = false, message = $"Yeterli Bilgelik Taşınız yok! En az {package.PriceInStones} taşa ihtiyacınız var." });
+
+            // Paketteki tüm avatarlar
             var packItems = await _context.ProfileAvatars
-                .Where(a => a.PackCategory == "AnimalPack")
+                .Where(a => a.PackCategory == package.CategoryCode)
                 .ToListAsync();
 
             if (!packItems.Any())
                 return Json(new { success = false, message = "Bu pakette henüz hiç avatar yok!" });
 
-            // Kullanıcının sahip olduğu hayvanlar
+            // Kullanıcının sahip olduğu avatarlar
             var ownedAvatarIds = await _context.UserAvatars
                 .Where(ua => ua.UserId == userId)
                 .Select(ua => ua.ProfileAvatarId)
                 .ToListAsync();
 
-            // Sadece sahip OLMADIĞI hayvanlar
+            // Sadece sahip OLMADIĞI avatarlar
             var unownedItems = packItems.Where(a => !ownedAvatarIds.Contains(a.Id)).ToList();
 
             if (!unownedItems.Any())
-                return Json(new { success = false, message = "Tebrikler! Bu paketteki TÜM hayvanlara zaten sahipsiniz. Başka çekiliş yapamazsınız." });
+                return Json(new { success = false, message = "Tebrikler! Bu paketteki TÜM avatarlara zaten sahipsiniz. Başka çekiliş yapamazsınız." });
 
             // Rastgele seçim
             var random = new Random();
             var drawnAvatar = unownedItems[random.Next(unownedItems.Count)];
 
             // Satın almayı gerçekleştir
-            user.WisdomStones -= 300;
+            user.WisdomStones -= package.PriceInStones;
             _context.UserAvatars.Add(new UserAvatar { UserId = userId.Value, ProfileAvatarId = drawnAvatar.Id });
             await _context.SaveChangesAsync();
 
@@ -248,6 +254,38 @@ namespace BookManagementApp.Controllers
 
             if(string.IsNullOrEmpty(returnUrl)) TempData["ActiveTab"] = "avatars";
             return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Index") : Redirect(returnUrl);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BuyStreakFreeze()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false, message = "Lütfen giriş yapın." });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return Json(new { success = false, message = "Kullanıcı bulunamadı." });
+
+            int freezePrice = 100;
+            int maxFreezes = 2;
+
+            if (user.StreakFreezes >= maxFreezes)
+            {
+                return Json(new { success = false, message = $"En fazla {maxFreezes} adet Seri Dondurma hakkına sahip olabilirsiniz." });
+            }
+
+            if (user.WisdomStones < freezePrice)
+            {
+                return Json(new { success = false, message = "Yetersiz Bilgelik Taşı!" });
+            }
+
+            user.WisdomStones -= freezePrice;
+            user.StreakFreezes++;
+            
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, newBalance = user.WisdomStones, newFreezes = user.StreakFreezes, message = "Seri Dondurma başarıyla satın alındı!" });
         }
     }
 }

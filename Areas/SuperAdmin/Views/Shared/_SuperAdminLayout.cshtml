@@ -223,6 +223,13 @@
                     <i class="bi bi-person-bounding-box"></i> Avatarlar
                 </a>
             </li>
+            
+            <li>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "StoreManagement" && ViewContext.RouteData.Values["action"]?.ToString() == "PackagesIndex" ? "active" : "")"
+                   asp-area="SuperAdmin" asp-controller="StoreManagement" asp-action="PackagesIndex">
+                    <i class="bi bi-box-seam"></i> Paketler
+                </a>
+            </li>
         </ul>
 
         <div class="mt-auto">

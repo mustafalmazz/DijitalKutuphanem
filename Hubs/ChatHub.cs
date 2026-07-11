@@ -13,6 +13,11 @@ namespace BookManagementApp.Hubs
         // Thread-safe dictionary: UserId -> thread-safe set of ConnectionIds
         private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> OnlineUsers = new();
 
+        public static bool IsUserOnline(string userId)
+        {
+            return OnlineUsers.TryGetValue(userId, out var connections) && !connections.IsEmpty;
+        }
+
         private readonly MyDbContext _context;
 
         public ChatHub(MyDbContext context)
@@ -97,6 +102,9 @@ namespace BookManagementApp.Hubs
             {
                 var connectionIds = connections.Keys.ToList();
                 await Clients.Clients(connectionIds).SendAsync("ReceiveMessage", messageObj);
+                
+                // Eğer kullanıcı aktifse "İletildi" sinyali gönder (Çift Gri Tik)
+                await Clients.Caller.SendAsync("MessageDelivered", msg.Id);
             }
 
             return new { success = true, message = messageObj };

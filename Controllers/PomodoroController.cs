@@ -49,26 +49,16 @@ namespace BookManagementApp.Controllers
                 };
 
                 _context.StudySessions.Add(session);
-                
+                int earnedStones = 0;
                 if (request.IsCompleted && !string.IsNullOrEmpty(request.SessionType) && !request.SessionType.Contains("Break", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (request.DurationInMinutes >= 60)
-                    {
-                        currentUser.WisdomStones += 100;
-                    }
-                    else if (request.DurationInMinutes >= 25)
-                    {
-                        currentUser.WisdomStones += 50;
-                    }
-                    else
-                    {
-                        currentUser.WisdomStones += request.DurationInMinutes; // 25 dakikadan az çalışmalar için dakika başı 1 taş
-                    }
+                    earnedStones = request.DurationInMinutes; // Dakika başı 1 taş
+                    currentUser.WisdomStones += earnedStones;
                 }
                 
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "Odaklanma süreniz başarıyla kaydedildi! Harika iş çıkardınız." });
+                return Json(new { success = true, earnedStones = earnedStones, message = "Odaklanma süreniz başarıyla kaydedildi! Harika iş çıkardınız." });
             }
             catch (Exception ex)
             {
