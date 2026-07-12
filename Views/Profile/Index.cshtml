@@ -1028,13 +1028,19 @@
 
         <div class="profile-info">
             <h1>Merhaba, @Model.UserName</h1>
+            @if (Model.User != null && !string.IsNullOrEmpty(Model.User.Bio))
+            {
+                <p style="color: #4a3f35; font-size: 1rem; margin-bottom: 10px; font-weight: 500;">
+                    "@Model.User.Bio"
+                </p>
+            }
             <p>
                 <i class="fa-solid fa-calendar-check"></i>
                 @Model.JoinDate.ToString("MMMM yyyy") tarihinden beri üyesiniz.
             </p>
         </div>
 
-        <a href="/Admin/Account/Index" class="btn-edit-profile">
+        <a href="/Profile/Edit" class="btn-edit-profile">
             <i class="fa-solid fa-user-pen"></i> Profili Düzenle
         </a>
     </div>

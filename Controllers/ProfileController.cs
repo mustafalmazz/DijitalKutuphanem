@@ -216,33 +216,108 @@ namespace BookManagementApp.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RemoveAvatar(string returnUrl)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user != null)
+            {
+                user.ProfileImageUrl = null;
+                _context.SaveChanges();
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            return RedirectToAction("Index");
+        }
+
         [HttpGet]
         public IActionResult PublicProfile(int id)
         {
             var loggedInUserId = HttpContext.Session.GetInt32("UserId");
             if (loggedInUserId == null) return RedirectToAction("Login", "Account");
 
-            var user = _context.Users.FirstOrDefault(u => u.Id == id);
+            var user = _context.Users.Include(u => u.Books).FirstOrDefault(u => u.Id == id);
             if (user == null) return NotFound();
 
-            if (loggedInUserId == id)
-            {
-                // Kendi profiliyse normal profile yönlendir
-                return RedirectToAction("Index");
-            }
+
 
             var followersCount = _context.Follows.Count(f => f.FollowingId == id);
             var followingCount = _context.Follows.Count(f => f.FollowerId == id);
             var isFollowing = _context.Follows.Any(f => f.FollowerId == loggedInUserId && f.FollowingId == id);
             var bookCount = _context.Books.Count(b => b.UserId == id);
 
+            // Toplam Odaklanma Süresi (Saat bazında)
+            var totalFocusMins = _context.StudySessions.Where(s => s.UserId == id).Sum(s => s.DurationInMinutes);
+            var totalFocusHours = totalFocusMins / 60;
+
             ViewBag.FollowersCount = followersCount;
             ViewBag.FollowingCount = followingCount;
             ViewBag.IsFollowing = isFollowing;
             ViewBag.BookCount = bookCount;
+            ViewBag.TotalFocusHours = totalFocusHours;
             ViewBag.LoggedInUserId = loggedInUserId;
 
+            if (loggedInUserId == id)
+            {
+                user.PasswordHash = string.Empty;
+
+                var ownedFrames = _context.UserFrames
+                    .Where(uf => uf.UserId == id)
+                    .Include(uf => uf.ProfileFrame)
+                    .Select(uf => uf.ProfileFrame)
+                    .ToList();
+
+                ViewBag.OwnedFrames = ownedFrames;
+                ViewBag.ActiveFrameImageUrl = user.ActiveFrameImageUrl;
+                
+                var ownedAvatarIds = _context.UserAvatars
+                    .Where(ua => ua.UserId == id)
+                    .Select(ua => ua.ProfileAvatarId)
+                    .ToList();
+
+                ViewBag.Avatars = _context.ProfileAvatars
+                    .Where(a => ownedAvatarIds.Contains(a.Id))
+                    .ToList();
+            }
+
             return View(user);
+        }
+
+        [HttpPost]
+        public IActionResult EditProfileInline(User model)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null || model.Id != userId) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user == null) return NotFound();
+
+            try
+            {
+                user.UserName = model.UserName;
+                user.Bio = model.Bio;
+
+                if (!string.IsNullOrEmpty(model.PasswordHash))
+                {
+                    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.PasswordHash);
+                }
+
+                _context.SaveChanges();
+                TempData["SuccessMessage"] = "Profiliniz başarıyla güncellendi.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Güncelleme sırasında hata oluştu: " + ex.Message;
+            }
+
+            return RedirectToAction("PublicProfile", new { id = userId });
         }
 
         [HttpPost]
@@ -278,6 +353,68 @@ namespace BookManagementApp.Controllers
         }
 
         [HttpGet]
+        public IActionResult Edit()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user == null) return NotFound();
+
+            user.PasswordHash = string.Empty;
+
+            var ownedFrames = _context.UserFrames
+                .Where(uf => uf.UserId == userId)
+                .Include(uf => uf.ProfileFrame)
+                .Select(uf => uf.ProfileFrame)
+                .ToList();
+
+            ViewBag.OwnedFrames = ownedFrames;
+            ViewBag.ActiveFrameImageUrl = user.ActiveFrameImageUrl;
+            
+            var ownedAvatarIds = _context.UserAvatars
+                .Where(ua => ua.UserId == userId)
+                .Select(ua => ua.ProfileAvatarId)
+                .ToList();
+
+            ViewBag.Avatars = _context.ProfileAvatars
+                .Where(a => ownedAvatarIds.Contains(a.Id))
+                .ToList();
+
+            return View(user);
+        }
+
+        [HttpPost]
+        public IActionResult Edit(User model)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null || model.Id != userId) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user == null) return NotFound();
+
+            try
+            {
+                user.UserName = model.UserName;
+                user.Bio = model.Bio;
+
+                if (!string.IsNullOrEmpty(model.PasswordHash))
+                {
+                    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.PasswordHash);
+                }
+
+                _context.SaveChanges();
+                TempData["SuccessMessage"] = "Profiliniz başarıyla güncellendi.";
+                return RedirectToAction("Edit");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Güncelleme sırasında hata oluştu: " + ex.Message);
+                return View(model);
+            }
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Community(string q)
         {
             var loggedInUserId = HttpContext.Session.GetInt32("UserId");
@@ -308,6 +445,103 @@ namespace BookManagementApp.Controllers
             ViewBag.Followings = followings;
 
             return View(users);
+        }
+
+        // --- SOCIAL INTERACTIONS ---
+
+        [HttpGet]
+        public async Task<IActionResult> BookDetails(int id)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var book = await _context.Books
+                .Include(b => b.User)
+                .Include(b => b.Category)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
+            if (book == null) return NotFound();
+
+            var likesCount = await _context.BookLikes.CountAsync(bl => bl.BookId == id);
+            var isLikedByMe = await _context.BookLikes.AnyAsync(bl => bl.BookId == id && bl.UserId == loggedInUserId);
+            
+            var comments = await _context.BookComments
+                .Include(bc => bc.User)
+                .Where(bc => bc.BookId == id)
+                .OrderByDescending(bc => bc.CreatedAt)
+                .ToListAsync();
+
+            ViewBag.LikesCount = likesCount;
+            ViewBag.IsLikedByMe = isLikedByMe;
+            ViewBag.Comments = comments;
+            ViewBag.CurrentUserId = loggedInUserId;
+
+            return View(book);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleLikeBook(int bookId)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            var existingLike = await _context.BookLikes.FirstOrDefaultAsync(bl => bl.BookId == bookId && bl.UserId == loggedInUserId);
+
+            if (existingLike != null)
+            {
+                _context.BookLikes.Remove(existingLike);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, isLiked = false });
+            }
+            else
+            {
+                var newLike = new BookLike
+                {
+                    BookId = bookId,
+                    UserId = loggedInUserId.Value
+                };
+                _context.BookLikes.Add(newLike);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, isLiked = true });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddComment(int bookId, string text)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            if (string.IsNullOrWhiteSpace(text)) return Json(new { success = false, message = "Yorum boş olamaz." });
+
+            var comment = new BookComment
+            {
+                BookId = bookId,
+                UserId = loggedInUserId.Value,
+                Text = text
+            };
+
+            _context.BookComments.Add(comment);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteComment(int commentId)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            var comment = await _context.BookComments.FirstOrDefaultAsync(bc => bc.Id == commentId);
+            if (comment == null) return Json(new { success = false, message = "Yorum bulunamadı." });
+
+            if (comment.UserId != loggedInUserId) return Json(new { success = false, message = "Yetkisiz işlem." });
+
+            _context.BookComments.Remove(comment);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
         }
     }
 }

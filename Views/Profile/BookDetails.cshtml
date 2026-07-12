@@ -1,0 +1,760 @@
+@model BookManagementApp.Models.Book
+@{
+    ViewData["Title"] = Model.Name;
+    var likesCount = ViewBag.LikesCount ?? 0;
+    var isLikedByMe = ViewBag.IsLikedByMe ?? false;
+    var comments = ViewBag.Comments as List<BookManagementApp.Models.BookComment>;
+    var currentUserId = ViewBag.CurrentUserId;
+}
+
+<style>
+    /* ===== GENEL ===== */
+    body {
+        background: #f5f0e8;
+        font-family: 'Georgia', serif;
+        color: #4a3f35;
+    }
+
+    .bd-page {
+        min-height: 100vh;
+        padding: 20px 0 60px;
+    }
+
+    .bd-wrapper {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 0 14px;
+    }
+
+    .bd-card {
+        background: #fffdf9;
+        border: 1px solid rgba(139, 111, 71, 0.14);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 6px 22px rgba(107, 85, 65, 0.09);
+        animation: bdIn 0.35s ease-out;
+    }
+
+    @@keyframes bdIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ===== ÜST BAR ===== */
+    .bd-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(139, 111, 71, 0.12);
+    }
+
+    .bd-back {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #8b6f47;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+        .bd-back:hover {
+            background: rgba(139, 111, 71, 0.08);
+            color: #6b5541;
+        }
+
+    .bd-header-title {
+        flex: 1;
+        font-weight: 600;
+        font-size: 0.88rem;
+        color: #6b5541;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ===== ANA İÇERİK ===== */
+    .bd-main {
+        display: flex;
+        gap: 20px;
+        padding: 22px 20px;
+    }
+
+    /* Kapak: mobilde de yan yana kalır, sadece küçülür — taşma yok */
+    .bd-cover-wrapper {
+        flex-shrink: 0;
+        width: 118px;
+    }
+
+    .bd-cover,
+    .bd-cover-placeholder {
+        width: 100%;
+        aspect-ratio: 2/3;
+        border-radius: 8px;
+        display: block;
+        box-shadow: 0 5px 14px rgba(74, 63, 53, 0.22);
+    }
+
+    .bd-cover {
+        object-fit: cover;
+    }
+
+    .bd-cover-placeholder {
+        background: linear-gradient(135deg, #e8dcc8, #d4c5b0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.6rem;
+    }
+
+    /* Bilgi bloğu */
+    .bd-info {
+        flex: 1;
+        min-width: 0; /* Uzun başlıkta taşmayı önler */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bd-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #3d3329;
+        line-height: 1.3;
+        margin: 0 0 3px;
+        word-break: break-word;
+    }
+
+    .bd-author {
+        font-size: 0.88rem;
+        color: #8b6f47;
+        font-style: italic;
+        margin-bottom: 12px;
+    }
+
+    /* Bilgi hapları — küçük ve zarif */
+    .bd-stats {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+
+    .bd-stat-pill {
+        background: #f5efe3;
+        border: 1px solid rgba(139, 111, 71, 0.14);
+        color: #6b5541;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 4px 11px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+
+        .bd-stat-pill i {
+            font-size: 0.68rem;
+            color: #a08b6d;
+        }
+
+    /* Beğeni — bilgi bloğunun altına yaslanır */
+    .bd-actions {
+        margin-top: auto;
+    }
+
+    .bd-like-btn {
+        background: none;
+        border: 1.5px solid rgba(139, 111, 71, 0.2);
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        cursor: pointer;
+        padding: 6px 14px;
+        transition: all 0.2s;
+        font-family: 'Georgia', serif;
+    }
+
+        .bd-like-btn:hover {
+            border-color: rgba(231, 76, 60, 0.4);
+            background: rgba(231, 76, 60, 0.04);
+        }
+
+        .bd-like-btn:active {
+            transform: scale(0.95);
+        }
+
+        .bd-like-btn.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+    .bd-like-icon {
+        font-size: 0.95rem;
+        color: #c9b89a;
+        transition: all 0.2s;
+    }
+
+        .bd-like-icon.liked {
+            color: #e74c3c;
+        }
+
+    .bd-like-count {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #4a3f35;
+    }
+
+    /* ===== KULLANICI NOTU ===== */
+    .bd-notes {
+        margin: 0 20px 20px;
+        background: #f7f1e6;
+        border-left: 3px solid #cda45e;
+        padding: 12px 15px;
+        border-radius: 0 8px 8px 0;
+        color: #5a4f45;
+        font-size: 0.86rem;
+        line-height: 1.55;
+        word-break: break-word;
+    }
+
+    .bd-notes-label {
+        font-size: 0.66rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #8b6f47;
+        margin-bottom: 4px;
+        font-weight: 700;
+    }
+
+    /* ===== YORUMLAR ===== */
+    .bd-comments {
+        border-top: 1px solid rgba(139, 111, 71, 0.12);
+        padding: 18px 20px 20px;
+    }
+
+    .bd-comments-header {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #3d3329;
+        margin-bottom: 16px;
+    }
+
+    .bd-comment-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+        max-height: 380px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    .bd-comment-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    .bd-comment-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .bd-comment-list::-webkit-scrollbar-thumb {
+        background: rgba(139, 111, 71, 0.2);
+        border-radius: 10px;
+    }
+    .bd-comment-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 111, 71, 0.4);
+    }
+
+    .bd-comment-item {
+        display: flex;
+        gap: 10px;
+        animation: bdIn 0.25s ease-out;
+    }
+
+    .bd-comment-avatar-wrapper {
+        position: relative;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .bd-comment-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 9px;
+        object-fit: cover;
+        background: linear-gradient(135deg, #e8dcc8, #d4c5b0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b5541;
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
+    
+    .bd-comment-frame {
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        width: 38px;
+        height: 38px;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .bd-comment-content {
+        flex: 1;
+        min-width: 0;
+        background: #f7f1e6;
+        padding: 9px 13px;
+        border-radius: 10px;
+        border-top-left-radius: 3px;
+    }
+
+    .bd-comment-user {
+        font-weight: 700;
+        color: #4a3f35;
+        font-size: 0.8rem;
+        text-decoration: none;
+        margin-right: 6px;
+    }
+
+        .bd-comment-user:hover {
+            color: #8b6f47;
+        }
+
+    .bd-comment-time {
+        font-size: 0.66rem;
+        color: #a89d8f;
+    }
+
+    .bd-comment-text {
+        font-size: 0.85rem;
+        color: #5a4f45;
+        margin-top: 3px;
+        line-height: 1.45;
+        word-break: break-word; /* Uzun yorum taşmaz */
+    }
+
+    .bd-comment-delete {
+        background: none;
+        border: none;
+        color: #c0705e;
+        font-size: 0.68rem;
+        padding: 0;
+        margin-top: 4px;
+        cursor: pointer;
+        font-family: 'Georgia', serif;
+    }
+
+        .bd-comment-delete:hover {
+            text-decoration: underline;
+            color: #a04a38;
+        }
+
+    .bd-no-comments {
+        font-size: 0.82rem;
+        color: #a89d8f;
+        text-align: center;
+        padding: 8px 0;
+        font-style: italic;
+    }
+
+    /* ===== YORUM GİRİŞİ ===== */
+    .bd-comment-input-area {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .bd-input {
+        flex: 1;
+        min-width: 0;
+        background: #f7f1e6;
+        border: 1.5px solid rgba(139, 111, 71, 0.15);
+        padding: 9px 15px;
+        border-radius: 22px;
+        font-size: 16px; /* iOS zoom önlemi */
+        font-family: 'Georgia', serif;
+        color: #4a3f35;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+        .bd-input:focus {
+            border-color: #8b6f47;
+            background: #fff;
+        }
+
+        .bd-input::placeholder {
+            color: #b5a48e;
+            font-style: italic;
+        }
+
+    .bd-send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #6b5541;
+        border: none;
+        color: #f5f0e8;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+        .bd-send-btn:hover {
+            background: #8b6f47;
+        }
+
+        .bd-send-btn:active {
+            transform: scale(0.92);
+        }
+
+        .bd-send-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+    /* ===== MOBİL ===== */
+    @@media (max-width: 480px) {
+        .bd-page {
+            padding: 10px 0 45px;
+        }
+
+        .bd-wrapper {
+            padding: 0 10px;
+        }
+
+        .bd-main {
+            gap: 14px;
+            padding: 16px 14px;
+        }
+
+        .bd-cover-wrapper {
+            width: 96px;
+        }
+
+        .bd-title {
+            font-size: 1.05rem;
+        }
+
+        .bd-author {
+            font-size: 0.8rem;
+            margin-bottom: 9px;
+        }
+
+        .bd-stat-pill {
+            font-size: 0.66rem;
+            padding: 3px 9px;
+        }
+
+        .bd-notes {
+            margin: 0 14px 16px;
+            font-size: 0.8rem;
+        }
+
+        .bd-comments {
+            padding: 15px 14px 16px;
+        }
+
+        .bd-comment-avatar-wrapper {
+            width: 28px;
+            height: 28px;
+        }
+
+        .bd-comment-frame {
+            top: -2.5px;
+            left: -2.5px;
+            width: 33px;
+            height: 33px;
+        }
+
+        .bd-comment-avatar {
+            font-size: 0.72rem;
+        }
+
+        .bd-comment-text {
+            font-size: 0.8rem;
+        }
+    }
+</style>
+
+<div class="bd-page">
+    <div class="bd-wrapper">
+        <div class="bd-card">
+
+            <!-- ÜST BAR -->
+            <div class="bd-header">
+                <a href="/Profile/PublicProfile/@Model.UserId" class="bd-back">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                <div class="bd-header-title">@Model.User.UserName'in Kitabı</div>
+            </div>
+
+            <!-- KİTAP BİLGİSİ -->
+            <div class="bd-main">
+                <div class="bd-cover-wrapper">
+                    @if (!string.IsNullOrEmpty(Model.Image))
+                    {
+                        <img src="@Model.Image" class="bd-cover" alt="@Model.Name" />
+                    }
+                    else
+                    {
+                        <div class="bd-cover-placeholder"><i class="fas fa-book"></i></div>
+                    }
+                </div>
+
+                <div class="bd-info">
+                    <h1 class="bd-title">@Model.Name</h1>
+                    <div class="bd-author">@Model.Author</div>
+
+                    <div class="bd-stats">
+                        <span class="bd-stat-pill"><i class="fas fa-layer-group"></i> @Model.TotalPages syf.</span>
+                        <span class="bd-stat-pill"><i class="fas fa-star" style="color:#e8b444;"></i> @(Model.Rate?.ToString("0.0") ?? "0.0")</span>
+                        @if (Model.Category != null)
+                        {
+                            <span class="bd-stat-pill"><i class="fas fa-bookmark"></i> @Model.Category.CategoryName</span>
+                        }
+                    </div>
+
+                    <div class="bd-actions" style="display: flex; align-items: center; gap: 10px; margin-top: auto; flex-wrap: wrap;">
+                        <button class="bd-like-btn" id="likeBtn" onclick="toggleLike(@Model.Id)">
+                            <i class="fas fa-heart bd-like-icon @(isLikedByMe ? "liked" : "")" id="likeIcon"></i>
+                            <span class="bd-like-count" id="likeCount">@likesCount</span>
+                        </button>
+
+                        @if (!string.IsNullOrEmpty(Model.Description))
+                        {
+                            <button type="button" class="bd-like-btn" data-bs-toggle="modal" data-bs-target="#descriptionModal" style="color: #6b5541;">
+                                <i class="fas fa-eye bd-like-icon" style="color: #6b5541;"></i>
+                                <span class="bd-like-count">İncele</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- KİTAP AÇIKLAMASI (İNCELE MODAL) -->
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <!-- DESCRIPTION MODAL -->
+                <div class="modal fade" id="descriptionModal" tabindex="-1" aria-labelledby="descriptionModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content" style="border-radius: 20px; background-color: #fdfbf7; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                            <div class="modal-header" style="border-bottom: 1px solid #e8dcc8; padding: 20px 25px;">
+                                <h5 class="modal-title" id="descriptionModalLabel" style="color: #4a3f35; font-family: 'Georgia', serif; font-weight: 700; font-size: 1.3rem;">Kitap Açıklaması</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" style="padding: 25px; color: #5a4f45; line-height: 1.7; font-size: 0.95rem;">
+                                @Html.Raw(Model.Description.Replace("\n", "<br/>"))
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- DELETE CONFIRMATION MODAL -->
+            <div class="modal fade" id="deleteCommentModal" tabindex="-1" aria-labelledby="deleteCommentModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="border-radius: 20px; background-color: #fdfbf7; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                        <div class="modal-header" style="border-bottom: 1px solid #e8dcc8; padding: 20px 25px;">
+                            <h5 class="modal-title" id="deleteCommentModalLabel" style="color: #4a3f35; font-family: 'Georgia', serif; font-weight: 700; font-size: 1.2rem;">Yorumu Sil</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" style="padding: 25px; color: #5a4f45; font-size: 0.95rem;">
+                            Bu yorumu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                        </div>
+                        <div class="modal-footer" style="border-top: 1px solid #e8dcc8; padding: 15px 25px;">
+                            <button type="button" class="bd-stat-pill" data-bs-dismiss="modal" style="background: transparent; color: #6b5541; border: 1px solid #e8dcc8; padding: 8px 20px; cursor: pointer; border-radius: 20px;">Vazgeç</button>
+                            <button type="button" class="bd-stat-pill" id="confirmDeleteBtn" style="background: #e74c3c; color: #fff; border: none; padding: 8px 20px; cursor: pointer; border-radius: 20px;">
+                                <i class="fas fa-trash-alt" style="color:#fff !important; margin-right:4px;"></i> Sil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- YORUMLAR -->
+            <div class="bd-comments">
+                <div class="bd-comments-header">
+                    Yorumlar (<span id="commentCount">@comments.Count</span>)
+                </div>
+
+                <div class="bd-comment-list" id="commentList">
+                    @if (comments.Count > 0)
+                    {
+                        @foreach (var c in comments)
+                        {
+                            <div class="bd-comment-item" id="comment-@c.Id">
+                                <div class="bd-comment-avatar-wrapper">
+                                    @if (!string.IsNullOrEmpty(c.User.ProfileImageUrl))
+                                    {
+                                        <img src="@c.User.ProfileImageUrl" class="bd-comment-avatar" />
+                                    }
+                                    else
+                                    {
+                                        <div class="bd-comment-avatar">@c.User.UserName.Substring(0, 1).ToUpper()</div>
+                                    }
+                                    
+                                    @if (!string.IsNullOrEmpty(c.User.ActiveFrameImageUrl))
+                                    {
+                                        <img src="@c.User.ActiveFrameImageUrl" class="bd-comment-frame" alt="" />
+                                    }
+                                </div>
+                                <div class="bd-comment-content">
+                                    <div>
+                                        <a href="/Profile/PublicProfile/@c.UserId" class="bd-comment-user">@c.User.UserName</a>
+                                        <span class="bd-comment-time">@c.CreatedAt.ToString("d MMM yyyy")</span>
+                                    </div>
+                                    <div class="bd-comment-text">@c.Text</div>
+                                    @if (c.UserId == currentUserId)
+                                    {
+                                        <button class="bd-comment-delete" onclick="deleteComment(@c.Id)">Sil</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="bd-no-comments" id="noComments">Henüz yorum yapılmamış. İlk yorumu sen yap!</div>
+                    }
+                </div>
+
+                <div class="bd-comment-input-area">
+                    <input type="text" id="commentInput" class="bd-input" placeholder="Yorum ekle..."
+                           autocomplete="off" maxlength="500" onkeypress="handleEnter(event, @Model.Id)" />
+                    <button class="bd-send-btn" id="sendBtn" onclick="addComment(@Model.Id)" aria-label="Gönder">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var isLiking = false;
+        var isCommenting = false;
+
+        // XSS koruması: dinamik eklenen yorum metni güvenli hale getirilir
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(text));
+            return div.innerHTML;
+        }
+
+        function toggleLike(bookId) {
+            if (isLiking) return;
+            isLiking = true;
+            $('#likeBtn').addClass('disabled');
+
+            $.post('/Profile/ToggleLikeBook', { bookId: bookId }, function (res) {
+                if (res.success) {
+                    var icon = $('#likeIcon');
+                    var countSpan = $('#likeCount');
+                    var currentCount = parseInt(countSpan.text()) || 0;
+
+                    if (res.isLiked) {
+                        icon.addClass('liked');
+                        countSpan.text(currentCount + 1);
+                    } else {
+                        icon.removeClass('liked');
+                        countSpan.text(Math.max(0, currentCount - 1));
+                    }
+                } else {
+                    alert(res.message);
+                }
+            }).always(function () {
+                isLiking = false;
+                $('#likeBtn').removeClass('disabled');
+            });
+        }
+
+        function handleEnter(e, bookId) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addComment(bookId);
+            }
+        }
+
+        function addComment(bookId) {
+            if (isCommenting) return;
+
+            var input = $('#commentInput');
+            var text = input.val().trim();
+            if (!text) return;
+
+            isCommenting = true;
+            $('#sendBtn').prop('disabled', true);
+
+            $.post('/Profile/AddComment', { bookId: bookId, text: text }, function (res) {
+                if (res.success) {
+                    location.reload();
+                } else {
+                    alert(res.message);
+                }
+            }).fail(function () {
+                alert('Yorum gönderilemedi, lütfen tekrar deneyin.');
+            }).always(function () {
+                isCommenting = false;
+                $('#sendBtn').prop('disabled', false);
+                input.focus();
+            });
+        }
+
+        var commentToDelete = 0;
+        var deleteModalInstance = null;
+
+        function deleteComment(commentId) {
+            commentToDelete = commentId;
+            var deleteModalEl = document.getElementById('deleteCommentModal');
+            if (!deleteModalInstance) {
+                deleteModalInstance = new bootstrap.Modal(deleteModalEl);
+            }
+            deleteModalInstance.show();
+        }
+
+        $(document).ready(function () {
+            $('#confirmDeleteBtn').click(function () {
+                if (commentToDelete === 0) return;
+
+                $.post('/Profile/DeleteComment', { commentId: commentToDelete }, function (res) {
+                    if (res.success) {
+                        $('#comment-' + commentToDelete).fadeOut(250, function () { $(this).remove(); });
+                        var count = parseInt($('#commentCount').text()) || 0;
+                        $('#commentCount').text(Math.max(0, count - 1));
+                        if (deleteModalInstance) {
+                            deleteModalInstance.hide();
+                        }
+                    } else {
+                        alert(res.message);
+                    }
+                });
+            });
+        });
+    </script>
+}

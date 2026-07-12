@@ -1,0 +1,688 @@
+@using BookManagementApp.Areas.Admin.Models
+@model User
+@{
+    ViewData["Title"] = "Profili Düzenle";
+}
+
+<style>
+    /* ============================================================
+               GENEL TEMA & ARKA PLAN
+       ============================================================ */
+    body {
+        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
+        font-family: 'Georgia', serif;
+        color: #4a3f35;
+        min-height: 100vh;
+    }
+
+    /* ============================================================
+               PROFİL KARTI (GLASSMORPHISM)
+       ============================================================ */
+    .edit-profile-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        min-height: calc(100vh - 100px); /* Header vs payı */
+    }
+
+    .edit-profile-card {
+        background: rgba(255, 249, 240, 0.7);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 24px;
+        padding: 50px 40px;
+        width: 100%;
+        max-width: 550px;
+        box-shadow: 0 20px 40px rgba(107, 85, 65, 0.1);
+        position: relative;
+        overflow: hidden;
+        animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Dekoratif Elementler */
+    .edit-profile-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #8b6f47, #d4c5b0, #8b6f47);
+        background-size: 200% auto;
+        animation: gradientShift 5s linear infinite;
+    }
+
+    @@keyframes gradientShift {
+        0% { background-position: 0% center; }
+        100% { background-position: 200% center; }
+    }
+
+    @@keyframes fadeUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .ep-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .ep-header h2 {
+        font-weight: 800;
+        color: #4a3f35;
+        font-size: 2rem;
+        margin-bottom: 5px;
+    }
+
+    .ep-header p {
+        color: #8b6f47;
+        font-style: italic;
+        font-size: 1rem;
+    }
+
+    /* ============================================================
+               AVATAR BÖLÜMÜ
+       ============================================================ */
+    .ep-avatar-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 35px auto;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+    .ep-avatar-container:hover {
+        transform: scale(1.05);
+    }
+
+    .ep-avatar-wrapper {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        font-weight: 700;
+        color: #5c4b3d;
+        box-shadow: 0 10px 25px rgba(107, 85, 65, 0.2);
+        border: 4px solid #fff;
+        position: relative;
+    }
+
+    .ep-avatar-wrapper img.main-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 16px;
+    }
+
+    .ep-avatar-wrapper img.frame-avatar {
+        position: absolute;
+        top: -15%;
+        left: -15%;
+        width: 130%;
+        height: 130%;
+        pointer-events: none;
+        z-index: 10;
+        object-fit: contain;
+    }
+
+    .ep-avatar-edit-icon {
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+        background: #8b6f47;
+        color: #fff;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid #fff9f0;
+        transition: background 0.3s ease;
+        z-index: 15;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .ep-avatar-container:hover .ep-avatar-edit-icon {
+        background: #4a3f35;
+    }
+
+    /* ============================================================
+               FLOATING LABEL & İNPUTLAR
+       ============================================================ */
+    .ep-form-group {
+        position: relative;
+        margin-bottom: 25px;
+    }
+
+    .ep-form-icon {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #a0785a;
+        font-size: 1.1rem;
+        transition: color 0.3s ease;
+        z-index: 2;
+    }
+
+    .ep-input {
+        width: 100%;
+        padding: 16px 20px 16px 50px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid transparent;
+        border-radius: 16px;
+        font-size: 1.05rem;
+        color: #4a3f35;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 500;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s ease;
+    }
+
+    /* Kutuya Focus Olunduğunda */
+    .ep-input:focus {
+        outline: none;
+        background: #fff;
+        border-color: #8b6f47;
+        box-shadow: 0 8px 25px rgba(139, 111, 71, 0.15);
+    }
+
+    /* Focus olunduğunda ikonu koyulaştır */
+    .ep-input:focus ~ .ep-form-icon,
+    .ep-form-icon.active {
+        color: #4a3f35;
+    }
+
+    .ep-textarea {
+        padding-top: 16px;
+        resize: vertical;
+        min-height: 100px;
+        max-height: 200px;
+    }
+
+    .ep-form-group.textarea-group .ep-form-icon {
+        top: 24px;
+        transform: none;
+    }
+
+    .char-counter {
+        position: absolute;
+        bottom: -20px;
+        right: 5px;
+        font-size: 0.8rem;
+        color: #8b6f47;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    /* Şifre Göster/Gizle */
+    .ep-toggle-password {
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #a0785a;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: color 0.3s ease;
+        z-index: 2;
+    }
+
+    .ep-toggle-password:hover {
+        color: #4a3f35;
+    }
+
+    .ep-password-error {
+        display: none;
+        color: #d32f2f;
+        font-size: 0.85rem;
+        margin-top: 5px;
+        margin-left: 10px;
+        font-weight: 600;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    /* ============================================================
+               BUTONLAR
+       ============================================================ */
+    .ep-btn-submit {
+        background: linear-gradient(135deg, #8b6f47, #6b5541);
+        color: #fff;
+        border: none;
+        width: 100%;
+        padding: 16px;
+        border-radius: 16px;
+        font-size: 1.15rem;
+        font-weight: 700;
+        font-family: 'Georgia', serif;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        margin-top: 15px;
+        box-shadow: 0 10px 20px rgba(107, 85, 65, 0.2);
+    }
+
+    .ep-btn-submit:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 15px 30px rgba(107, 85, 65, 0.3);
+        background: linear-gradient(135deg, #a0785a, #8b6f47);
+        color: #fff;
+    }
+
+    .ep-btn-submit:active {
+        transform: translateY(1px);
+        box-shadow: 0 5px 10px rgba(107, 85, 65, 0.2);
+    }
+
+    .ep-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #8b6f47;
+        text-decoration: none;
+        font-weight: 600;
+        margin-bottom: 20px;
+        transition: color 0.3s ease;
+    }
+
+    .ep-back-link:hover {
+        color: #4a3f35;
+    }
+
+    /* ============================================================
+               BAŞARI MESAJI (TOAST)
+       ============================================================ */
+    .ep-toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #e8f5e9;
+        border-left: 5px solid #4caf50;
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        z-index: 1000;
+        transform: translateX(120%);
+        transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .ep-toast.show {
+        transform: translateX(0);
+    }
+
+    .ep-toast-icon {
+        color: #4caf50;
+        font-size: 1.5rem;
+    }
+
+    .ep-toast-text {
+        color: #2e7d32;
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 600;
+    }
+
+    /* ============================================================
+               MODAL STİLLERİ (AVATAR)
+       ============================================================ */
+    .custom-modal-content {
+        background: #fff9f0;
+        border-radius: 20px;
+        border: none;
+    }
+    .modal-header { border-bottom: 1px solid rgba(139, 111, 71, 0.2); }
+    .modal-title { color: #4a3f35; font-weight: 700; font-family: 'Georgia', serif; }
+    .nav-tabs .nav-link { color: #8b6f47; font-weight: 600; border: none; background: transparent; }
+    .nav-tabs .nav-link.active { color: #4a3f35; background: transparent; border-bottom: 3px solid #a0785a; }
+    .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 20px 0; }
+    .avatar-option { width: 70px; height: 70px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s ease; object-fit: cover; }
+    .avatar-option:hover { transform: scale(1.1); }
+    .avatar-option.selected { border-color: #a0785a; box-shadow: 0 0 10px rgba(160, 120, 90, 0.5); transform: scale(1.1); }
+    .btn-save-custom { background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 20px; padding: 8px 25px; border: none; }
+    .btn-save-custom:hover { background: linear-gradient(135deg, #a0785a, #8b6f47); color: #fff; }
+
+</style>
+
+<div class="container">
+    <div class="edit-profile-wrapper">
+        <div style="width:100%; max-width:550px;">
+            <a href="/Profile/Index" class="ep-back-link">
+                <i class="fa-solid fa-arrow-left"></i> Profile Dön
+            </a>
+
+            <div class="edit-profile-card">
+                <div class="ep-header">
+                    <h2>Profili Düzenle</h2>
+                    <p>Kendinizi ifade edin.</p>
+                </div>
+
+                <!-- Avatar Bölümü -->
+                <div class="ep-avatar-container" data-bs-toggle="modal" data-bs-target="#avatarModal">
+                    <div class="ep-avatar-wrapper">
+                        @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                        {
+                            <img src="@Model.ProfileImageUrl" alt="Profil Fotoğrafı" class="main-avatar">
+                        }
+                        else
+                        {
+                            @(string.IsNullOrEmpty(Model.UserName) ? "U" : Model.UserName.Substring(0, 1).ToUpper())
+                        }
+                        @if (!string.IsNullOrEmpty(ViewBag.ActiveFrameImageUrl as string))
+                        {
+                            <img src="@ViewBag.ActiveFrameImageUrl" class="frame-avatar" />
+                        }
+                    </div>
+                    <div class="ep-avatar-edit-icon">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                </div>
+
+                <!-- Form Bölümü -->
+                <form id="editProfileForm" method="post" asp-action="Edit" asp-controller="Profile">
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="ProfileImageUrl" />
+
+                    <!-- İsim -->
+                    <div class="ep-form-group">
+                        <input class="ep-input" asp-for="UserName" placeholder="Kullanıcı Adı" autocomplete="off" required />
+                        <i class="fa-solid fa-at ep-form-icon"></i>
+                    </div>
+
+                    <!-- Biyografi -->
+                    <div class="ep-form-group textarea-group">
+                        <textarea class="ep-input ep-textarea" asp-for="Bio" id="bioInput" placeholder="Kendinizden kısaca bahsedin..." maxlength="160"></textarea>
+                        <i class="fa-solid fa-quote-left ep-form-icon"></i>
+                        <div class="char-counter"><span id="charCount">0</span>/160</div>
+                    </div>
+
+                    <!-- Şifre -->
+                    <div class="ep-form-group">
+                        <input class="ep-input" id="newPassword" asp-for="PasswordHash" type="password" placeholder="Yeni şifre belirle (Opsiyonel)" autocomplete="new-password" />
+                        <i class="fa-solid fa-lock-open ep-form-icon"></i>
+                        <i class="fa-solid fa-eye ep-toggle-password" onclick="togglePasswordVisibility('newPassword', this)"></i>
+                    </div>
+
+                    <div class="ep-form-group">
+                        <input class="ep-input" id="confirmPassword" asp-for="ConfirmPassword" type="password" placeholder="Şifrenizi tekrar girin" autocomplete="new-password" />
+                        <i class="fa-solid fa-lock ep-form-icon"></i>
+                        <i class="fa-solid fa-eye ep-toggle-password" onclick="togglePasswordVisibility('confirmPassword', this)"></i>
+                        <div id="passwordError" class="ep-password-error">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Şifreler uyuşmuyor!
+                        </div>
+                    </div>
+
+                    <button type="submit" class="ep-btn-submit">
+                        Değişiklikleri Kaydet
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BAŞARI MESAJI (TOAST) -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="ep-toast" id="successToast">
+        <i class="fa-solid fa-circle-check ep-toast-icon"></i>
+        <div class="ep-toast-text">@TempData["SuccessMessage"]</div>
+    </div>
+}
+
+<!-- AVATAR MODALI -->
+<div class="modal fade" id="avatarModal" tabindex="-1" aria-labelledby="avatarModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="avatarModalLabel"><i class="fa-solid fa-user-pen"></i> Profil Fotoğrafı Seç</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" id="avatarTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="select-tab" data-bs-toggle="tab" data-bs-target="#select-pane" type="button" role="tab">Hazır Avatar</button>
+                    </li>
+                    <li class="nav-item" role="presentation" style="display: none;">
+                        <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button" role="tab">Fotoğraf Yükle</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="frame-tab" data-bs-toggle="tab" data-bs-target="#frame-pane" type="button" role="tab"><i class="fa-solid fa-gem" style="color: #00ffff; text-shadow: 0 0 5px rgba(0,255,255,0.4);"></i> Çerçeveler</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="avatarTabsContent">
+                    <div class="tab-pane fade show active" id="select-pane" role="tabpanel">
+                        <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
+                        <div class="text-center mt-2 mb-3">
+                            <form asp-action="RemoveAvatar" asp-controller="Profile" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="returnUrl" value="/Profile/Edit" />
+                                <button type="submit" class="btn btn-sm" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Avatarı Kaldır</button>
+                            </form>
+                        </div>
+                        <div class="avatar-grid" style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
+                            @if (ViewBag.Avatars != null)
+                            {
+                                foreach (var avatar in ViewBag.Avatars)
+                                {
+                                    <img src="@avatar.ImageUrl" class="avatar-option" onclick="selectAvatar(this)" title="@avatar.Name">
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                        <div class="mb-3 text-center">
+                            <label for="customAvatarFile" class="form-label text-muted">Bilgisayarından bir fotoğraf seç</label>
+                            <input class="form-control" type="file" id="customAvatarFile" accept="image/*">
+                        </div>
+                        <div class="text-center mt-3">
+                            <div id="uploadPreview" style="width: 100px; height: 100px; border-radius: 50%; background: #e8dcc8; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <span class="text-muted small">Önizleme</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="frame-pane" role="tabpanel">
+                        @{
+                            var ownedFrames = ViewBag.OwnedFrames as List<BookManagementApp.Areas.Admin.Models.ProfileFrame>;
+                            var activeFrame = ViewBag.ActiveFrameImageUrl as string;
+                        }
+                        @if (ownedFrames != null && ownedFrames.Any())
+                        {
+                            <div class="text-center mb-2 text-muted small">Sahip olduğun çerçevelerden birini seç:</div>
+                            <div class="text-center mt-2">
+                                <form asp-action="EquipFrame" asp-controller="Store" asp-area="" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="0" />
+                                    <input type="hidden" name="returnUrl" value="/Profile/Edit" />
+                                    <button type="submit" class="btn btn-sm" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Çerçeveyi Kaldır</button>
+                                </form>
+                            </div>
+                            <div style="max-height: 250px; overflow-y: auto; overflow-x: hidden; padding-right: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding-top: 10px;">
+                                @foreach (var frame in ownedFrames)
+                                {
+                                    bool isActive = activeFrame == frame.ImageUrl;
+                                    <form asp-action="EquipFrame" asp-controller="Store" asp-area="" method="post" style="text-align: center;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@frame.Id" />
+                                        <input type="hidden" name="returnUrl" value="/Profile/Edit" />
+                                        <button type="submit" style="background: none; border: none; cursor: pointer; padding: 0; transition: transform 0.2s;" title="@frame.Name">
+                                            <div style="position: relative; width: 70px; height: 70px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%); color: #5c4b3d; font-weight: 700; margin: 0 auto;">
+                                                <div style="width: 100%; height: 100%; border-radius: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                                    @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                                                    {
+                                                        <img src="@Model.ProfileImageUrl" style="width:100%; height:100%; object-fit:cover;" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @(string.IsNullOrEmpty(Model.UserName) ? "U" : Model.UserName.Substring(0, 1).ToUpper())
+                                                    }
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(frame.ImageUrl))
+                                                {
+                                                    <img src="@frame.ImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;" />
+                                                }
+                                            </div>
+                                            <div style="font-size: 0.7rem; margin-top: 5px; color: @(isActive ? "#27ae60" : "#8b6f47"); font-weight: 700;">@frame.IconEmoji @frame.Name</div>
+                                            @if (isActive)
+                                            {
+                                                <div style="font-size: 0.65rem; color: #27ae60;">✓ Aktif</div>
+                                            }
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fa-solid fa-store" style="font-size: 2.5rem; color: #e8dcc8; margin-bottom: 10px;"></i>
+                                <p style="color: #8b6f47; font-size: 0.9rem;">Henüz çerçeven yok!</p>
+                                <a asp-controller="Store" asp-action="Index" asp-area="" class="btn btn-sm" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 20px; padding: 8px 20px; font-weight: 600;">Mağazaya Git</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: none;">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-sm btn-save-custom" id="saveAvatarBtn">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Karakter Sayacı
+    const bioInput = document.getElementById('bioInput');
+    const charCount = document.getElementById('charCount');
+    if (bioInput && charCount) {
+        bioInput.addEventListener('input', function () {
+            charCount.textContent = this.value.length;
+        });
+        charCount.textContent = bioInput.value.length; // Sayfa yüklenince
+    }
+
+    // Şifre Göster/Gizle
+    function togglePasswordVisibility(inputId, iconElement) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+            iconElement.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            input.type = "password";
+            iconElement.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
+    // Şifre Doğrulama
+    document.getElementById('editProfileForm').addEventListener('submit', function (e) {
+        const pwd = document.getElementById('newPassword').value;
+        const confirmPwd = document.getElementById('confirmPassword').value;
+        const errorMsg = document.getElementById('passwordError');
+        const confirmInput = document.getElementById('confirmPassword');
+
+        if (pwd !== confirmPwd) {
+            e.preventDefault();
+            errorMsg.style.display = 'block';
+            confirmInput.style.borderColor = '#d32f2f';
+        } else {
+            errorMsg.style.display = 'none';
+        }
+    });
+
+    document.getElementById('confirmPassword').addEventListener('input', function () {
+        const pwd = document.getElementById('newPassword').value;
+        if (this.value === pwd || this.value === '') {
+            document.getElementById('passwordError').style.display = 'none';
+            this.style.borderColor = 'transparent';
+        }
+    });
+
+    // Toast Mesajı Animasyonu
+    const toast = document.getElementById('successToast');
+    if (toast) {
+        setTimeout(() => {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000); // 3 saniye sonra gizle
+        }, 100);
+    }
+
+    // Avatar Yükleme İşlemleri (Mevcut yapı ile aynı)
+    let selectedAvatarUrl = "";
+    let uploadedFile = null;
+
+    function selectAvatar(imgElement) {
+        document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+        imgElement.classList.add('selected');
+        selectedAvatarUrl = imgElement.src;
+        uploadedFile = null;
+    }
+
+    const fileInput = document.getElementById('customAvatarFile');
+    if(fileInput){
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadedFile = file;
+                selectedAvatarUrl = "";
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('uploadPreview').innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    const saveAvatarBtn = document.getElementById('saveAvatarBtn');
+    if(saveAvatarBtn){
+        saveAvatarBtn.addEventListener('click', function() {
+            const formData = new FormData();
+            if (uploadedFile) {
+                formData.append('file', uploadedFile);
+            } else if (selectedAvatarUrl) {
+                formData.append('avatarUrl', selectedAvatarUrl);
+            } else {
+                alert("Lütfen bir avatar seçin veya fotoğraf yükleyin.");
+                return;
+            }
+
+            const btn = this;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+            btn.disabled = true;
+
+            fetch('/Profile/UpdateAvatar', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); 
+                } else {
+                    alert("Hata: " + data.message);
+                    btn.innerHTML = 'Kaydet';
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Hata:', error);
+                alert("Bir hata oluştu.");
+                btn.innerHTML = 'Kaydet';
+                btn.disabled = false;
+            });
+        });
+    }
+</script>

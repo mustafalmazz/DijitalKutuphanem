@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Http
 <style>
     body {
         display: flex;
@@ -569,9 +570,17 @@
                 <i class="fa-solid fa-users"></i> Topluluk
             </a>
         </li>
+        @if (Context.Session.GetInt32("UserId") != null)
+        {
+            <li>
+                <a href="/Profile/PublicProfile/@Context.Session.GetInt32("UserId")" class="action-sheet-item">
+                    <i class="fa-solid fa-id-badge"></i> Profilim
+                </a>
+            </li>
+        }
         <li>
             <a href="/Profile/Index" class="action-sheet-item">
-                <i class="fa-solid fa-user"></i> Profil Özetim
+                <i class="fa-solid fa-user"></i> Özetim
             </a>
         </li>
         <li>

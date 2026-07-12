@@ -40,6 +40,9 @@ namespace BookManagementApp.Areas.Admin.Models
         [StringLength(255)]
         public string? ActiveFrameImageUrl { get; set; }
 
+        [StringLength(160, ErrorMessage = "Biyografi en fazla 160 karakter olabilir.")]
+        public string? Bio { get; set; }
+
         public DateTime CreateDate { get; set; } = DateTime.Now;
 
         public ICollection<Book>? Books { get; set; }

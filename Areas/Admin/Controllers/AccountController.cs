@@ -71,6 +71,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
             try
             {
                 user.UserName = model.UserName;
+                user.Bio = model.Bio;
 
                 if (!string.IsNullOrEmpty(model.PasswordHash))
                 {

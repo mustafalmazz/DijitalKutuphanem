@@ -22,6 +22,8 @@ namespace BookManagementApp.Models
         public DbSet<UserAvatar> UserAvatars { get; set; }
         public DbSet<Follow> Follows { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<BookLike> BookLikes { get; set; }
+        public DbSet<BookComment> BookComments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -78,6 +80,30 @@ namespace BookManagementApp.Models
                 .WithMany()
                 .HasForeignKey(m => m.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<BookLike>()
+                .HasOne(bl => bl.User)
+                .WithMany()
+                .HasForeignKey(bl => bl.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<BookLike>()
+                .HasOne(bl => bl.Book)
+                .WithMany()
+                .HasForeignKey(bl => bl.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BookComment>()
+                .HasOne(bc => bc.User)
+                .WithMany()
+                .HasForeignKey(bc => bc.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<BookComment>()
+                .HasOne(bc => bc.Book)
+                .WithMany()
+                .HasForeignKey(bc => bc.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // --- MAĞAZA SEED DATA ---
             modelBuilder.Entity<ProfileFrame>().HasData(

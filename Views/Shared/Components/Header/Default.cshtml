@@ -314,10 +314,40 @@
 <header>
     <nav class="navbar navbar-expand-lg book-navbar">
         <div class="container-fluid">
-            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+            <!-- PC MASAÜSTÜ LOGO -->
+            <a class="navbar-brand d-none d-lg-flex" asp-area="" asp-controller="Home" asp-action="Index">
                 <img src="/images/library.png" style="width:35px;" />
                 <span>DijitalKütüphanem</span>
             </a>
+
+            <!-- MOBİL AVATAR LOGO -->
+            @if(Model.User != null)
+            {
+                <a class="navbar-brand d-flex d-lg-none" asp-area="" asp-controller="Profile" asp-action="PublicProfile" asp-route-id="@Model.User.Id">
+                    <div style="position: relative; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%); color: #5c4b3d; font-size: 1.1rem; font-weight: bold; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                        <div style="width: 100%; height: 100%; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            @if (!string.IsNullOrEmpty(Model.User.ProfileImageUrl))
+                            {
+                                <img src="@Model.User.ProfileImageUrl" alt="Profil" style="width: 100%; height: 100%; object-fit: cover;">
+                            }
+                            else
+                            {
+                                @Model.User.UserName.Substring(0, 1).ToUpper()
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.User.ActiveFrameImageUrl))
+                        {
+                            <img src="@Model.User.ActiveFrameImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;" />
+                        }
+                    </div>
+                </a>
+            }
+            else
+            {
+                <a class="navbar-brand d-flex d-lg-none" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="/images/library.png" style="width:32px;" />
+                </a>
+            }
 
             @if(Model.User != null)
             {
@@ -430,8 +460,11 @@
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="userDropdown">
                             <li>
+                                <a class="dropdown-item logout-item" asp-area="" asp-controller="Profile" asp-action="PublicProfile" asp-route-id="@Model.User.Id">
+                                    Profilim
+                                </a>
                                 <a class="dropdown-item logout-item" asp-area="" asp-controller="Profile" asp-action="Index">
-                                    Profil Özetim
+                                    Özetim
                                 </a>
                                 @if (Model.User != null && Model.User.Role == "SuperAdmin")
                                 {

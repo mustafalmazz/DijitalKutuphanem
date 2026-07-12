@@ -345,6 +345,12 @@
             </div>
 
             <div class="input-group-custom">
+                <label class="form-label" asp-for="Bio">Biyografi (Hakkımda)</label>
+                <i class="fa-solid fa-quote-left left-icon"></i>
+                <input class="form-control" asp-for="Bio" placeholder="Kendinizden kısaca bahsedin..." maxlength="160" autocomplete="off" />
+            </div>
+
+            <div class="input-group-custom">
                 <label class="form-label" asp-for="PasswordHash">Yeni Şifre</label>
                 <i class="fa-solid fa-lock-open left-icon"></i>
                 <input class="form-control" id="newPassword" asp-for="PasswordHash" type="password" placeholder="Yeni şifre belirleyin..." autocomplete="new-password" />

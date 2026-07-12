@@ -893,7 +893,7 @@
             <div class="pp-card-top pp-anim-2">
 
                 <!-- AVATAR (kare, çerçeve orijinal formuyla üstünde) -->
-                <div class="pp-avatar-zone">
+                <div class="pp-avatar-zone" @(ViewBag.LoggedInUserId == Model.Id ? Html.Raw("style=\"cursor:pointer;\" data-bs-toggle=\"modal\" data-bs-target=\"#avatarModal\"") : Html.Raw(""))>
                     <div class="pp-avatar-box">
                         @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
                         {
@@ -902,6 +902,12 @@
                         else
                         {
                             @(Model.UserName?.Substring(0, 1).ToUpper())
+                        }
+                        @if (ViewBag.LoggedInUserId == Model.Id)
+                        {
+                            <div style="position: absolute; bottom: -5px; right: -5px; background: #8b6f47; color: #fff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid #fff9f0; z-index: 15; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                <i class="fa-solid fa-camera" style="font-size: 0.9rem;"></i>
+                            </div>
                         }
                     </div>
 
@@ -914,13 +920,12 @@
                 <!-- İSİM & SEVİYE -->
                 <h1 class="pp-name">@Model.UserName</h1>
 
-                <p class="pp-join">
-                    <i class="fas fa-calendar-alt me-1"></i>
-                    @Model.CreateDate.ToString("MMMM yyyy") tarihinden beri üye
-                </p>
-                <p class="pp-member-days">
-                    Kütüphane yolculuğunun <b>@memberDays. günü</b>
-                </p>
+                @if (!string.IsNullOrEmpty(Model.Bio))
+                {
+                    <p class="pp-bio text-muted mt-2 mb-3 px-3" style="font-style: italic; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.5; font-size: 0.95rem;">
+                        "@Model.Bio"
+                    </p>
+                }
 
                 <!-- SAYACLAR (kompakt, tek satır) -->
                 <div class="pp-counters">
@@ -942,16 +947,25 @@
 
                 <!-- AKSİYONLAR -->
                 <div class="pp-actions">
-                    <button id="btnFollow"
-                            class="pp-btn pp-btn-follow @(ViewBag.IsFollowing ? "following" : "")"
-                            onclick="toggleFollow(@Model.Id)">
-                        <i class="fas @(ViewBag.IsFollowing ? "fa-user-check" : "fa-user-plus")"></i>
-                        <span id="followText">@(ViewBag.IsFollowing ? "Takiptesin" : "Takip Et")</span>
-                    </button>
+                    @if (ViewBag.LoggedInUserId == Model.Id)
+                    {
+                        <button type="button" class="pp-btn pp-btn-follow" data-bs-toggle="modal" data-bs-target="#editProfileModalInline" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; width: 100%;">
+                            <i class="fas fa-user-pen"></i> Profili Düzenle
+                        </button>
+                    }
+                    else
+                    {
+                        <button id="btnFollow"
+                                class="pp-btn pp-btn-follow @(ViewBag.IsFollowing ? "following" : "")"
+                                onclick="toggleFollow(@Model.Id)">
+                            <i class="fas @(ViewBag.IsFollowing ? "fa-user-check" : "fa-user-plus")"></i>
+                            <span id="followText">@(ViewBag.IsFollowing ? "Takiptesin" : "Takip Et")</span>
+                        </button>
 
-                    <a href="/Message/Chat?userId=@Model.Id" class="pp-btn pp-btn-message">
-                        <i class="fas fa-comment-dots"></i> Mesaj Gönder
-                    </a>
+                        <a href="/Message/Chat?userId=@Model.Id" class="pp-btn pp-btn-message">
+                            <i class="fas fa-comment-dots"></i> Mesaj Gönder
+                        </a>
+                    }
 
                     <button type="button" class="pp-btn pp-btn-share" id="btnShare" title="Profil bağlantısını kopyala" aria-label="Profil bağlantısını kopyala">
                         <i class="fas fa-share-nodes"></i>
@@ -960,38 +974,220 @@
 
             </div>
 
-            <!-- ============ İSTATİSTİKLER ============ -->
-            <div class="pp-stats pp-anim-3">
-                <div class="pp-stats-title">
-                    <i class="fas fa-trophy"></i> İstatistikler
-                </div>
+            <!-- ============ SEKMELER (TABS) ============ -->
+            <div class="pp-stats pp-anim-3" style="padding: 15px;">
+                <ul class="nav nav-pills mb-4 justify-content-center pp-profile-tabs" id="profileTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="library-tab" data-bs-toggle="tab" data-bs-target="#library-pane" type="button" role="tab">
+                            <i class="fas fa-book"></i> Kitaplık
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button" role="tab">
+                            <i class="fas fa-chart-line"></i> İstatistikler
+                        </button>
+                    </li>
+                   
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="achievements-tab" data-bs-toggle="tab" data-bs-target="#achievements-pane" type="button" role="tab">
+                            <i class="fas fa-medal"></i> Başarımlar
+                        </button>
+                    </li>
+                </ul>
 
-                <div class="pp-stats-grid">
-                    <div class="pp-tile pp-tile-fire">
-                        <div class="pp-tile-icon"><i class="fas fa-fire"></i></div>
-                        <div class="pp-tile-body">
-                            <div class="pp-tile-value">@Model.CurrentStreak Gün</div>
-                            <div class="pp-tile-label">Mevcut Seri</div>
+                <style>
+                    .pp-profile-tabs {
+                        display: flex;
+                        flex-wrap: nowrap;
+                        gap: 6px;
+                        overflow-x: auto;
+                        -ms-overflow-style: none;
+                        scrollbar-width: none;
+                    }
+                    .pp-profile-tabs::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .pp-profile-tabs .nav-link {
+                        border-radius: 20px;
+                        font-weight: 600;
+                        padding: 6px 12px;
+                        font-size: 0.8rem;
+                        color: #8b6f47;
+                        background: rgba(139, 111, 71, 0.1);
+                        white-space: nowrap;
+                    }
+                    #profileTabs .nav-link.active {
+                        background: linear-gradient(135deg, #8b6f47, #6b5541) !important;
+                        color: #fff !important;
+                        box-shadow: 0 4px 10px rgba(107, 85, 65, 0.3);
+                    }
+                    .pp-book-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                        gap: 15px;
+                        padding-top: 10px;
+                        max-height: 400px;
+                        overflow-y: auto;
+                        padding-right: 5px;
+                    }
+                    .pp-book-card {
+                        background: #fff9f0;
+                        border-radius: 12px;
+                        box-shadow: 0 4px 10px rgba(107, 85, 65, 0.1);
+                        overflow: hidden;
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;
+                        text-align: center;
+                        text-decoration: none;
+                        color: inherit;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .pp-book-card:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 8px 15px rgba(107, 85, 65, 0.2);
+                    }
+                    .pp-book-cover {
+                        width: 100%;
+                        aspect-ratio: 2 / 3;
+                        object-fit: cover;
+                        border-bottom: 2px solid rgba(139, 111, 71, 0.1);
+                    }
+                    .pp-book-cover-placeholder {
+                        width: 100%;
+                        aspect-ratio: 2 / 3;
+                        background: linear-gradient(135deg, #e8dcc8, #d4c5b0);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 2rem;
+                        color: #8b6f47;
+                        border-bottom: 2px solid rgba(139, 111, 71, 0.1);
+                    }
+                    .pp-book-info {
+                        padding: 10px 8px;
+                        flex-grow: 1;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                    }
+                    .pp-book-title {
+                        font-size: 0.8rem;
+                        font-weight: 700;
+                        color: #4a3f35;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        margin-bottom: 3px;
+                    }
+                    .pp-book-author {
+                        font-size: 0.7rem;
+                        color: #8b6f47;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        margin-bottom: 5px;
+                    }
+                    .pp-book-rating {
+                        font-size: 0.7rem;
+                        color: #f39c12;
+                    }
+                </style>
+
+                <div class="tab-content" id="profileTabsContent">
+                    <!-- İSTATİSTİKLER TAB -->
+                    <div class="tab-pane fade" id="stats-pane" role="tabpanel">
+                        <div class="pp-stats-grid">
+                            <div class="pp-tile pp-tile-fire">
+                                <div class="pp-tile-icon"><i class="fas fa-fire"></i></div>
+                                <div class="pp-tile-body">
+                                    <div class="pp-tile-value">@Model.CurrentStreak Gün</div>
+                                    <div class="pp-tile-label">Mevcut Seri</div>
+                                </div>
+                                <span class="pp-tile-sub">@streakLabel</span>
+                            </div>
+
+                            <div class="pp-tile pp-tile-gem">
+                                <div class="pp-tile-icon"><i class="fas fa-gem"></i></div>
+                                <div class="pp-tile-body">
+                                    <div class="pp-tile-value">@Model.WisdomStones.ToString("N0")</div>
+                                    <div class="pp-tile-label">Bilgelik Taşı</div>
+                                </div>
+                                <span class="pp-tile-sub">Hazine</span>
+                            </div>
+
+                            <div class="pp-tile">
+                                <div class="pp-tile-icon"><i class="fas fa-clock"></i></div>
+                                <div class="pp-tile-body">
+                                    <div class="pp-tile-value">@ViewBag.TotalFocusHours Saat</div>
+                                    <div class="pp-tile-label">Odaklanma Süresi</div>
+                                </div>
+                                <span class="pp-tile-sub">YOLCULUK</span>
+                            </div>
                         </div>
-                        <span class="pp-tile-sub">@streakLabel</span>
                     </div>
 
-                    <div class="pp-tile pp-tile-gem">
-                        <div class="pp-tile-icon"><i class="fas fa-gem"></i></div>
-                        <div class="pp-tile-body">
-                            <div class="pp-tile-value">@Model.WisdomStones.ToString("N0")</div>
-                            <div class="pp-tile-label">Bilgelik Taşı</div>
-                        </div>
-                        <span class="pp-tile-sub">Hazine</span>
+                    <!-- KİTAPLIK TAB -->
+                    <div class="tab-pane fade show active" id="library-pane" role="tabpanel">
+                        @if (Model.Books != null && Model.Books.Any())
+                        {
+                            <div class="pp-book-grid">
+                                @foreach (var book in Model.Books)
+                                {
+                                    <a href="/Profile/BookDetails/@book.Id" class="pp-book-card">
+                                        @if (!string.IsNullOrEmpty(book.Image))
+                                        {
+                                            <img src="@book.Image" class="pp-book-cover" alt="@book.Name" />
+                                        }
+                                        else
+                                        {
+                                            <div class="pp-book-cover-placeholder">
+                                                <i class="fas fa-book"></i>
+                                            </div>
+                                        }
+                                        <div class="pp-book-info">
+                                            <div>
+                                                <div class="pp-book-title" title="@book.Name">@book.Name</div>
+                                                <div class="pp-book-author" title="@book.Author">@book.Author</div>
+                                            </div>
+                                            <div class="pp-book-rating">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= (book.Rate ?? 0))
+                                                    {
+                                                        <i class="fas fa-star"></i>
+                                                    }
+                                                    else if (i - 0.5m <= (book.Rate ?? 0))
+                                                    {
+                                                        <i class="fas fa-star-half-alt"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="far fa-star"></i>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-book-open" style="font-size: 3rem; color: #d4c5b0; margin-bottom: 15px;"></i>
+                                <h5 style="color: #6b5541; font-weight: 700; font-family: 'Georgia', serif;">Henüz Kitap Yok</h5>
+                                <p class="text-muted" style="font-size: 0.9rem;">Bu kullanıcının kitaplığı şu an boş.</p>
+                            </div>
+                        }
                     </div>
 
-                    <div class="pp-tile pp-tile-cal">
-                        <div class="pp-tile-icon"><i class="fas fa-calendar-days"></i></div>
-                        <div class="pp-tile-body">
-                            <div class="pp-tile-value">@memberDays Gün</div>
-                            <div class="pp-tile-label">Üyelik Süresi</div>
+                    <!-- BAŞARIMLAR TAB -->
+                    <div class="tab-pane fade" id="achievements-pane" role="tabpanel">
+                        <div class="text-center py-4">
+                            <i class="fas fa-award" style="font-size: 3rem; color: #d4c5b0; margin-bottom: 15px;"></i>
+                            <h5 style="color: #6b5541; font-weight: 700; font-family: 'Georgia', serif;">Yakında!</h5>
+                            <p class="text-muted" style="font-size: 0.9rem;">Kullanıcının başarımları buraya eklenecek.</p>
                         </div>
-                        <span class="pp-tile-sub">Yolculuk</span>
                     </div>
                 </div>
             </div>
@@ -1004,6 +1200,190 @@
 <div class="pp-toast" id="ppToast">
     <i class="fas fa-check-circle"></i> Profil bağlantısı kopyalandı!
 </div>
+
+<!-- ============================================================
+     PROFİLİ DÜZENLE MODAL (INLINE)
+     ============================================================ -->
+<div class="modal fade" id="editProfileModalInline" tabindex="-1" aria-labelledby="editProfileModalInlineLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #f5f0e8; border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(107, 85, 65, 0.2);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(139, 111, 71, 0.2);">
+                <h5 class="modal-title" id="editProfileModalInlineLabel" style="color: #4a3f35; font-weight: 700; font-family: 'Georgia', serif;">
+                    <i class="fas fa-user-pen"></i> Profili Düzenle
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body" style="padding: 25px;">
+                <form id="inlineEditProfileForm" method="post" asp-action="EditProfileInline" asp-controller="Profile">
+                    <input type="hidden" asp-for="Id" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #8b6f47; font-weight: 600;">Kullanıcı Adı</label>
+                        <input type="text" class="form-control" asp-for="UserName" required style="border-radius: 12px; border: 1px solid #d4c5b0; padding: 10px 15px; background: rgba(255,255,255,0.7);" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #8b6f47; font-weight: 600;">Biyografi (Hakkımda)</label>
+                        <textarea class="form-control" asp-for="Bio" maxlength="160" rows="3" style="border-radius: 12px; border: 1px solid #d4c5b0; padding: 10px 15px; background: rgba(255,255,255,0.7); resize: none;"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn w-100" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 15px; padding: 12px; font-weight: 600; transition: transform 0.2s ease;">
+                        Değişiklikleri Kaydet
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (ViewBag.LoggedInUserId == Model.Id)
+{
+<!-- AVATAR MODALI -->
+<div class="modal fade" id="avatarModal" tabindex="-1" aria-labelledby="avatarModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #fff9f0; border-radius: 20px; border: none;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(139, 111, 71, 0.2);">
+                <h5 class="modal-title" id="avatarModalLabel" style="color: #4a3f35; font-weight: 700; font-family: 'Georgia', serif;"><i class="fa-solid fa-user-pen"></i> Profil Fotoğrafı Seç</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <style>
+                    .nav-tabs .nav-link { color: #8b6f47; font-weight: 600; border: none; background: transparent; }
+                    .nav-tabs .nav-link.active { color: #4a3f35; background: transparent; border-bottom: 3px solid #a0785a; }
+                    .avatar-option { width: 70px; height: 70px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s ease; object-fit: cover; }
+                    .avatar-option:hover { transform: scale(1.1); }
+                    .avatar-option.selected { border-color: #a0785a; box-shadow: 0 0 10px rgba(160, 120, 90, 0.5); transform: scale(1.1); }
+                </style>
+                <ul class="nav nav-tabs mb-3" id="avatarTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="select-tab" data-bs-toggle="tab" data-bs-target="#select-pane" type="button" role="tab">Hazır Avatar</button>
+                    </li>
+                    <li class="nav-item" role="presentation" style="display: none;">
+                        <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button" role="tab">Fotoğraf Yükle</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="frame-tab" data-bs-toggle="tab" data-bs-target="#frame-pane" type="button" role="tab"><i class="fa-solid fa-gem" style="color: #00ffff; text-shadow: 0 0 5px rgba(0,255,255,0.4);"></i> Çerçeveler</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="avatarTabsContent">
+                    <div class="tab-pane fade show active" id="select-pane" role="tabpanel">
+                        <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
+                        <div class="text-center mt-2 mb-3">
+                            <form asp-action="RemoveAvatar" asp-controller="Profile" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="returnUrl" value="/Profile/PublicProfile/@Model.Id" />
+                                <button type="submit" class="btn btn-sm" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Avatarı Kaldır</button>
+                            </form>
+                        </div>
+                        <div style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
+                            @if (ViewBag.Avatars != null)
+                            {
+                                foreach (var avatar in ViewBag.Avatars)
+                                {
+                                    <img src="@avatar.ImageUrl" class="avatar-option" onclick="selectAvatar(this)" title="@avatar.Name">
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                        <div class="mb-3 text-center">
+                            <label for="customAvatarFile" class="form-label text-muted">Bilgisayarından bir fotoğraf seç</label>
+                            <input class="form-control" type="file" id="customAvatarFile" accept="image/*">
+                        </div>
+                        <div class="text-center mt-3">
+                            <div id="uploadPreview" style="width: 100px; height: 100px; border-radius: 50%; background: #e8dcc8; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <span class="text-muted small">Önizleme</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="frame-pane" role="tabpanel">
+                        @{
+                            var ownedFrames = ViewBag.OwnedFrames as List<BookManagementApp.Areas.Admin.Models.ProfileFrame>;
+                            var activeFrame = ViewBag.ActiveFrameImageUrl as string;
+                        }
+                        @if (ownedFrames != null && ownedFrames.Any())
+                        {
+                            <div class="text-center mb-2 text-muted small">Sahip olduğun çerçevelerden birini seç:</div>
+                            <div class="text-center mt-2">
+                                <form asp-action="EquipFrame" asp-controller="Store" asp-area="" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="0" />
+                                    <input type="hidden" name="returnUrl" value="/Profile/PublicProfile/@Model.Id" />
+                                    <button type="submit" class="btn btn-sm" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Çerçeveyi Kaldır</button>
+                                </form>
+                            </div>
+                            <div style="max-height: 250px; overflow-y: auto; overflow-x: hidden; padding-right: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding-top: 10px;">
+                                @foreach (var frame in ownedFrames)
+                                {
+                                    bool isActive = activeFrame == frame.ImageUrl;
+                                    <form asp-action="EquipFrame" asp-controller="Store" asp-area="" method="post" style="text-align: center;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@frame.Id" />
+                                        <input type="hidden" name="returnUrl" value="/Profile/PublicProfile/@Model.Id" />
+                                        <button type="submit" style="background: none; border: none; cursor: pointer; padding: 0; transition: transform 0.2s;" title="@frame.Name">
+                                            <div style="position: relative; width: 70px; height: 70px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%); color: #5c4b3d; font-weight: 700; margin: 0 auto;">
+                                                <div style="width: 100%; height: 100%; border-radius: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                                    @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                                                    {
+                                                        <img src="@Model.ProfileImageUrl" style="width:100%; height:100%; object-fit:cover;" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @(string.IsNullOrEmpty(Model.UserName) ? "U" : Model.UserName.Substring(0, 1).ToUpper())
+                                                    }
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(frame.ImageUrl))
+                                                {
+                                                    <img src="@frame.ImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;" />
+                                                }
+                                            </div>
+                                            <div style="font-size: 0.7rem; margin-top: 5px; color: @(isActive ? "#27ae60" : "#8b6f47"); font-weight: 700;">@frame.IconEmoji @frame.Name</div>
+                                            @if (isActive)
+                                            {
+                                                <div style="font-size: 0.65rem; color: #27ae60;">✓ Aktif</div>
+                                            }
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fa-solid fa-store" style="font-size: 2.5rem; color: #e8dcc8; margin-bottom: 10px;"></i>
+                                <p style="color: #8b6f47; font-size: 0.9rem;">Henüz çerçeven yok!</p>
+                                <a asp-controller="Store" asp-action="Index" asp-area="" class="btn btn-sm" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 20px; padding: 8px 20px; font-weight: 600;">Mağazaya Git</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: none;">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-sm" id="saveAvatarBtn" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 20px; padding: 8px 25px; border: none;">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show m-3" role="alert" style="position: fixed; bottom: 20px; right: 20px; z-index: 1050; border-radius: 15px;">
+        <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show m-3" role="alert" style="position: fixed; bottom: 20px; right: 20px; z-index: 1050; border-radius: 15px;">
+        <i class="fa-solid fa-triangle-exclamation"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
 @section Scripts {
     <script>
@@ -1099,5 +1479,74 @@
                 showToast();
             }
         });
+
+        // ============================================================
+        //  AVATAR YÜKLEME (INLINE)
+        // ============================================================
+        let selectedAvatarUrl = "";
+        let uploadedFile = null;
+
+        function selectAvatar(imgElement) {
+            document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+            imgElement.classList.add('selected');
+            selectedAvatarUrl = imgElement.src;
+            uploadedFile = null;
+        }
+
+        const fileInput = document.getElementById('customAvatarFile');
+        if(fileInput){
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    uploadedFile = file;
+                    selectedAvatarUrl = "";
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('uploadPreview').innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        const saveAvatarBtn = document.getElementById('saveAvatarBtn');
+        if(saveAvatarBtn){
+            saveAvatarBtn.addEventListener('click', function() {
+                const formData = new FormData();
+                if (uploadedFile) {
+                    formData.append('file', uploadedFile);
+                } else if (selectedAvatarUrl) {
+                    formData.append('avatarUrl', selectedAvatarUrl);
+                } else {
+                    alert("Lütfen bir avatar seçin veya fotoğraf yükleyin.");
+                    return;
+                }
+
+                const btn = this;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+                btn.disabled = true;
+
+                fetch('/Profile/UpdateAvatar', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload(); 
+                    } else {
+                        alert("Hata: " + data.message);
+                        btn.innerHTML = 'Kaydet';
+                        btn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Hata:', error);
+                    alert("Bir hata oluştu.");
+                    btn.innerHTML = 'Kaydet';
+                    btn.disabled = false;
+                });
+            });
+        }
     </script>
 }
