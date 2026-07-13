@@ -23,6 +23,12 @@ namespace BookManagementApp.Controllers
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null) return RedirectToAction("Login", "Account");
 
+            // Blocked or blocking IDs
+            var blockedOrBlockingIds = _context.Blocks
+                .Where(b => b.BlockerId == userId.Value || b.BlockedId == userId.Value)
+                .Select(b => b.BlockerId == userId.Value ? b.BlockedId : b.BlockerId)
+                .ToList();
+
             // Kullanıcının daha önce mesajlaştığı kişileri bul (En son mesaj atanlar üstte)
             var conversations = _context.ChatMessages
                 .Include(m => m.Sender)
@@ -31,6 +37,7 @@ namespace BookManagementApp.Controllers
                 .OrderByDescending(m => m.CreatedAt)
                 .ToList()
                 .GroupBy(m => m.SenderId == userId ? m.ReceiverId : m.SenderId)
+                .Where(g => !blockedOrBlockingIds.Contains(g.Key))
                 .Select(g => g.First())
                 .ToList();
 
@@ -45,6 +52,25 @@ namespace BookManagementApp.Controllers
 
             var otherUser = _context.Users.FirstOrDefault(u => u.Id == userId);
             if (otherUser == null) return NotFound();
+
+            var isBlocked = _context.Blocks.Any(b => 
+                (b.BlockerId == myId.Value && b.BlockedId == userId) || 
+                (b.BlockerId == userId && b.BlockedId == myId.Value));
+
+            if (isBlocked)
+            {
+                return RedirectToAction("Index"); // Redirect to messages if blocked
+            }
+
+            if (otherUser.IsPrivate && otherUser.Id != myId.Value)
+            {
+                var isFollowing = _context.Follows.Any(f => f.FollowerId == myId.Value && f.FollowingId == userId && f.IsAccepted);
+                if (!isFollowing)
+                {
+                    TempData["ErrorMessage"] = "Bu hesap gizli olduğu için mesaj gönderemezsiniz. Lütfen önce takip edin.";
+                    return RedirectToAction("PublicProfile", "Profile", new { id = userId });
+                }
+            }
 
             ViewBag.OtherUser = otherUser;
             ViewBag.CurrentUserId = myId;
@@ -76,6 +102,16 @@ namespace BookManagementApp.Controllers
             var senderId = HttpContext.Session.GetInt32("UserId");
             if (senderId == null) return Json(new { success = false, message = "Oturum kapalı." });
             if (string.IsNullOrWhiteSpace(content)) return Json(new { success = false, message = "Boş mesaj gönderilemez." });
+
+            var otherUser = _context.Users.FirstOrDefault(u => u.Id == receiverId);
+            if (otherUser != null && otherUser.IsPrivate && otherUser.Id != senderId.Value)
+            {
+                var isFollowing = _context.Follows.Any(f => f.FollowerId == senderId.Value && f.FollowingId == receiverId && f.IsAccepted);
+                if (!isFollowing)
+                {
+                    return Json(new { success = false, message = "Bu hesap gizli olduğu için mesaj gönderemezsiniz." });
+                }
+            }
 
             var msg = new ChatMessage
             {

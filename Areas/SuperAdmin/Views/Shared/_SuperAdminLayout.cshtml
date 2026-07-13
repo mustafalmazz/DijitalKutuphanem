@@ -197,6 +197,13 @@
             </li>
 
             <li>
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active" : "")"
+                   asp-area="SuperAdmin" asp-controller="Reports" asp-action="Index">
+                    <i class="bi bi-flag"></i> Şikayetler
+                </a>
+            </li>
+
+            <li>
                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Settings" ? "active" : "")"
                    asp-area="SuperAdmin" asp-controller="Books" asp-action="List">
                     <i class="bi bi-book"></i> Kitaplar

@@ -246,11 +246,13 @@ namespace BookManagementApp.Controllers
             var user = _context.Users.Include(u => u.Books).FirstOrDefault(u => u.Id == id);
             if (user == null) return NotFound();
 
+            var isBlockedByMe = _context.Blocks.Any(b => b.BlockerId == loggedInUserId.Value && b.BlockedId == id);
+            var isBlockingMe = _context.Blocks.Any(b => b.BlockerId == id && b.BlockedId == loggedInUserId.Value);
 
-
-            var followersCount = _context.Follows.Count(f => f.FollowingId == id);
-            var followingCount = _context.Follows.Count(f => f.FollowerId == id);
-            var isFollowing = _context.Follows.Any(f => f.FollowerId == loggedInUserId && f.FollowingId == id);
+            var followersCount = _context.Follows.Count(f => f.FollowingId == id && f.IsAccepted);
+            var followingCount = _context.Follows.Count(f => f.FollowerId == id && f.IsAccepted);
+            var isFollowing = _context.Follows.Any(f => f.FollowerId == loggedInUserId && f.FollowingId == id && f.IsAccepted);
+            var isPending = _context.Follows.Any(f => f.FollowerId == loggedInUserId && f.FollowingId == id && !f.IsAccepted);
             var bookCount = _context.Books.Count(b => b.UserId == id);
 
             // Toplam Odaklanma Süresi (Saat bazında)
@@ -260,9 +262,13 @@ namespace BookManagementApp.Controllers
             ViewBag.FollowersCount = followersCount;
             ViewBag.FollowingCount = followingCount;
             ViewBag.IsFollowing = isFollowing;
+            ViewBag.IsPending = isPending;
             ViewBag.BookCount = bookCount;
             ViewBag.TotalFocusHours = totalFocusHours;
             ViewBag.LoggedInUserId = loggedInUserId;
+            ViewBag.IsBlockedByMe = isBlockedByMe;
+            ViewBag.IsBlockingMe = isBlockingMe;
+            ViewBag.IsPrivate = user.IsPrivate;
 
             if (loggedInUserId == id)
             {
@@ -276,7 +282,7 @@ namespace BookManagementApp.Controllers
 
                 ViewBag.OwnedFrames = ownedFrames;
                 ViewBag.ActiveFrameImageUrl = user.ActiveFrameImageUrl;
-                
+
                 var ownedAvatarIds = _context.UserAvatars
                     .Where(ua => ua.UserId == id)
                     .Select(ua => ua.ProfileAvatarId)
@@ -303,6 +309,7 @@ namespace BookManagementApp.Controllers
             {
                 user.UserName = model.UserName;
                 user.Bio = model.Bio;
+                user.IsPrivate = model.IsPrivate;
 
                 if (!string.IsNullOrEmpty(model.PasswordHash))
                 {
@@ -328,28 +335,105 @@ namespace BookManagementApp.Controllers
 
             if (loggedInUserId == targetId) return Json(new { success = false, message = "Kendinizi takip edemezsiniz." });
 
+            // DÜZELTME: Engel kontrolü eklendi — taraflardan biri diğerini engellediyse takip işlemi yapılamaz
+            var isBlocked = _context.Blocks.Any(b =>
+                (b.BlockerId == targetId && b.BlockedId == loggedInUserId.Value) ||
+                (b.BlockerId == loggedInUserId.Value && b.BlockedId == targetId));
+            if (isBlocked) return Json(new { success = false, message = "Bu işlem gerçekleştirilemiyor." });
+
             var existingFollow = _context.Follows.FirstOrDefault(f => f.FollowerId == loggedInUserId && f.FollowingId == targetId);
+            var targetUser = _context.Users.FirstOrDefault(u => u.Id == targetId);
+
+            if (targetUser == null) return Json(new { success = false, message = "Kullanıcı bulunamadı." });
 
             if (existingFollow != null)
             {
-                // Takipten Çık
+                // Takipten Çık veya İsteği Geri Çek
                 _context.Follows.Remove(existingFollow);
                 _context.SaveChanges();
-                return Json(new { success = true, isFollowing = false });
+                return Json(new { success = true, isFollowing = false, isPending = false });
             }
             else
             {
-                // Takip Et
+                // Takip Et veya İstek Gönder
                 var newFollow = new Follow
                 {
                     FollowerId = loggedInUserId.Value,
                     FollowingId = targetId,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.Now,
+                    IsAccepted = !targetUser.IsPrivate // Gizli hesapsa false, değilse true
                 };
                 _context.Follows.Add(newFollow);
                 _context.SaveChanges();
-                return Json(new { success = true, isFollowing = true });
+                return Json(new { success = true, isFollowing = newFollow.IsAccepted, isPending = !newFollow.IsAccepted });
             }
+        }
+
+        // ============================================================
+        //  YENİ: TAKİP İSTEKLERİ (Community sayfasındaki modal bunları çağırıyor)
+        // ============================================================
+
+        // Bekleyen (kabul edilmemiş) takip isteklerini listeler
+        [HttpGet]
+        public async Task<IActionResult> GetFollowRequests()
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            // Navigation property'ye bağımlı kalmamak için join kullanıldı
+            var data = await (from f in _context.Follows
+                              join u in _context.Users on f.FollowerId equals u.Id
+                              where f.FollowingId == loggedInUserId.Value && !f.IsAccepted
+                              orderby f.CreatedAt descending
+                              select new
+                              {
+                                  followerId = f.FollowerId,
+                                  userName = u.UserName,
+                                  profileImage = u.ProfileImageUrl,
+                                  activeFrame = u.ActiveFrameImageUrl
+                              }).ToListAsync();
+
+            return Json(new { success = true, data });
+        }
+
+        // Takip isteğini kabul eder
+        [HttpPost]
+        public async Task<IActionResult> AcceptFollowRequest(int followerId)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            var request = await _context.Follows.FirstOrDefaultAsync(f =>
+                f.FollowerId == followerId &&
+                f.FollowingId == loggedInUserId.Value &&
+                !f.IsAccepted);
+
+            if (request == null) return Json(new { success = false, message = "İstek bulunamadı." });
+
+            request.IsAccepted = true;
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        // Takip isteğini reddeder (kaydı siler)
+        [HttpPost]
+        public async Task<IActionResult> RejectFollowRequest(int followerId)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            var request = await _context.Follows.FirstOrDefaultAsync(f =>
+                f.FollowerId == followerId &&
+                f.FollowingId == loggedInUserId.Value &&
+                !f.IsAccepted);
+
+            if (request == null) return Json(new { success = false, message = "İstek bulunamadı." });
+
+            _context.Follows.Remove(request);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
         }
 
         [HttpGet]
@@ -371,7 +455,7 @@ namespace BookManagementApp.Controllers
 
             ViewBag.OwnedFrames = ownedFrames;
             ViewBag.ActiveFrameImageUrl = user.ActiveFrameImageUrl;
-            
+
             var ownedAvatarIds = _context.UserAvatars
                 .Where(ua => ua.UserId == userId)
                 .Select(ua => ua.ProfileAvatarId)
@@ -423,28 +507,119 @@ namespace BookManagementApp.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var query = _context.Users.AsQueryable();
+            var blockedOrBlockingIds = _context.Blocks
+                .Where(b => b.BlockerId == loggedInUserId.Value || b.BlockedId == loggedInUserId.Value)
+                .Select(b => b.BlockerId == loggedInUserId.Value ? b.BlockedId : b.BlockerId)
+                .ToList();
+
+            // DÜZELTME: Kullanıcının kendisi artık sorguda dışlanıyor
+            // (önceden view'da gizleniyordu; bu, listede sadece sen varken
+            // "Sonuç Bulunamadı" yerine boş liste görünmesine yol açıyordu)
+            var query = _context.Users
+                .Include(u => u.Books)
+                .Where(u =>
+                !u.IsBanned &&
+                u.Id != loggedInUserId.Value &&
+                !blockedOrBlockingIds.Contains(u.Id)).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(q))
             {
-                query = query.Where(u => u.UserName.Contains(q));
+                // DÜZELTME: Büyük/küçük harf duyarsız arama (tüm veritabanı sağlayıcılarında tutarlı)
+                var lowered = q.ToLower();
+                query = query.Where(u => u.UserName.ToLower().Contains(lowered));
             }
 
             var users = await query
                 .OrderByDescending(u => u.WisdomStones)
                 .ToListAsync();
 
+            // DÜZELTME: Hassas alan view'a gitmesin
+            foreach (var u in users)
+            {
+                u.PasswordHash = string.Empty;
+            }
+
             ViewBag.SearchQuery = q;
             ViewBag.CurrentUserId = loggedInUserId;
 
-            var followings = await _context.Follows
-                .Where(f => f.FollowerId == loggedInUserId.Value)
+            var acceptedFollowings = await _context.Follows
+                .Where(f => f.FollowerId == loggedInUserId.Value && f.IsAccepted)
                 .Select(f => f.FollowingId)
                 .ToListAsync();
 
-            ViewBag.Followings = followings;
+            var requestedFollowings = await _context.Follows
+                .Where(f => f.FollowerId == loggedInUserId.Value && !f.IsAccepted)
+                .Select(f => f.FollowingId)
+                .ToListAsync();
+
+            ViewBag.AcceptedFollowings = acceptedFollowings;
+            ViewBag.RequestedFollowings = requestedFollowings;
+
+            // DÜZELTME: "Takip İstekleri" butonundaki rozet için gelen istek sayısı
+            // (önceden hiç set edilmiyordu, rozet her zaman gizli kalıyordu)
+            ViewBag.IncomingRequestCount = await _context.Follows
+                .CountAsync(f => f.FollowingId == loggedInUserId.Value && !f.IsAccepted);
 
             return View(users);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleBlock(int userId)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Lütfen giriş yapın." });
+
+            var existingBlock = await _context.Blocks
+                .FirstOrDefaultAsync(b => b.BlockerId == loggedInUserId.Value && b.BlockedId == userId);
+
+            if (existingBlock != null)
+            {
+                _context.Blocks.Remove(existingBlock);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, isBlocked = false, message = "Engel kaldırıldı." });
+            }
+            else
+            {
+                var block = new BookManagementApp.Models.Block
+                {
+                    BlockerId = loggedInUserId.Value,
+                    BlockedId = userId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Blocks.Add(block);
+
+                var follow1 = await _context.Follows.FirstOrDefaultAsync(f => f.FollowerId == loggedInUserId.Value && f.FollowingId == userId);
+                var follow2 = await _context.Follows.FirstOrDefaultAsync(f => f.FollowerId == userId && f.FollowingId == loggedInUserId.Value);
+                if (follow1 != null) _context.Follows.Remove(follow1);
+                if (follow2 != null) _context.Follows.Remove(follow2);
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, isBlocked = true, message = "Kullanıcı engellendi." });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ReportUser(int reportedUserId, string reason, string details)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Lütfen giriş yapın." });
+
+            if (string.IsNullOrWhiteSpace(reason)) return Json(new { success = false, message = "Lütfen bir sebep belirtin." });
+
+            var report = new BookManagementApp.Models.Report
+            {
+                ReporterId = loggedInUserId.Value,
+                ReportedUserId = reportedUserId,
+                Reason = reason,
+                Details = details,
+                CreatedAt = DateTime.UtcNow,
+                IsResolved = false
+            };
+
+            _context.Reports.Add(report);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Şikayetiniz başarıyla iletildi." });
         }
 
         // --- SOCIAL INTERACTIONS ---
@@ -464,7 +639,7 @@ namespace BookManagementApp.Controllers
 
             var likesCount = await _context.BookLikes.CountAsync(bl => bl.BookId == id);
             var isLikedByMe = await _context.BookLikes.AnyAsync(bl => bl.BookId == id && bl.UserId == loggedInUserId);
-            
+
             var comments = await _context.BookComments
                 .Include(bc => bc.User)
                 .Where(bc => bc.BookId == id)

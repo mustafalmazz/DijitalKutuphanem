@@ -23,6 +23,9 @@ namespace BookManagementApp.ViewComponents
                 viewModel.User = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
                 viewModel.Categories = await _context.Categories.Where(c=>c.UserId == userId).ToListAsync();
+                
+                int requestCount = await _context.Follows.CountAsync(f => f.FollowingId == userId && !f.IsAccepted);
+                ViewBag.FollowRequestCount = requestCount;
             }
             return View(viewModel);
         }

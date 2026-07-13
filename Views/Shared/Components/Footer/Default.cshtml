@@ -1,4 +1,4 @@
-@using Microsoft.AspNetCore.Http
+﻿@using Microsoft.AspNetCore.Http
 <style>
     body {
         display: flex;
@@ -566,8 +566,11 @@
     </div>
     <ul class="action-sheet-list">
         <li>
-            <a href="/Profile/Community" class="action-sheet-item">
+            <a href="/Profile/Community" class="action-sheet-item d-flex align-items-center">
                 <i class="fa-solid fa-users"></i> Topluluk
+                <span id="toplulukBadge" class="badge bg-danger rounded-pill ms-auto @(ViewBag.FollowRequestCount != null && ViewBag.FollowRequestCount > 0 ? "" : "d-none")" style="font-size: 0.8rem; margin-right: 0;">
+                    @(ViewBag.FollowRequestCount ?? 0)
+                </span>
             </a>
         </li>
         @if (Context.Session.GetInt32("UserId") != null)
@@ -642,9 +645,18 @@
     <button type="button" class="bottom-nav-item position-relative" id="nav-menu-btn">
         <i class="fa-solid fa-bars"></i>
         <span>Menü</span>
-        <span id="mobileMenuDot" class="position-absolute top-0 start-50 translate-middle p-1 bg-danger border border-light rounded-circle d-none" style="margin-top: 5px; margin-left: 10px;">
-            <span class="visually-hidden">Yeni mesaj</span>
-        </span>
+        @if (ViewBag.FollowRequestCount != null && ViewBag.FollowRequestCount > 0)
+        {
+            <span id="mobileMenuDot" data-follow-requests="true" class="position-absolute top-0 start-50 translate-middle p-1 bg-danger border border-light rounded-circle" style="margin-top: 5px; margin-left: 10px;">
+                <span class="visually-hidden">Yeni bildirim</span>
+            </span>
+        }
+        else
+        {
+            <span id="mobileMenuDot" data-follow-requests="false" class="position-absolute top-0 start-50 translate-middle p-1 bg-danger border border-light rounded-circle d-none" style="margin-top: 5px; margin-left: 10px;">
+                <span class="visually-hidden">Yeni bildirim</span>
+            </span>
+        }
     </button>
 </nav>
 

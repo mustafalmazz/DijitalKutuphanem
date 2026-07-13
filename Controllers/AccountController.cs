@@ -1,4 +1,4 @@
-using BookManagementApp.Areas.Admin.Models;
+﻿using BookManagementApp.Areas.Admin.Models;
 using BookManagementApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
@@ -73,6 +73,12 @@ namespace BookManagementApp.Controllers
 
             if (user != null)
             {
+                if (user.IsBanned)
+                {
+                    ViewBag.Error = "Hesabınız topluluk kurallarını ihlal ettiği gerekçesiyle askıya alınmıştır.";
+                    return View();
+                }
+
                 try
                 {
                     if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash.StartsWith("$2"))
@@ -132,6 +138,12 @@ namespace BookManagementApp.Controllers
 
             if (user != null)
             {
+                if (user.IsBanned)
+                {
+                    ViewBag.Error = "Hesabınız topluluk kurallarını ihlal ettiği gerekçesiyle askıya alınmıştır.";
+                    return View("Login");
+                }
+
                 await SignInUserAsync(user);
 
                 if (user.Role == "SuperAdmin")

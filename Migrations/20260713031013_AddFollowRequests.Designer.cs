@@ -4,6 +4,7 @@ using BookManagementApp.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookManagementApp.Migrations
 {
     [DbContext(typeof(MyDbContext))]
-    partial class MyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713031013_AddFollowRequests")]
+    partial class AddFollowRequests
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -241,9 +244,6 @@ namespace BookManagementApp.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<bool>("IsBanned")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsPrivate")
                         .HasColumnType("bit");
 
@@ -331,32 +331,6 @@ namespace BookManagementApp.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserFrames");
-                });
-
-            modelBuilder.Entity("BookManagementApp.Models.Block", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BlockedId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("BlockerId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BlockedId");
-
-                    b.HasIndex("BlockerId");
-
-                    b.ToTable("Blocks");
                 });
 
             modelBuilder.Entity("BookManagementApp.Models.Book", b =>
@@ -735,49 +709,6 @@ namespace BookManagementApp.Migrations
                         });
                 });
 
-            modelBuilder.Entity("BookManagementApp.Models.Report", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AdminNotes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Details")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsResolved")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("ReportedUserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ReporterId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReportedUserId");
-
-                    b.HasIndex("ReporterId");
-
-                    b.ToTable("Reports");
-                });
-
             modelBuilder.Entity("BookManagementApp.Models.StorePackage", b =>
                 {
                     b.Property<int>("Id")
@@ -894,25 +825,6 @@ namespace BookManagementApp.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("BookManagementApp.Models.Block", b =>
-                {
-                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "Blocked")
-                        .WithMany()
-                        .HasForeignKey("BlockedId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "Blocker")
-                        .WithMany()
-                        .HasForeignKey("BlockerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Blocked");
-
-                    b.Navigation("Blocker");
-                });
-
             modelBuilder.Entity("BookManagementApp.Models.Book", b =>
                 {
                     b.HasOne("BookManagementApp.Models.Category", "Category")
@@ -1014,25 +926,6 @@ namespace BookManagementApp.Migrations
                     b.Navigation("Follower");
 
                     b.Navigation("Following");
-                });
-
-            modelBuilder.Entity("BookManagementApp.Models.Report", b =>
-                {
-                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "ReportedUser")
-                        .WithMany()
-                        .HasForeignKey("ReportedUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "Reporter")
-                        .WithMany()
-                        .HasForeignKey("ReporterId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ReportedUser");
-
-                    b.Navigation("Reporter");
                 });
 
             modelBuilder.Entity("BookManagementApp.Models.StudySession", b =>

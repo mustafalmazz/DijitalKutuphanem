@@ -1,7 +1,8 @@
 @model IEnumerable<BookManagementApp.Areas.Admin.Models.User>
 @{
     ViewData["Title"] = "Topluluk";
-    var followings = ViewBag.Followings as List<int> ?? new List<int>();
+    var acceptedFollowings = ViewBag.AcceptedFollowings as List<int> ?? new List<int>();
+    var requestedFollowings = ViewBag.RequestedFollowings as List<int> ?? new List<int>();
     var currentUserId = ViewBag.CurrentUserId as int?;
 }
 
@@ -24,7 +25,7 @@
     .community-title {
         color: #4a3f35;
         font-weight: 800;
-        font-size: 2.2rem;
+        font-size: 1.7rem;
         margin-bottom: 10px;
     }
 
@@ -34,12 +35,44 @@
         font-style: italic;
     }
 
-    /* Arama Kutusu */
+    /* Arama Kutusu ve Butonlar */
     .community-search-form {
         position: relative;
-        margin-bottom: 30px;
+        margin-bottom: 0;
         box-shadow: 0 8px 25px rgba(107, 85, 65, 0.15);
         border-radius: 50px;
+    }
+
+    .community-requests-btn {
+        height: 60px;
+        width: 60px;
+        border-radius: 50%;
+        background: #fff;
+        color: #8b6f47;
+        border: 2px solid rgba(139, 111, 71, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        position: relative;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(107, 85, 65, 0.15);
+        flex-shrink: 0;
+    }
+
+    .community-requests-btn:hover {
+        border-color: #cda45e;
+        color: #cda45e;
+        transform: translateY(-2px);
+    }
+
+    .community-requests-btn .badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-size: 0.65rem;
+        border: 2px solid #fff;
+        padding: 0.25em 0.4em;
     }
 
     .community-search-input {
@@ -54,11 +87,11 @@
         transition: all 0.3s ease;
     }
 
-    .community-search-input:focus {
-        outline: none;
-        border-color: #cda45e;
-        box-shadow: 0 0 0 4px rgba(205, 164, 94, 0.2);
-    }
+        .community-search-input:focus {
+            outline: none;
+            border-color: #cda45e;
+            box-shadow: 0 0 0 4px rgba(205, 164, 94, 0.2);
+        }
 
     .community-search-btn {
         position: absolute;
@@ -77,10 +110,10 @@
         transition: all 0.3s ease;
     }
 
-    .community-search-btn:hover {
-        background: linear-gradient(135deg, #cda45e, #a0785a);
-        transform: scale(1.05);
-    }
+        .community-search-btn:hover {
+            background: linear-gradient(135deg, #cda45e, #a0785a);
+            transform: scale(1.05);
+        }
 
     /* Kullanıcı Listesi */
     .community-list {
@@ -89,6 +122,8 @@
         gap: 15px;
     }
 
+    /* Kart artık <a> değil <div>; tıklama JS ile profile gider.
+           (a içinde button geçersiz HTML olduğu için düzeltildi) */
     .user-card {
         background: #fff;
         border-radius: 20px;
@@ -101,13 +136,14 @@
         transition: all 0.3s ease;
         text-decoration: none;
         color: inherit;
+        cursor: pointer;
     }
 
-    .user-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(107, 85, 65, 0.15);
-        border-color: rgba(205, 164, 94, 0.4);
-    }
+        .user-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(107, 85, 65, 0.15);
+            border-color: rgba(205, 164, 94, 0.4);
+        }
 
     .user-avatar-wrap {
         width: 60px;
@@ -170,7 +206,7 @@
         font-weight: 600;
     }
 
-    .user-stones {
+    .user-books {
         font-size: 0.8rem;
         color: #a08b6d;
         margin-left: 8px;
@@ -193,41 +229,54 @@
         position: relative;
     }
 
-    .btn-follow-toggle.not-following {
-        background: linear-gradient(135deg, #8b6f47, #6b5541);
-        color: #fff;
-        box-shadow: 0 4px 12px rgba(107, 85, 65, 0.2);
-    }
+        .btn-follow-toggle.not-following {
+            background: linear-gradient(135deg, #8b6f47, #6b5541);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(107, 85, 65, 0.2);
+        }
 
-    .btn-follow-toggle.not-following:hover {
-        background: linear-gradient(135deg, #a0785a, #8b6f47);
-        transform: translateY(-2px);
-    }
+            .btn-follow-toggle.not-following:hover {
+                background: linear-gradient(135deg, #a0785a, #8b6f47);
+                transform: translateY(-2px);
+            }
 
-    .btn-follow-toggle.following {
-        background: #efe6d6;
-        color: #8b6f47;
-        border: 1px solid rgba(139, 111, 71, 0.2);
-    }
+        .btn-follow-toggle.following {
+            background: #efe6d6;
+            color: #8b6f47;
+            border: 1px solid rgba(139, 111, 71, 0.2);
+        }
 
-    .btn-follow-toggle.following:hover {
-        background: #e6dac8;
-        color: #dc3545;
-        border-color: #dc3545;
-    }
+            .btn-follow-toggle.following:hover {
+                background: #e6dac8;
+                color: #dc3545;
+                border-color: #dc3545;
+            }
 
-    .btn-follow-toggle.following:hover .follow-text::before {
-        content: 'Takipten Çık';
-    }
-    .btn-follow-toggle.following:hover .follow-text {
-        font-size: 0;
-    }
-    .btn-follow-toggle.following:hover .follow-text::before {
-        font-size: 0.85rem;
-    }
-    .btn-follow-toggle.following:hover i::before {
-        content: "\f235"; /* fa-user-minus */
-    }
+                .btn-follow-toggle.following:hover .follow-text::before {
+                    content: 'Takipten Çık';
+                }
+
+                .btn-follow-toggle.following:hover .follow-text {
+                    font-size: 0;
+                }
+
+                    .btn-follow-toggle.following:hover .follow-text::before {
+                        font-size: 0.85rem;
+                    }
+
+                .btn-follow-toggle.following:hover i::before {
+                    content: "\f503"; /* fa-user-minus */
+                }
+
+        .btn-follow-toggle.requested {
+            background: transparent;
+            color: #d9a441;
+            border: 1px solid #d9a441;
+        }
+
+            .btn-follow-toggle.requested:hover {
+                background: rgba(217, 164, 65, 0.08);
+            }
 
     /* Boş Durum */
     .empty-state {
@@ -238,34 +287,37 @@
         border: 1px dashed rgba(139, 111, 71, 0.3);
     }
 
-    .empty-state i {
-        font-size: 3rem;
-        color: #d4c5b0;
-        margin-bottom: 15px;
-    }
+        .empty-state i {
+            font-size: 3rem;
+            color: #d4c5b0;
+            margin-bottom: 15px;
+        }
 
-    .empty-state h3 {
-        color: #6b5541;
-        font-size: 1.3rem;
-        margin-bottom: 8px;
-    }
+        .empty-state h3 {
+            color: #6b5541;
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
 
-    .empty-state p {
-        color: #a08b6d;
-    }
-    
+        .empty-state p {
+            color: #a08b6d;
+        }
+
     @@media (max-width: 576px) {
         .user-card {
             padding: 15px;
             gap: 12px;
         }
+
         .user-avatar-wrap {
             width: 50px;
             height: 50px;
         }
+
         .user-name {
             font-size: 1rem;
         }
+
         .btn-follow-toggle {
             padding: 6px 14px;
             font-size: 0.8rem;
@@ -279,12 +331,25 @@
         <p class="community-subtitle">Diğer okurları keşfet ve kütüphanelerini incele</p>
     </div>
 
-    <form class="community-search-form" method="get" action="/Profile/Community">
-        <input type="text" name="q" class="community-search-input" placeholder="Kullanıcı adı ile ara..." value="@ViewBag.SearchQuery" autocomplete="off" />
-        <button type="submit" class="community-search-btn">
-            <i class="fa-solid fa-magnifying-glass"></i>
-        </button>
-    </form>
+    <div class="d-flex align-items-center gap-2 mb-4">
+        
+
+        @if (currentUserId.HasValue)
+        {
+            <button type="button" class="community-requests-btn" onclick="openRequestsModal()" title="Takip İstekleri">
+                <i class="fa-solid fa-bell"></i>
+                <span id="communityRequestsBadge" class="badge bg-danger rounded-pill @(ViewBag.IncomingRequestCount != null && ViewBag.IncomingRequestCount > 0 ? "" : "d-none")">
+                    @(ViewBag.IncomingRequestCount ?? 0)
+                </span>
+            </button>
+        }
+        <form class="community-search-form flex-grow-1" method="get" action="/Profile/Community">
+            <input type="text" name="q" class="community-search-input" placeholder="Kullanıcı adı ile ara..." value="@ViewBag.SearchQuery" autocomplete="off" />
+            <button type="submit" class="community-search-btn">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+        </form>
+    </div>
 
     @if (!Model.Any())
     {
@@ -303,8 +368,6 @@
         <div class="community-list">
             @foreach (var user in Model)
             {
-                if (user.Id == currentUserId) continue; // Kendini listede gizle
-
                 int stones = user.WisdomStones;
                 string levelName;
                 string levelIcon;
@@ -315,9 +378,10 @@
                 else if (stones < 12000) { levelName = "Üstat"; levelIcon = "fa-crown"; }
                 else { levelName = "Efsane"; levelIcon = "fa-star"; }
 
-                bool isFollowing = followings.Contains(user.Id);
+                bool isFollowing = acceptedFollowings.Contains(user.Id);
+                bool isRequested = requestedFollowings.Contains(user.Id);
 
-                <a href="/Profile/PublicProfile?id=@user.Id" class="user-card">
+                <div class="user-card" onclick="goToProfile(@user.Id)" role="link" tabindex="0" onkeydown="if(event.key==='Enter'){goToProfile(@user.Id);}">
                     <div class="user-avatar-wrap">
                         @if (!string.IsNullOrEmpty(user.ProfileImageUrl))
                         {
@@ -339,43 +403,68 @@
                         <div class="user-level">
                             <i class="fa-solid @levelIcon"></i> @levelName
                         </div>
-                        <span class="user-stones"><i class="fa-solid fa-gem" style="color:#cda45e;"></i> @stones</span>
+                        <span class="user-books" title="Kitap Sayısı"><i class="fa-solid fa-book" style="color:#cda45e;"></i> @(user.Books?.Count ?? 0)</span>
                     </div>
 
-                    <button type="button" 
-                            class="btn-follow-toggle @(isFollowing ? "following" : "not-following")" 
+                    <button type="button"
+                            class="btn-follow-toggle @(isFollowing ? "following" : (isRequested ? "requested" : "not-following"))"
                             onclick="toggleFollowList(event, @user.Id, this)">
-                        <i class="fa-solid @(isFollowing ? "fa-user-check" : "fa-user-plus")"></i>
-                        <span class="follow-text">@(isFollowing ? "Takiptesin" : "Takip Et")</span>
+                        <i class="fa-solid @(isFollowing ? "fa-user-check" : (isRequested ? "fa-clock" : "fa-user-plus"))"></i>
+                        <span class="follow-text">@(isFollowing ? "Takiptesin" : (isRequested ? "İstek Gönderildi" : "Takip Et"))</span>
                     </button>
-                </a>
+                </div>
             }
         </div>
     }
 </div>
 
+<!-- Takip İstekleri Modalı -->
+<div class="modal fade" id="requestsModal" tabindex="-1" aria-labelledby="requestsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #fff9f0; border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(107, 85, 65, 0.2);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(139, 111, 71, 0.2);">
+                <h5 class="modal-title" id="requestsModalLabel" style="color: #4a3f35; font-weight: 700; font-family: 'Georgia', serif;">
+                    <i class="fa-solid fa-bell"></i> Takip İstekleri
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body" id="requestsModalBody" style="padding: 15px; max-height: 400px; overflow-y: auto;">
+                <div class="text-center"><i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        // Kart tıklaması ile profile git (a içinde button geçersiz olduğu için div + JS kullanıldı)
+        function goToProfile(userId) {
+            window.location.href = '/Profile/PublicProfile?id=' + userId;
+        }
+
         function toggleFollowList(e, userId, btnElement) {
-            e.preventDefault(); // karta tıklanmasını engelle (profile gitmesin)
+            e.preventDefault();
             e.stopPropagation();
 
             var $btn = $(btnElement);
             var $icon = $btn.find('i.fa-solid');
             var $text = $btn.find('.follow-text');
 
-            // disabled yap
             $btn.prop('disabled', true);
 
             $.post('/Profile/ToggleFollow', { targetId: userId }, function (res) {
                 if (res.success) {
                     if (res.isFollowing) {
-                        $btn.removeClass('not-following').addClass('following');
-                        $icon.removeClass('fa-user-plus').addClass('fa-user-check');
+                        $btn.removeClass('not-following requested').addClass('following');
+                        $icon.removeClass('fa-user-plus fa-clock').addClass('fa-user-check');
                         $text.text('Takiptesin');
+                    } else if (res.isPending) { // DÜZELTİLDİ: backend "isPending" dönüyor, "isRequested" değil
+                        $btn.removeClass('not-following following').addClass('requested');
+                        $icon.removeClass('fa-user-plus fa-user-check').addClass('fa-clock');
+                        $text.text('İstek Gönderildi');
                     } else {
-                        $btn.removeClass('following').addClass('not-following');
-                        $icon.removeClass('fa-user-check').addClass('fa-user-plus');
+                        $btn.removeClass('following requested').addClass('not-following');
+                        $icon.removeClass('fa-user-check fa-clock').addClass('fa-user-plus');
                         $text.text('Takip Et');
                     }
                 } else {
@@ -385,6 +474,106 @@
             }).fail(function () {
                 alert("Sunucu ile bağlantı kurulamadı.");
                 $btn.prop('disabled', false);
+            });
+        }
+
+        var reqModal;
+        function openRequestsModal() {
+            if (!reqModal) {
+                reqModal = new bootstrap.Modal(document.getElementById('requestsModal'));
+            }
+            reqModal.show();
+            loadRequests();
+        }
+
+        function loadRequests() {
+            var body = $('#requestsModalBody');
+            body.html('<div class="text-center"><i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...</div>');
+
+            $.get('/Profile/GetFollowRequests', function (res) {
+                if (res.success) {
+                    if (res.data.length === 0) {
+                        body.html('<div class="text-center text-muted" style="padding: 20px;">Bekleyen takip isteği yok.</div>');
+                        return;
+                    }
+                    var html = '<div class="list-group list-group-flush">';
+                    res.data.forEach(function (req) {
+                        var avatarContent = req.profileImage
+                            ? '<img src="' + req.profileImage + '" style="width:40px;height:40px;border-radius:10px;object-fit:cover;">'
+                            : '<div style="width:40px;height:40px;border-radius:10px;background:#e6dac8;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#8b6f47;">' + req.userName.charAt(0).toUpperCase() + '</div>';
+
+                        var frameContent = req.activeFrame
+                            ? '<img src="' + req.activeFrame + '" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;">'
+                            : '';
+
+                        var avatarHtml = '<div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">' + avatarContent + frameContent + '</div>';
+
+                        html += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center" style="background:transparent; border-color: rgba(139,111,71,0.1);" id="req-item-${req.followerId}">
+                            <a href="/Profile/PublicProfile/${req.followerId}" class="d-flex align-items-center gap-3 text-decoration-none" style="flex-grow: 1;">
+                                ${avatarHtml}
+                                <span style="font-weight: 600; color: #4a3f35; transition: color 0.2s;" onmouseover="this.style.color='#8b6f47'" onmouseout="this.style.color='#4a3f35'">${req.userName}</span>
+                            </a>
+                            <div style="flex-shrink: 0;">
+                                <button class="btn btn-sm btn-success me-1" onclick="handleReq(${req.followerId}, true)"><i class="fa-solid fa-check"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="handleReq(${req.followerId}, false)"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>`;
+                    });
+                    html += '</div>';
+                    body.html(html);
+                } else {
+                    body.html('<div class="text-center text-danger">İstekler yüklenemedi.</div>');
+                }
+            }).fail(function () {
+                body.html('<div class="text-center text-danger">İstekler yüklenemedi.</div>');
+            });
+        }
+
+        function handleReq(followerId, isAccept) {
+            var url = isAccept ? '/Profile/AcceptFollowRequest' : '/Profile/RejectFollowRequest';
+            $.post(url, { followerId: followerId }, function (res) {
+                if (res.success) {
+                    $('#req-item-' + followerId).fadeOut(300, function() {
+                        $(this).remove();
+
+                        var decrementFn = function(selector) {
+                            var b = $(selector);
+                            if (b.length) {
+                                var curr = parseInt(b.text()) || 0;
+                                if (curr > 1) {
+                                    b.text(curr - 1);
+                                } else {
+                                    b.text(0).addClass('d-none');
+                                }
+                            }
+                        };
+
+                        decrementFn('#toplulukBadge');
+                        decrementFn('#communityRequestsBadge');
+
+                        // Mobil menü nokta kontrolü
+                        var tBadge = $('#toplulukBadge');
+                        if (tBadge.length && (parseInt(tBadge.text()) || 0) === 0) {
+                            var md = $('#mobileMenuDot');
+                            if (md.length) {
+                                md.data('follow-requests', false);
+                                var mb = $('#mobileUnreadBadge');
+                                if (!mb.length || mb.hasClass('d-none')) {
+                                    md.addClass('d-none');
+                                }
+                            }
+                        }
+
+                        if ($('#requestsModalBody .list-group-item').length === 0) {
+                            $('#requestsModalBody').html('<div class="text-center text-muted" style="padding: 20px;">Bekleyen takip isteği yok.</div>');
+                        }
+                    });
+                } else {
+                    alert((res && res.message) || "İşlem gerçekleştirilemedi.");
+                }
+            }).fail(function () {
+                alert("Sunucu ile bağlantı kurulamadı.");
             });
         }
     </script>

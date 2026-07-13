@@ -1,4 +1,4 @@
-@using BookManagementApp.Areas.Admin.Models
+﻿@using BookManagementApp.Areas.Admin.Models
 @model User
 @{
     ViewData["Title"] = "Profili Düzenle";
@@ -401,6 +401,14 @@
                         <textarea class="ep-input ep-textarea" asp-for="Bio" id="bioInput" placeholder="Kendinizden kısaca bahsedin..." maxlength="160"></textarea>
                         <i class="fa-solid fa-quote-left ep-form-icon"></i>
                         <div class="char-counter"><span id="charCount">0</span>/160</div>
+                    </div>
+
+                    <!-- Gizlilik -->
+                    <div class="ep-form-group form-check form-switch" style="margin-bottom: 20px; padding-left: 45px;">
+                        <input type="checkbox" class="form-check-input" asp-for="IsPrivate" id="IsPrivateCheck" style="width: 40px; height: 20px; margin-left: -40px; cursor: pointer;" />
+                        <label class="form-check-label" for="IsPrivateCheck" style="color: #4a3f35; font-weight: 600; margin-left: 5px; cursor: pointer;">
+                            Gizli Profil <span style="font-size: 0.8rem; color: #8b6f47; font-weight: normal;">(Sadece takipçileriniz kitaplarınızı ve istatistiklerinizi görebilir)</span>
+                        </label>
                     </div>
 
                     <!-- Şifre -->

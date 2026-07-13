@@ -1,4 +1,4 @@
-using BookManagementApp.Areas.Admin.Models;
+﻿using BookManagementApp.Areas.Admin.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookManagementApp.Models
@@ -24,6 +24,8 @@ namespace BookManagementApp.Models
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<BookLike> BookLikes { get; set; }
         public DbSet<BookComment> BookComments { get; set; }
+        public DbSet<Block> Blocks { get; set; }
+        public DbSet<Report> Reports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -104,6 +106,30 @@ namespace BookManagementApp.Models
                 .WithMany()
                 .HasForeignKey(bc => bc.BookId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Block>()
+                .HasOne(b => b.Blocker)
+                .WithMany()
+                .HasForeignKey(b => b.BlockerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Block>()
+                .HasOne(b => b.Blocked)
+                .WithMany()
+                .HasForeignKey(b => b.BlockedId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Report>()
+                .HasOne(r => r.Reporter)
+                .WithMany()
+                .HasForeignKey(r => r.ReporterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Report>()
+                .HasOne(r => r.ReportedUser)
+                .WithMany()
+                .HasForeignKey(r => r.ReportedUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // --- MAĞAZA SEED DATA ---
             modelBuilder.Entity<ProfileFrame>().HasData(

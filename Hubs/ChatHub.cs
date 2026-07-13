@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using BookManagementApp.Areas.Admin.Models; // For MyDbContext
 using BookManagementApp.Models; // For ChatMessage

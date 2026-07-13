@@ -1,4 +1,4 @@
-using BookManagementApp.Areas.Admin.Models;
+﻿using BookManagementApp.Areas.Admin.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace BookManagementApp.Models

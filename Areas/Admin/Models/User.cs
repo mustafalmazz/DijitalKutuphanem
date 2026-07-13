@@ -1,4 +1,4 @@
-using BookManagementApp.Models;
+﻿using BookManagementApp.Models;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -42,6 +42,10 @@ namespace BookManagementApp.Areas.Admin.Models
 
         [StringLength(160, ErrorMessage = "Biyografi en fazla 160 karakter olabilir.")]
         public string? Bio { get; set; }
+
+        public bool IsPrivate { get; set; } = true;
+
+        public bool IsBanned { get; set; } = false;
 
         public DateTime CreateDate { get; set; } = DateTime.Now;
 

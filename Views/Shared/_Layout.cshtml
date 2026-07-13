@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -162,6 +162,8 @@
 
             function updateBadgeCount(count) {
                 var menuDot = $('#mobileMenuDot');
+                var hasFollowReq = menuDot.data('follow-requests') === true;
+
                 if (count > 0) {
                     if (badge.length) badge.text(count).removeClass('d-none');
                     if (mobileBadge.length) mobileBadge.text(count).removeClass('d-none');
@@ -169,7 +171,9 @@
                 } else {
                     if (badge.length) badge.addClass('d-none');
                     if (mobileBadge.length) mobileBadge.addClass('d-none');
-                    if (menuDot.length) menuDot.addClass('d-none');
+                    if (menuDot.length && !hasFollowReq) {
+                        menuDot.addClass('d-none');
+                    }
                 }
             }
 
@@ -187,6 +191,65 @@
                 if (!isChattingWithSender) {
                     var currentCount = parseInt(badge.text()) || 0;
                     updateBadgeCount(currentCount + 1);
+                }
+            });
+
+            window.globalConnection.on("ReceiveFollowNotification", function () {
+                var tBadge = $('#toplulukBadge');
+                if (tBadge.length) {
+                    var current = parseInt(tBadge.text()) || 0;
+                    tBadge.text(current + 1).removeClass('d-none');
+                }
+
+                var cBadge = $('#communityRequestsBadge');
+                if (cBadge.length) {
+                    var currentC = parseInt(cBadge.text()) || 0;
+                    cBadge.text(currentC + 1).removeClass('d-none');
+                }
+
+                var menuDot = $('#mobileMenuDot');
+                if (menuDot.length) {
+                    menuDot.data('follow-requests', true);
+                    menuDot.removeClass('d-none');
+                }
+                
+                // Eğer Topluluk sayfasında isek ve modal açıksa, listeyi otomatik yenile
+                if (typeof window.loadRequests === 'function' && $('#requestsModal').hasClass('show')) {
+                    window.loadRequests();
+                }
+            });
+
+            window.globalConnection.on("CancelFollowNotification", function () {
+                var decrementFn = function(selector) {
+                    var b = $(selector);
+                    if (b.length) {
+                        var curr = parseInt(b.text()) || 0;
+                        if (curr > 1) {
+                            b.text(curr - 1);
+                        } else {
+                            b.text(0).addClass('d-none');
+                        }
+                    }
+                };
+                
+                decrementFn('#toplulukBadge');
+                decrementFn('#communityRequestsBadge');
+
+                var tBadge = $('#toplulukBadge');
+                if (tBadge.length && (parseInt(tBadge.text()) || 0) === 0) {
+                    var md = $('#mobileMenuDot');
+                    if (md.length) {
+                        md.data('follow-requests', false);
+                        var mb = $('#mobileUnreadBadge');
+                        if (!mb.length || mb.hasClass('d-none')) {
+                            md.addClass('d-none');
+                        }
+                    }
+                }
+
+                // Eğer Topluluk sayfasında isek ve modal açıksa, listeyi otomatik yenile
+                if (typeof window.loadRequests === 'function' && $('#requestsModal').hasClass('show')) {
+                    window.loadRequests();
                 }
             });
 

@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using BookManagementApp.Areas.Admin.Models;
 
@@ -18,5 +18,7 @@ namespace BookManagementApp.Models
         public virtual User Following { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        public bool IsAccepted { get; set; } = false;
     }
 }
