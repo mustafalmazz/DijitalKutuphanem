@@ -1,1188 +1,273 @@
-﻿@using BookManagementApp.Models
+@using BookManagementApp.Models
 @using BookManagementApp.Areas.Admin.Models
 @model StoreViewModel
 @{
     ViewData["Title"] = "Mağaza";
     var user = ViewBag.User as User;
-    var ownedFrameIds = ViewBag.OwnedFrameIds as List<int>;
-    var ownedAvatarIds = ViewBag.OwnedAvatarIds as List<int>;
-    int userBookCount = ViewBag.UserBookCount;
+    var ownedFrameIds = ViewBag.OwnedFrameIds as List<int> ?? new List<int>();
+    var ownedAvatarIds = ViewBag.OwnedAvatarIds as List<int> ?? new List<int>();
+
+    var avatarCount = Model.Avatars?.Count() ?? 0;
+    var frameCount = Model.Frames?.Count() ?? 0;
+    var packCount = Model.Packages?.Count() ?? 0;
+
+    var ownedAvatarCount = Model.Avatars?.Count(a => ownedAvatarIds.Contains(a.Id)) ?? 0;
+    var ownedFrameCount = Model.Frames?.Count(f => ownedFrameIds.Contains(f.Id)) ?? 0;
+
+    // Kartların üstünde gösterilecek küçük önizleme görselleri
+    var avatarPreviews = Model.Avatars?.Take(4).Select(a => a.ImageUrl).ToList() ?? new List<string>();
+    var framePreviews = Model.Frames?.Where(f => !string.IsNullOrEmpty(f.ImageUrl)).Take(4).Select(f => f.ImageUrl).ToList() ?? new List<string>();
+    var packPreviews = Model.PackAvatars?.Take(4).Select(a => a.ImageUrl).ToList() ?? new List<string>();
 }
 
+@await Html.PartialAsync("_StoreStyles")
+
 <style>
-    /* --- MAĞAZA ANA SAYFASI --- */
-    .store-page {
-        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
-        min-height: 100vh;
-        font-family: 'Georgia', serif;
-        color: #4a3f35;
-        padding-bottom: 120px;
+    .shop-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: clamp(14px, 2vw, 26px);
     }
 
-    /* --- BAŞLIK ALANI --- */
-    .store-hero {
-        background: linear-gradient(135deg, #4a3f35 0%, #6b5541 40%, #8b6f47 100%);
-        padding: 40px 0 55px;
-        text-align: center;
+    .shop-card {
         position: relative;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
+        min-height: clamp(190px, 24vw, 260px);
+        padding: clamp(18px, 2.4vw, 30px);
+        border-radius: 22px;
+        border: 2px solid rgba(139, 111, 71, 0.12);
+        background: #fff;
+        box-shadow: 0 10px 30px rgba(107, 85, 65, 0.10);
+        color: inherit;
+        text-decoration: none;
+        transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.35s, border-color 0.35s;
     }
 
-        .store-hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 20% 50%, rgba(255,215,130,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(0,255,255,0.05) 0%, transparent 50%);
+        .shop-card:hover,
+        .shop-card:focus-visible {
+            transform: translateY(-8px);
+            border-color: var(--shop-accent);
+            box-shadow: 0 22px 44px rgba(107, 85, 65, 0.22);
+            color: inherit;
+            text-decoration: none;
         }
 
-    .store-title {
-        color: #f5f0e8;
-        font-size: 2.2rem;
+    /* Karta hafif renk veren köşe parıltısı */
+    .shop-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 100% 0%, var(--shop-glow) 0%, transparent 55%);
+        pointer-events: none;
+    }
+
+    .shop-card-top {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: auto;
+    }
+
+    .shop-icon {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        width: clamp(44px, 5.2vw, 60px);
+        height: clamp(44px, 5.2vw, 60px);
+        border-radius: 18px;
+        background: var(--shop-accent);
+        color: #fff;
+        font-size: clamp(1.05rem, 2vw, 1.5rem);
+        box-shadow: 0 8px 18px var(--shop-glow);
+    }
+
+    .shop-badge {
+        flex-shrink: 0;
+        background: rgba(139, 111, 71, 0.10);
+        color: #6b5541;
+        border-radius: 50px;
+        padding: 5px 13px;
+        font-size: clamp(0.66rem, 1.1vw, 0.8rem);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .shop-card-body {
+        position: relative;
+        z-index: 1;
+        margin-top: clamp(14px, 2vw, 22px);
+    }
+
+    .shop-name {
+        margin: 0 0 5px;
+        color: #4a3f35;
+        font-size: clamp(1.02rem, 2.1vw, 1.5rem);
         font-weight: 800;
-        margin-bottom: 8px;
-        position: relative;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        line-height: 1.2;
     }
 
-    .store-subtitle {
-        color: rgba(245, 240, 232, 0.7);
-        font-size: 1rem;
+    .shop-desc {
+        margin: 0;
+        color: #8b6f47;
+        font-size: clamp(0.75rem, 1.3vw, 0.92rem);
         font-style: italic;
-        position: relative;
+        line-height: 1.45;
     }
 
-    /* --- BAKİYE KARTI --- */
-    .balance-badge {
+    .shop-card-foot {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: clamp(14px, 2vw, 22px);
+    }
+
+    /* Üst üste binen küçük önizleme avatarları */
+    .shop-thumbs {
+        display: flex;
+        align-items: center;
+    }
+
+    .shop-thumb {
+        width: clamp(28px, 3.4vw, 40px);
+        height: clamp(28px, 3.4vw, 40px);
+        border-radius: 12px;
+        border: 2px solid #fff;
+        background: #f5f0e8;
+        object-fit: contain;
+        box-shadow: 0 4px 10px rgba(107, 85, 65, 0.18);
+    }
+
+        .shop-thumb + .shop-thumb {
+            margin-left: clamp(-12px, -1.2vw, -8px);
+        }
+
+    .shop-go {
         display: inline-flex;
         align-items: center;
-        gap: 12px;
-        background: rgba(255, 255, 255, 0.12);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 215, 130, 0.3);
-        padding: 12px 28px;
-        border-radius: 50px;
-        margin-top: 20px;
-        position: relative;
-    }
-
-    .balance-icon {
-        font-size: 1.5rem;
-        color: #00ffff;
-        text-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
-    }
-
-    .balance-amount {
-        font-size: 1.6rem;
-        font-weight: 800;
-        color: #ffd782;
-        letter-spacing: 1px;
-        line-height: 1.1;
-    }
-
-    .balance-label {
-        font-size: 0.75rem;
-        color: rgba(245, 240, 232, 0.6);
-        letter-spacing: 2px;
-        text-transform: uppercase;
-    }
-
-    /* --- ÜRÜN GRID --- */
-    .store-container {
-        max-width: 1300px;
-        margin: -30px auto 0;
-        padding: 0 20px;
-        position: relative;
-        z-index: 2;
-    }
-
-    .store-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr); /* PC: 4 kart */
-        gap: 22px;
-    }
-
-    /* --- ÜRÜN KARTI --- */
-    .frame-card {
-        background: #fff;
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 8px 30px rgba(107, 85, 65, 0.1);
-        border: 2px solid rgba(139, 111, 71, 0.08);
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        position: relative;
-        display: flex;
-        flex-direction: column;
-    }
-
-        .frame-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(107, 85, 65, 0.2);
-            border-color: rgba(139, 111, 71, 0.2);
-        }
-
-        .frame-card.owned {
-            border-color: rgba(72, 187, 120, 0.4);
-        }
-
-        .frame-card.equipped {
-            border-color: #ffd782;
-            box-shadow: 0 8px 30px rgba(255, 215, 130, 0.25);
-        }
-
-    /* Kart Üst Kısım (Çerçeve Önizleme) */
-    .frame-preview {
-        background: linear-gradient(135deg, #f5f0e8 0%, #e8dcc8 100%);
-        padding: 28px 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        min-height: 155px;
+        gap: 7px;
         flex-shrink: 0;
-    }
-
-    .preview-avatar-wrapper {
-        width: 95px;
-        height: 95px;
-        border-radius: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.4rem;
-        background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%);
-        color: #5c4b3d;
-        font-weight: 700;
-        position: relative;
-    }
-
-        .preview-avatar-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-    /* --- KART ALT BİLGİ --- */
-    .frame-info {
-        padding: 18px;
-        display: flex;
-        flex-direction: column;
-        flex: 1; /* Butonlar tüm kartlarda aynı hizada dursun */
-    }
-
-    .frame-name {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: #4a3f35;
-        margin-bottom: 5px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .frame-desc {
-        font-size: 0.82rem;
-        color: #8b6f47;
-        line-height: 1.5;
-        margin-bottom: 12px;
-        font-style: italic;
-        min-height: 40px;
-    }
-
-    .frame-price {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 1rem;
-        font-weight: 700;
-        color: #4a3f35;
-        margin-bottom: 12px;
-        margin-top: auto; /* Fiyat ve buton hep en altta */
-    }
-
-        .frame-price i {
-            color: #00ffff;
-            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-        }
-
-    .frame-requirement {
-        font-size: 0.72rem;
-        color: #e74c3c;
-        background: rgba(231, 76, 60, 0.08);
-        padding: 4px 10px;
-        border-radius: 20px;
-        display: inline-block;
-        margin-bottom: 10px;
-    }
-
-    .frame-requirement-met {
-        color: #27ae60;
-        background: rgba(39, 174, 96, 0.08);
-    }
-
-    /* --- BUTONLAR --- */
-    .btn-buy {
-        width: 100%;
-        padding: 11px 8px;
-        border: none;
-        border-radius: 12px;
-        font-weight: 700;
-        font-family: 'Georgia', serif;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        letter-spacing: 0.3px;
-    }
-
-        .btn-buy:active {
-            transform: scale(0.97); /* Dokunma geri bildirimi */
-        }
-
-    .btn-buy-available {
-        background: linear-gradient(135deg, #8b6f47, #6b5541);
+        border-radius: 50px;
+        padding: clamp(7px, 1vw, 10px) clamp(13px, 1.7vw, 20px);
+        background: var(--shop-accent);
         color: #fff;
-        box-shadow: 0 4px 15px rgba(107, 85, 65, 0.25);
-    }
-
-        .btn-buy-available:hover {
-            background: linear-gradient(135deg, #a0785a, #8b6f47);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(107, 85, 65, 0.35);
-        }
-
-    .btn-buy-locked {
-        background: #e8dcc8;
-        color: #999;
-        cursor: not-allowed;
-    }
-
-    .btn-buy-equip {
-        background: linear-gradient(135deg, #48bb78, #38a169);
-        color: #fff;
-        box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
-    }
-
-        .btn-buy-equip:hover {
-            background: linear-gradient(135deg, #38a169, #2f855a);
-            transform: translateY(-2px);
-        }
-
-    .btn-buy-equipped {
-        background: linear-gradient(135deg, #ffd782, #f0c050);
-        color: #4a3f35;
-        box-shadow: 0 4px 15px rgba(255, 215, 130, 0.3);
-    }
-
-        .btn-buy-equipped:hover {
-            background: linear-gradient(135deg, #f0c050, #e0b040);
-            transform: translateY(-2px);
-        }
-
-    /* Sahiplik rozeti */
-    .owned-badge {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        background: rgba(72, 187, 120, 0.9);
-        color: #fff;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.72rem;
+        font-size: clamp(0.72rem, 1.2vw, 0.88rem);
         font-weight: 700;
-        backdrop-filter: blur(5px);
-        z-index: 2;
+        white-space: nowrap;
+        box-shadow: 0 6px 16px var(--shop-glow);
+        transition: gap 0.25s;
     }
 
-    .equipped-badge {
-        background: rgba(255, 215, 130, 0.95);
-        color: #4a3f35;
+    .shop-card:hover .shop-go {
+        gap: 12px;
     }
 
-    /* --- ALERT MESAJLARI --- */
-    .store-alert {
-        max-width: 1300px;
-        margin: 0 auto 20px;
-        padding: 0 20px;
-    }
-
-    .alert-store {
-        border-radius: 12px;
-        border: none;
-        font-family: 'Georgia', serif;
-        font-weight: 600;
-        padding: 14px 20px;
-    }
-
-    .alert-store-success {
-        background: rgba(72, 187, 120, 0.1);
-        color: #27ae60;
-        border-left: 4px solid #27ae60;
-    }
-
-    .alert-store-error {
-        background: rgba(231, 76, 60, 0.1);
-        color: #e74c3c;
-        border-left: 4px solid #e74c3c;
-    }
-
-    /* Sekme butonları */
-    .nav-pills .nav-link.active {
-        background: #4a3f35 !important;
-        color: #f5f0e8 !important;
-    }
-
-    /* ========================
-           RESPONSIVE TASARIM
-           ======================== */
-
-    /* Küçük laptop / büyük tablet: 3 sütun */
-    @@media (max-width: 1200px) {
-        .store-grid {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-    }
-
-    /* Tablet: 2 sütun */
-    @@media (max-width: 992px) {
-        .store-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 18px;
+    @@media (max-width: 620px) {
+        .shop-grid {
+            grid-template-columns: minmax(0, 1fr);
         }
 
-        .store-title {
-            font-size: 1.8rem;
-        }
-    }
-
-    /* Mobil: 2 sütun (kompakt kartlar) */
-    @@media (max-width: 768px) {
-        .store-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+        .shop-card {
+            min-height: 0;
         }
 
-        .store-hero {
-            padding: 28px 15px 42px;
-        }
-
-        .store-title {
-            font-size: 1.5rem;
-        }
-
-        .store-subtitle {
-            font-size: 0.85rem;
-        }
-
-        .balance-badge {
-            padding: 10px 22px;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .balance-amount {
-            font-size: 1.3rem;
-        }
-
-        .balance-icon {
-            font-size: 1.2rem;
-        }
-
-        .balance-label {
-            font-size: 0.65rem;
-            letter-spacing: 1.5px;
-        }
-
-        .store-container {
-            padding: 0 12px;
-            margin-top: -25px;
-        }
-
-        .store-alert {
-            padding: 0 12px;
-        }
-
-        .frame-card {
-            border-radius: 14px;
-        }
-            /* Dokunmatikte hover kaydırması olmasın */
-            .frame-card:hover {
-                transform: none;
-                box-shadow: 0 8px 30px rgba(107, 85, 65, 0.1);
-            }
-
-        .frame-preview {
-            padding: 20px 10px;
-            min-height: 115px;
-        }
-
-        .preview-avatar-wrapper {
-            width: 70px;
-            height: 70px;
-            font-size: 1.8rem;
-            border-radius: 12px;
-        }
-
-        .owned-badge {
-            top: 8px;
-            right: 8px;
-            padding: 3px 9px;
-            font-size: 0.62rem;
-        }
-
-        .frame-info {
-            padding: 12px;
-        }
-
-        .frame-name {
-            font-size: 0.9rem;
-            gap: 5px;
-        }
-
-        .frame-desc {
-            font-size: 0.72rem;
-            min-height: 32px;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
-        .frame-requirement {
-            font-size: 0.62rem;
-            padding: 3px 8px;
-            margin-bottom: 8px;
-        }
-
-        .frame-price {
-            font-size: 0.85rem;
-            margin-bottom: 10px;
-            gap: 5px;
-        }
-
-        .btn-buy {
-            padding: 9px 6px;
-            font-size: 0.7rem;
-            border-radius: 10px;
-        }
-
-            .btn-buy:hover {
-                transform: none; /* Mobilde hover kayması yok */
-            }
-
-        .alert-store {
-            padding: 11px 15px;
-            font-size: 0.85rem;
-        }
-    }
-
-    /* Çok küçük ekranlar */
-    @@media (max-width: 400px) {
-        .store-grid {
-            gap: 10px;
-        }
-
-        .preview-avatar-wrapper {
-            width: 62px;
-            height: 62px;
-            font-size: 1.6rem;
-        }
-
-        .frame-preview {
-            min-height: 100px;
-            padding: 16px 8px;
-        }
-
-        .frame-name {
-            font-size: 0.82rem;
-        }
-
-        .frame-desc {
-            font-size: 0.68rem;
-        }
-
-        .frame-price {
-            font-size: 0.78rem;
-        }
-
-        .btn-buy {
-            font-size: 0.64rem;
-            padding: 8px 4px;
+        .shop-desc {
+            display: none;
         }
     }
 </style>
 
 <div class="store-page">
-    <!-- BAŞLIK -->
-    <div class="store-hero">
-        <h1 class="store-title">
-            <i class="fa-solid fa-store"></i> Mağaza
-        </h1>
-        <p class="store-subtitle">Bilgelik Taşlarınla profilini özelleştir!</p>
+    @await Html.PartialAsync("_StoreHero")
+    @await Html.PartialAsync("_StoreNotify")
 
-        @if (user != null)
-        {
-            <div class="balance-badge">
-                <i class="fa-solid fa-gem balance-icon"></i>
-                <div>
-                    <div class="balance-amount">@user.WisdomStones</div>
-                    <div class="balance-label">Bilgelik Taşı</div>
+    <div class="store-container">
+        <div class="shop-grid">
+
+            <a asp-controller="Store" asp-action="Avatars" class="shop-card" style="--shop-accent: #6b5541; --shop-glow: rgba(107,85,65,0.22);">
+                <div class="shop-card-top">
+                    <span class="shop-icon"><i class="fa-solid fa-user-astronaut"></i></span>
+                    <span class="shop-badge">@ownedAvatarCount / @avatarCount sende</span>
                 </div>
-            </div>
-        }
-    </div>
-
-    <!-- ALERT MESAJLARI -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="store-alert">
-            <div class="alert alert-store alert-store-success">
-                @TempData["SuccessMessage"]
-            </div>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="store-alert">
-            <div class="alert alert-store alert-store-error">
-                @TempData["ErrorMessage"]
-            </div>
-        </div>
-    }
-
-    <!-- SEKME YAPISI (TABS) -->
-    <div class="store-container" style="max-width: 1300px; margin: 0 auto; padding: 0 20px 20px;">
-        @{
-            string activeTab = TempData["ActiveTab"] as string ?? "frames";
-        }
-        <ul class="nav nav-pills mb-4 justify-content-center" id="storeTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link @(activeTab == "frames" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="frames-tab" data-bs-toggle="pill" data-bs-target="#frames" type="button" role="tab" aria-controls="frames" aria-selected="@(activeTab == "frames" ? "true" : "false")">Çerçeveler</button>
-            </li>
-            <li class="nav-item ms-2" role="presentation">
-                <button class="nav-link @(activeTab == "avatars" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="avatars-tab" data-bs-toggle="pill" data-bs-target="#avatars" type="button" role="tab" aria-controls="avatars" aria-selected="@(activeTab == "avatars" ? "true" : "false")">Avatarlar</button>
-            </li>
-            <li class="nav-item ms-2" role="presentation">
-                <button class="nav-link @(activeTab == "packs" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="packs-tab" data-bs-toggle="pill" data-bs-target="#packs" type="button" role="tab" aria-controls="packs" aria-selected="@(activeTab == "packs" ? "true" : "false")">Sürpriz Paketler 🎁</button>
-            </li>
-            <li class="nav-item ms-2" role="presentation">
-                <button class="nav-link @(activeTab == "specials" ? "active" : "") fw-bold px-4 rounded-pill" style="color: #4a3f35; background: transparent; border: 1px solid #4a3f35;" id="specials-tab" data-bs-toggle="pill" data-bs-target="#specials" type="button" role="tab" aria-controls="specials" aria-selected="@(activeTab == "specials" ? "true" : "false")">Özel Eşyalar ✨</button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="storeTabsContent">
-            <!-- ÖZEL EŞYALAR SEKME İÇERİĞİ -->
-            <div class="tab-pane fade @(activeTab == "specials" ? "show active" : "")" id="specials" role="tabpanel" aria-labelledby="specials-tab">
-                <div class="store-grid">
-                    <div class="frame-card" style="border-color: #00bcd4; box-shadow: 0 0 15px rgba(0, 188, 212, 0.2);">
-                        <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 150px; background: linear-gradient(135deg, #e0f7fa, #b2ebf2);">
-                            <span style="font-size: 5rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">🧊</span>
-                        </div>
-                        <div class="frame-info text-center" style="padding: 15px;">
-                            <div style="font-size: 1.2rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">Seri Dondurma</div>
-                            <div style="font-size: 0.85rem; color: #8b6f47; margin-bottom: 15px;">Giriş yapmayı unutsan bile serin (streak) bozulmasın!</div>
-                            
-                            <div style="font-size: 1rem; font-weight: bold; color: #4a3f35; margin-bottom: 15px;">
-                                <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> 100 Taş
-                            </div>
-
-                            <form id="buyFreezeForm">
-                                @Html.AntiForgeryToken()
-                                <button type="button" onclick="buyStreakFreeze(this)" class="btn-buy btn-buy-available w-100" style="padding: 12px; font-size: 1rem; background: linear-gradient(135deg, #00acc1, #00838f);">
-                                    <i class="fa-solid fa-cart-shopping"></i> Satın Al
-                                </button>
-                            </form>
-                        </div>
+                <div class="shop-card-body">
+                    <h2 class="shop-name">Avatar Dükkanı</h2>
+                    <p class="shop-desc">Profilini yansıtan karakterleri keşfet.</p>
+                </div>
+                <div class="shop-card-foot">
+                    <div class="shop-thumbs">
+                        @foreach (var img in avatarPreviews)
+                        {
+                            <img src="@img" alt="" class="shop-thumb" loading="lazy" />
+                        }
                     </div>
+                    <span class="shop-go">Dükkana Git <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
-            </div>
-            <!-- ÇERÇEVELER SEKME İÇERİĞİ -->
-            <div class="tab-pane fade @(activeTab == "frames" ? "show active" : "")" id="frames" role="tabpanel" aria-labelledby="frames-tab">
-                <div class="store-grid">
-                    @foreach (var frame in Model.Frames)
-                    {
-                        bool isOwned = ownedFrameIds.Contains(frame.Id);
-                        bool isEquipped = user?.ActiveFrameImageUrl == frame.ImageUrl;
-                        bool hasEnoughStones = user != null && user.WisdomStones >= frame.PriceInStones;
-                        bool meetsBookReq = frame.RequiredBookCount == 0 || userBookCount >= frame.RequiredBookCount;
-                        bool canBuy = !isOwned && hasEnoughStones && meetsBookReq;
+            </a>
 
-                        <div class="frame-card @(isEquipped ? "equipped" : isOwned ? "owned" : "")">
-
-                            @if (isEquipped)
-                            {
-                                <span class="owned-badge equipped-badge">✨ Aktif</span>
-                            }
-                            else if (isOwned)
-                            {
-                                <span class="owned-badge">✓ Sahip</span>
-                            }
-
-                            <div class="frame-preview">
-                                <div class="preview-avatar-wrapper" style="position: relative; border-radius: 15px;">
-                                    <div style="width: 100%; height: 100%; border-radius: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                                        @if (!string.IsNullOrEmpty(user?.ProfileImageUrl))
-                                        {
-                                            <img src="@user.ProfileImageUrl" alt="Profil" style="width: 100%; height: 100%; object-fit: cover;" />
-                                        }
-                                        else
-                                        {
-                                            @(user?.UserName?.Substring(0, 1).ToUpper())
-                                        }
-                                    </div>
-
-                                    @if (!string.IsNullOrEmpty(frame.ImageUrl))
-                                    {
-                                        <img src="@frame.ImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;" />
-                                    }
-                                </div>
-                            </div>
-
-                            <!-- Bilgi Kısmı -->
-                            <div class="frame-info">
-                                <div class="frame-name">
-                                    <span>@frame.IconEmoji</span>
-                                    @frame.Name
-                                </div>
-                                <p class="frame-desc">@frame.Description</p>
-
-                                @if (frame.RequiredBookCount > 0)
-                                {
-                                    if (meetsBookReq)
-                                    {
-                                        <div class="frame-requirement frame-requirement-met">
-                                            ✓ @frame.RequiredBookCount kitap gereksinimi karşılandı
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="frame-requirement">
-                                            <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i>
-                                            En az @frame.RequiredBookCount kitap gerekli (@userBookCount / @frame.RequiredBookCount)
-                                        </div>
-                                    }
-                                }
-
-                                <div class="frame-price">
-                                    <i class="fa-solid fa-gem"></i>
-                                    @frame.PriceInStones Bilgelik Taşı
-                                </div>
-
-                                @if (isOwned)
-                                {
-                                    <form asp-action="EquipFrame" asp-controller="Store" method="post">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@frame.Id" />
-                                        <button type="submit" class="btn-buy @(isEquipped ? "btn-buy-equipped" : "btn-buy-equip")">
-                                            @if (isEquipped)
-                                            {
-                                                <text><i class="fa-solid fa-star"></i> Takılı - Çıkarmak İçin Tıkla</text>
-                                            }
-                                            else
-                                            {
-                                                <text><i class="fa-solid fa-wand-magic-sparkles"></i> Kullan</text>
-                                            }
-                                        </button>
-                                    </form>
-                                }
-                                else if (canBuy)
-                                {
-                                    <form asp-action="BuyFrame" asp-controller="Store" method="post">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@frame.Id" />
-                                        <button type="submit" class="btn-buy btn-buy-available">
-                                            <i class="fa-solid fa-cart-shopping"></i> Satın Al
-                                        </button>
-                                    </form>
-                                }
-                                else
-                                {
-                                    <button class="btn-buy btn-buy-locked" disabled>
-                                        @if (!meetsBookReq)
-                                        {
-                                            <text><i class="fa-solid fa-lock"></i> Kitap Gereksinimi Karşılanmadı</text>
-                                        }
-                                        else
-                                        {
-                                            <text><i class="fa-solid fa-lock"></i> Yetersiz Bilgelik Taşı</text>
-                                        }
-                                    </button>
-                                }
-                            </div>
-                        </div>
-                    }
+            <a asp-controller="Store" asp-action="Frames" class="shop-card" style="--shop-accent: #a0785a; --shop-glow: rgba(160,120,90,0.24);">
+                <div class="shop-card-top">
+                    <span class="shop-icon"><i class="fa-solid fa-crown"></i></span>
+                    <span class="shop-badge">@ownedFrameCount / @frameCount sende</span>
                 </div>
-            </div>
-
-            <!-- AVATARLAR SEKME İÇERİĞİ -->
-            <div class="tab-pane fade @(activeTab == "avatars" ? "show active" : "")" id="avatars" role="tabpanel" aria-labelledby="avatars-tab">
-                <div class="store-grid">
-                    @foreach (var avatar in Model.Avatars)
-                    {
-                        bool isOwnedA = ownedAvatarIds.Contains(avatar.Id);
-                        bool isEquippedA = user?.ProfileImageUrl == avatar.ImageUrl;
-                        bool hasEnoughStonesA = user != null && user.WisdomStones >= avatar.PriceInStones;
-                        bool meetsBookReqA = avatar.RequiredBookCount == 0 || userBookCount >= avatar.RequiredBookCount;
-                        bool canBuyA = !isOwnedA && hasEnoughStonesA && meetsBookReqA;
-
-                        <div class="frame-card @(isEquippedA ? "equipped" : isOwnedA ? "owned" : "")">
-
-                            @if (isEquippedA)
-                            {
-                                <span class="owned-badge equipped-badge">✨ Aktif</span>
-                            }
-                            else if (isOwnedA)
-                            {
-                                <span class="owned-badge">✓ Sahip</span>
-                            }
-
-                            <div class="frame-preview d-flex justify-content-center align-items-center">
-                                <img src="@avatar.ImageUrl" alt="@avatar.Name" style="width: 100px; height: 100px; object-fit: contain; border-radius: 10px;" />
-                            </div>
-
-                            <div class="frame-info">
-                                <div class="frame-name">
-                                    @avatar.Name
-                                </div>
-                                <p class="frame-desc">@avatar.Description</p>
-
-                                @if (avatar.RequiredBookCount > 0)
-                                {
-                                    if (meetsBookReqA)
-                                    {
-                                        <div class="frame-requirement frame-requirement-met">
-                                            ✓ @avatar.RequiredBookCount kitap gereksinimi karşılandı
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="frame-requirement">
-                                            <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i>
-                                            En az @avatar.RequiredBookCount kitap gerekli (@userBookCount / @avatar.RequiredBookCount)
-                                        </div>
-                                    }
-                                }
-
-                                <div class="frame-price">
-                                    <i class="fa-solid fa-gem"></i>
-                                    @avatar.PriceInStones Bilgelik Taşı
-                                </div>
-
-                                @if (isOwnedA)
-                                {
-                                    <form asp-action="EquipAvatar" asp-controller="Store" method="post">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@avatar.Id" />
-                                        <button type="submit" class="btn-buy @(isEquippedA ? "btn-buy-equipped" : "btn-buy-equip")" @(isEquippedA ? "disabled" : "")>
-                                            @if (isEquippedA)
-                                            {
-                                                <text><i class="fa-solid fa-check"></i> Şu An Kullanımda</text>
-                                            }
-                                            else
-                                            {
-                                                <text><i class="fa-solid fa-wand-magic-sparkles"></i> Kullan</text>
-                                            }
-                                        </button>
-                                    </form>
-                                }
-                                else if (canBuyA)
-                                {
-                                    <form asp-action="BuyAvatar" asp-controller="Store" method="post">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@avatar.Id" />
-                                        <button type="submit" class="btn-buy btn-buy-available">
-                                            <i class="fa-solid fa-cart-shopping"></i> Satın Al
-                                        </button>
-                                    </form>
-                                }
-                                else
-                                {
-                                    <button class="btn-buy btn-buy-locked" disabled>
-                                        @if (!meetsBookReqA)
-                                        {
-                                            <text><i class="fa-solid fa-lock"></i> Kitap Gereksinimi Karşılanmadı</text>
-                                        }
-                                        else
-                                        {
-                                            <text><i class="fa-solid fa-lock"></i> Yetersiz Bilgelik Taşı</text>
-                                        }
-                                    </button>
-                                }
-                            </div>
-                        </div>
-                    }
+                <div class="shop-card-body">
+                    <h2 class="shop-name">Çerçeve Dükkanı</h2>
+                    <p class="shop-desc">Profil fotoğrafını süsleyen çerçeveler.</p>
                 </div>
-            </div>
-
-            <!-- SÜRPRİZ PAKETLER SEKME İÇERİĞİ -->
-            <div class="tab-pane fade" id="packs" role="tabpanel" aria-labelledby="packs-tab">
-                @if (Model.Packages == null || !Model.Packages.Any())
-                {
-                    <div class="text-center" style="padding: 50px; color: #8b6f47;">
-                        <i class="fa-solid fa-box-open" style="font-size: 4rem; margin-bottom: 15px; opacity: 0.5;"></i>
-                        <h4>Şu an hiç sürpriz paket bulunmuyor.</h4>
+                <div class="shop-card-foot">
+                    <div class="shop-thumbs">
+                        @foreach (var img in framePreviews)
+                        {
+                            <img src="@img" alt="" class="shop-thumb" loading="lazy" />
+                        }
                     </div>
-                }
-                else
-                {
-                    @foreach(var package in Model.Packages)
-                    {
-                        var packAvatars = Model.PackAvatars.Where(a => a.PackCategory == package.CategoryCode).ToList();
-                        var packTotal = packAvatars.Count();
-                        var packOwned = packAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
-                        bool canBuyPack = packOwned < packTotal && user != null && user.WisdomStones >= package.PriceInStones;
-                        var themeColor = package.ThemeColor ?? "#ff9800";
-                        var iconClass = package.IconClass ?? "fa-solid fa-box";
+                    <span class="shop-go">Dükkana Git <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+            </a>
 
-                        <div class="gacha-banner-wrapper" style="background: linear-gradient(135deg, #fff, #fef8f0); border-radius: 20px; border: 2px solid @themeColor; padding: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); margin-bottom: 40px; position: relative; overflow: hidden;">
-                            <!-- Banner Arkaplan Deseni -->
-                            <div style="position: absolute; right: -50px; top: -50px; opacity: 0.1; font-size: 15rem; color: @themeColor;">
-                                <i class="@iconClass"></i>
-                            </div>
-                            
-                            <div class="row align-items-center position-relative" style="z-index: 2;">
-                                <div class="col-md-7 text-center text-md-start mb-4 mb-md-0">
-                                    <h2 style="color: @themeColor; font-weight: 800; font-size: 2.2rem; margin-bottom: 15px;">
-                                        <i class="@iconClass"></i> @package.Title
-                                    </h2>
-                                    <p style="color: #6b5541; font-size: 1.1rem; margin-bottom: 25px;">
-                                        @package.Description <br />
-                                        Koleksiyonu tamamlayabilecek misin? (@packOwned / @packTotal)
-                                    </p>
-                                    
-                                    <div class="d-flex flex-row align-items-center justify-content-center justify-content-md-start gap-2 gap-md-4" style="flex-wrap: wrap;">
-                                        <div style="background: rgba(255,152,0,0.1); padding: 10px 20px; border-radius: 50px; font-weight: bold; font-size: 1.2rem; color: #d35400;">
-                                            <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> @package.PriceInStones Taş
-                                        </div>
-                                        
-                                        <button type="button" class="btn btn-lg" data-bs-toggle="modal" data-bs-target="#packModal-@package.Id" style="background: linear-gradient(135deg, @themeColor, #ff5722); color: white; border-radius: 50px; padding: 12px 30px; font-weight: bold; box-shadow: 0 8px 20px rgba(255,87,34,0.3); transition: transform 0.2s;">
-                                            <i class="fa-solid fa-box-open"></i> Paketi İncele
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-md-5 text-center d-none d-md-block">
-                                    <div class="d-flex justify-content-center align-items-center gap-3">
-                                        @foreach(var item in packAvatars.Take(3))
-                                        {
-                                            <div style="width: 75px; height: 75px; background: white; border: 2px solid @themeColor; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(255,152,0,0.15); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                                                <img src="@item.ImageUrl" alt="@item.Name" style="width: 55px; height: 55px; object-fit: contain; border-radius: 8px;" />
-                                            </div>
-                                        }
-                                        @if (packAvatars.Count() > 3)
-                                        {
-                                            <div style="width: 75px; height: 75px; background: rgba(255,152,0,0.05); border: 2px dashed @themeColor; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: @themeColor; font-weight: 800; font-size: 1.3rem; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,152,0,0.15)'" onmouseout="this.style.background='rgba(255,152,0,0.05)'" data-bs-toggle="modal" data-bs-target="#packModal-@package.Id">
-                                                +@(packAvatars.Count() - 3)
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                }
-            </div>
+            <a asp-controller="Store" asp-action="Packs" class="shop-card" style="--shop-accent: #e65100; --shop-glow: rgba(230,81,0,0.22);">
+                <div class="shop-card-top">
+                    <span class="shop-icon"><i class="fa-solid fa-gift"></i></span>
+                    <span class="shop-badge">@packCount paket</span>
+                </div>
+                <div class="shop-card-body">
+                    <h2 class="shop-name">Sürpriz Paketler</h2>
+                    <p class="shop-desc">Koleksiyonunu tamamla, sürpriz avatarlar kap.</p>
+                </div>
+                <div class="shop-card-foot">
+                    <div class="shop-thumbs">
+                        @foreach (var img in packPreviews)
+                        {
+                            <img src="@img" alt="" class="shop-thumb" loading="lazy" />
+                        }
+                    </div>
+                    <span class="shop-go">Dükkana Git <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+            </a>
+
+            <a asp-controller="Store" asp-action="Specials" class="shop-card" style="--shop-accent: #00838f; --shop-glow: rgba(0,131,143,0.22);">
+                <div class="shop-card-top">
+                    <span class="shop-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                    <span class="shop-badge">@(user?.StreakFreezes ?? 0) / 2 dondurma</span>
+                </div>
+                <div class="shop-card-body">
+                    <h2 class="shop-name">Özel Eşyalar</h2>
+                    <p class="shop-desc">Okuma serini koruyan yardımcı eşyalar.</p>
+                </div>
+                <div class="shop-card-foot">
+                    <div class="shop-thumbs">
+                        <span class="shop-thumb" style="display: grid; place-items: center; font-size: 1.1rem;">🧊</span>
+                    </div>
+                    <span class="shop-go">Dükkana Git <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+            </a>
+
         </div>
     </div>
 </div>
-
-@if (Model.Packages != null)
-{
-    foreach(var package in Model.Packages)
-    {
-        var packAvatars = Model.PackAvatars.Where(a => a.PackCategory == package.CategoryCode).ToList();
-        var packTotal = packAvatars.Count();
-        var packOwned = packAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
-        bool canBuyPack = packOwned < packTotal && user != null && user.WisdomStones >= package.PriceInStones;
-        var themeColor = package.ThemeColor ?? "#ff9800";
-        var iconClass = package.IconClass ?? "fa-solid fa-box";
-
-        <!-- Paket Modal -->
-        <div class="modal fade" id="packModal-@package.Id" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-            <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
-                <div class="modal-header" style="background: linear-gradient(135deg, @themeColor, #e65100); color: white; border-bottom: none; padding: 25px;">
-                <h5 class="modal-title" style="font-weight: 800; font-size: 1.5rem;"><i class="@iconClass"></i> @package.Title İçeriği</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
-                </div>
-                <div class="modal-body" style="background: #fdfbf7; padding: 30px;">
-                <p style="color: #6b5541; font-weight: 600; margin-bottom: 20px; text-align: center;">Koleksiyon Durumu: @packOwned / @packTotal</p>
-                
-                <div class="store-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
-                    @foreach(var item in packAvatars)
-                    {
-                        bool isItemOwned = ownedAvatarIds.Contains(item.Id);
-                        
-                        <div class="frame-card" style="@(isItemOwned ? "opacity: 0.5; filter: grayscale(100%); border-color: rgba(0,0,0,0.1);" : $"border-color: {themeColor}; box-shadow: 0 0 15px rgba(255,152,0,0.1); background: white;")" id="packItem-@item.Id">
-                            <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 100px;">
-                                <img src="@item.ImageUrl" alt="@item.Name" style="width: 70px; height: 70px; object-fit: contain; border-radius: 10px;" />
-                            </div>
-                            <div class="frame-info text-center" style="padding: 10px;">
-                                <div style="font-size: 0.8rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">@item.Name</div>
-                                @if (isItemOwned)
-                                {
-                                    <div style="font-weight: bold; color: #6c757d; font-size: 0.75rem;"><i class="fa-solid fa-check"></i> Alındı</div>
-                                }
-                                else
-                                {
-                                    <div style="font-weight: bold; color: @themeColor; font-size: 0.75rem;"><i class="fa-solid fa-star"></i> Çıkmadı</div>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-                </div>
-                <div class="modal-footer d-flex justify-content-between align-items-center" style="background: #f5f0e8; border-top: 1px solid rgba(139,111,71,0.1); padding: 20px;">
-                <div style="font-weight: bold; font-size: 1.1rem; color: #d35400;">
-                    <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> @package.PriceInStones Taş
-                </div>
-                
-                @Html.AntiForgeryToken()
-                <button onclick="buyPack(this, @package.Id)" class="btn btn-lg" style="background: linear-gradient(135deg, @themeColor, #ff5722); color: white; border-radius: 50px; padding: 10px 25px; font-weight: bold; box-shadow: 0 8px 20px rgba(255,87,34,0.3); transition: transform 0.2s;" @(canBuyPack ? "" : "disabled")>
-                    @if(packOwned >= packTotal && packTotal > 0)
-                    {
-                        <text><i class="fa-solid fa-check-double"></i> Koleksiyon Tamamlandı</text>
-                    }
-                    else if(user != null && user.WisdomStones < package.PriceInStones)
-                    {
-                        <text><i class="fa-solid fa-lock"></i> Yetersiz Bakiye</text>
-                    }
-                    else
-                    {
-                        <text><i class="fa-solid fa-cube"></i> Paketi Aç</text>
-                    }
-                </button>
-                </div>
-            </div>
-            </div>
-        </div>
-    }
-}
-
-<!-- Gacha Animasyon Overlay -->
-<style>
-    #gachaOverlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.85); z-index: 999999;
-        display: none; flex-direction: column; justify-content: center; align-items: center;
-        backdrop-filter: blur(10px);
-    }
-    .gacha-box {
-        font-size: 8rem; color: #ff9800;
-        animation: shake 0.5s infinite alternate;
-        filter: drop-shadow(0 0 20px #ff9800);
-    }
-    .gacha-box.burst {
-        animation: burst 0.6s forwards;
-    }
-    .gacha-result {
-        display: none; flex-direction: column; align-items: center;
-        transform: scale(0);
-        animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-    .gacha-card {
-        background: linear-gradient(135deg, #fff, #fef8f0);
-        border: 4px solid #ffcc80; border-radius: 20px;
-        padding: 30px; box-shadow: 0 0 50px rgba(255,204,128,0.5);
-        display: flex; flex-direction: column; align-items: center;
-    }
-    @@keyframes shake {
-        0% { transform: rotate(-5deg) scale(1); }
-        100% { transform: rotate(5deg) scale(1.1); filter: drop-shadow(0 0 40px #ff9800); }
-    }
-    @@keyframes burst {
-        0% { transform: scale(1.1); opacity: 1; }
-        50% { transform: scale(2); filter: brightness(2) drop-shadow(0 0 100px #fff); }
-        100% { transform: scale(0); opacity: 0; }
-    }
-    @@keyframes popIn {
-        0% { transform: scale(0) rotateY(-180deg); opacity: 0; }
-        100% { transform: scale(1) rotateY(0deg); opacity: 1; }
-    }
-    
-    @@media (max-width: 768px) {
-        .gacha-banner-wrapper {
-            padding: 25px 15px !important;
-            margin-bottom: 25px !important;
-        }
-        .gacha-banner-wrapper h2 {
-            font-size: 1.6rem !important;
-            margin-bottom: 10px !important;
-        }
-        .gacha-banner-wrapper p {
-            font-size: 0.95rem !important;
-            margin-bottom: 15px !important;
-        }
-        .gacha-banner-wrapper .main-pack-icon {
-            font-size: 6rem !important;
-            margin-top: 15px;
-        }
-        .gacha-banner-wrapper .d-flex {
-            flex-direction: column;
-            gap: 15px !important;
-        }
-        .gacha-banner-wrapper .btn {
-            width: 100%;
-        }
-        .gacha-box {
-            font-size: 5rem !important;
-        }
-        .gacha-result h2 {
-            font-size: 2.2rem !important;
-        }
-        .gacha-card img {
-            width: 100px !important;
-            height: 100px !important;
-        }
-        .gacha-card h3 {
-            font-size: 1.2rem !important;
-        }
-    }
-</style>
-
-<div id="gachaOverlay">
-    <div class="gacha-box" id="gachaBox">
-        <i class="fa-solid fa-box"></i>
-    </div>
-    <div class="gacha-result" id="gachaResult">
-        <h2 style="color: #ff9800; font-weight: 900; font-size: 3rem; text-shadow: 0 4px 20px rgba(0,0,0,0.5); margin-bottom: 20px;">
-            TEBRİKLER!
-        </h2>
-        <div class="gacha-card">
-            <img id="gachaAvatarImage" src="" style="width: 150px; height: 150px; object-fit: contain; margin-bottom: 15px;" />
-            <h3 id="gachaAvatarName" style="color: #4a3f35; font-weight: 700; margin: 0;">Gizemli Hayvan</h3>
-        </div>
-        <button class="btn btn-light mt-4 px-5 py-2 fw-bold rounded-pill" onclick="closeGacha()" style="font-size: 1.2rem;">Harika!</button>
-    </div>
-</div>
-
-<script>
-    function buyPack(btn, packageId) {
-        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-        
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Açılıyor...';
-        btn.disabled = true;
-
-        fetch('/Store/BuyPack?packageId=' + packageId, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': token
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.success) {
-                // Bakiyeyi güncelle
-                document.querySelectorAll('.navbar .fa-gem').forEach(function(gemIcon) {
-                    var textNode = gemIcon.nextSibling;
-                    if(textNode && textNode.nodeType === 3 && textNode.nodeValue.trim().length > 0) {
-                        var valStr = textNode.nodeValue.replace('+', '').trim();
-                        if(!isNaN(parseInt(valStr))) {
-                            textNode.nodeValue = ' ' + data.newBalance;
-                        }
-                    }
-                });
-
-                // Gacha Animasyonunu Başlat
-                var overlay = document.getElementById('gachaOverlay');
-                var box = document.getElementById('gachaBox');
-                var result = document.getElementById('gachaResult');
-                
-                // Reset
-                box.className = 'gacha-box';
-                box.style.display = 'block';
-                result.style.display = 'none';
-                overlay.style.display = 'flex';
-                
-                // Result datasını doldur
-                document.getElementById('gachaAvatarImage').src = data.avatarImage;
-                document.getElementById('gachaAvatarName').innerText = data.avatarName || 'Gizemli Hayvan';
-
-                // Koleksiyon gridindeki silik durumu uygula
-                var card = document.getElementById('packItem-' + data.avatarId);
-                if(card) {
-                    card.style = "opacity: 0.5; filter: grayscale(80%); border-color: rgba(0,0,0,0.1);";
-                    card.querySelector('img').style = "width: 80px; height: 80px; object-fit: contain; border-radius: 10px;";
-                    card.querySelector('.frame-info').innerHTML = '<div style="font-size: 0.85rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">' + (data.avatarName || 'Gizemli Hayvan') + '</div><div style="font-weight: bold; color: #6c757d; font-size: 0.8rem;"><i class="fa-solid fa-check"></i> Sende Var</div>';
-                }
-
-                // Butonu düzelt
-                btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
-                btn.disabled = false;
-
-                // Animasyon Akışı
-                setTimeout(function() {
-                    box.classList.add('burst'); // Kutu patlar
-                    setTimeout(function() {
-                        box.style.display = 'none'; // Kutu yok olur
-                        result.style.display = 'flex'; // Kart belirir (popIn)
-                    }, 500);
-                }, 2000); // 2 saniye sallanma süresi
-
-            } else {
-                alert("Hata: " + data.message);
-                btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
-                btn.disabled = false;
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Paket açılırken bir hata oluştu!");
-            btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
-            btn.disabled = false;
-        });
-    }
-
-    function buyStreakFreeze(btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
-
-        var token = document.querySelector('#buyFreezeForm input[name="__RequestVerificationToken"]').value;
-
-        fetch('/Store/BuyStreakFreeze', {
-            method: 'POST',
-            headers: {
-                'RequestVerificationToken': token
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.success) {
-                // Bakiyeyi güncelle
-                document.querySelectorAll('.navbar .fa-gem').forEach(function(gemIcon) {
-                    var textNode = gemIcon.nextSibling;
-                    if(textNode && textNode.nodeType === 3 && textNode.nodeValue.trim().length > 0) {
-                        var valStr = textNode.nodeValue.replace('+', '').trim();
-                        if(!isNaN(parseInt(valStr))) {
-                            textNode.nodeValue = ' ' + data.newBalance;
-                        }
-                    }
-                });
-
-                // Header'daki dondurma sayısını güncelle (Varsa)
-                var freezeCountEl = document.getElementById('headerFreezeCount');
-                if(freezeCountEl) {
-                    freezeCountEl.innerText = data.newFreezes + '/2';
-                }
-
-                alert(data.message);
-            } else {
-                alert("Hata: " + data.message);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Satın alma işlemi sırasında bir hata oluştu!");
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Satın Al';
-        });
-    }
-
-    function closeGacha() {
-        document.getElementById('gachaOverlay').style.display = 'none';
-        // Reload page to reflect exact collection counts if preferred, or just let user stay.
-        // window.location.reload(); 
-    }
-</script>

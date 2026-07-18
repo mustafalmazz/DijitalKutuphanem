@@ -6,10 +6,10 @@ namespace BookManagementApp.Models
     public class Category
     {
         public int Id { get; set; }
+        // Kategoriler ARTIK GLOBAL: yalnızca yönetici tanımlar, tüm kullanıcılar
+        // aynı listeden seçer. Kullanıcıya ait kategori kavramı kaldırıldı.
         [Display(Name = "Kategori Adı")]
         public string? CategoryName { get; set; }
-        public int? UserId { get; set; }
-        public User? User { get; set; }
         public ICollection<Book>? Books { get; set; }
     }
 }

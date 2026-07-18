@@ -16,14 +16,17 @@ namespace BookManagementApp.ViewComponents
         public async Task<IViewComponentResult> InvokeAsync()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
-            var categories = await _context.Categories.ToListAsync();
             var viewModel = new CategoryUserViewModel();
+
+            // Kategoriler global; oturumdan bağımsız olarak herkese gösterilir.
+            // (Önceden yalnızca giriş yapmışlara yükleniyordu ve anonim kullanıcıda
+            //  header'daki Categories.Any() null referansla patlıyordu.)
+            viewModel.Categories = await _context.Categories.OrderBy(c => c.CategoryName).ToListAsync();
+
             if (userId != null)
             {
                 viewModel.User = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
-                viewModel.Categories = await _context.Categories.Where(c=>c.UserId == userId).ToListAsync();
-                
                 int requestCount = await _context.Follows.CountAsync(f => f.FollowingId == userId && !f.IsAccepted);
                 ViewBag.FollowRequestCount = requestCount;
             }

@@ -1,0 +1,26 @@
+@using BookManagementApp.Models
+@model LeaderboardUserItem
+@*
+    Liderlik tablosu satırındaki başarım etiketi.
+    Etiket takılı değilse hiçbir şey basmaz.
+*@
+@{
+    if (string.IsNullOrEmpty(Model?.TitleName)) { return; }
+
+    string[] tierNames = { "", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Efsane" };
+    var tier = tierNames[Math.Clamp(Model.TitleTier, 1, 6)];
+    var color = string.IsNullOrEmpty(Model.TitleColor) ? "#8b6f47" : Model.TitleColor;
+}
+
+<span class="lb-title js-title-badge"
+      style="--lb-title-color: @color;"
+      role="button" tabindex="0"
+      title="@Model.TitleName"
+      data-title-name="@Model.TitleName"
+      data-title-desc="@Model.TitleDescription"
+      data-title-icon="@Model.TitleIcon"
+      data-title-color="@color"
+      data-title-tier="@tier">
+    <i class="fa-solid @Model.TitleIcon"></i>
+    <span class="lb-title-text">@Model.TitleName</span>
+</span>

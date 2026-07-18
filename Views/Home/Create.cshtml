@@ -560,12 +560,11 @@
                                 Kategori
                                 <span class="required">*</span>
                             </label>
-                            <select asp-for="CategoryId"
-                                    class="form-select-custom"
-                                    asp-items="ViewBag.Categories"
-                                    required>
-                                <option value="">Kategori Seçiniz</option>
-                            </select>
+@await Html.PartialAsync("_CategoryPicker", new BookManagementApp.Models.CategoryPickerModel {
+                    Categories = ViewBag.Categories as List<BookManagementApp.Models.Category>,
+                    SelectedId = (int?)Model?.CategoryId,
+                    Required   = true
+                })
                             <span asp-validation-for="CategoryId" class="text-danger"></span>
                         </div>
 
@@ -730,3 +729,5 @@
         }
     </script>
 }
+
+@await Html.PartialAsync("_CategoryPickerAssets")

@@ -30,8 +30,25 @@ namespace BookManagementApp.Areas.Admin.Models
         public int MonthlyReadingGoal { get; set; }
         public int MonthlyPagesRead { get; set; }
         
+        // Harcanabilir bakiye. Mağazada azalır.
         public int WisdomStones { get; set; } = 0;
-        
+
+        // Kullanıcının bugüne kadar KAZANDIĞI toplam taş. Asla azalmaz.
+        // İlerlemeye bakan her şey (Bilgelik başarımları vb.) bunu kullanmalı;
+        // WisdomStones harcanabildiği için ilerleme ölçütü olamaz.
+        public int TotalStonesEarned { get; set; } = 0;
+
+        /// <summary>
+        /// Taş kazandırmanın TEK doğru yolu. Hem bakiyeyi hem toplam kazancı birlikte artırır.
+        /// Doğrudan WisdomStones += yazmayın; ikisi ayrışır ve ilerleme bozulur.
+        /// </summary>
+        public void EarnStones(int amount)
+        {
+            if (amount <= 0) return;
+            WisdomStones += amount;
+            TotalStonesEarned += amount;
+        }
+
         public DateTime? LastLoginDate { get; set; }
         public int CurrentStreak { get; set; } = 0;
         public int LongestStreak { get; set; } = 0;
@@ -39,6 +56,13 @@ namespace BookManagementApp.Areas.Admin.Models
         public DateTime? LastRewardClaimDate { get; set; }
         [StringLength(255)]
         public string? ActiveFrameImageUrl { get; set; }
+
+        // Kullanıcının profilinde göstermeyi seçtiği başarım etiketi.
+        // null ise profilde etiket gösterilmez. Yalnızca kazanılmış bir başarım takılabilir
+        // (doğrulama ProfileController.EquipTitle içinde yapılır).
+        public int? ActiveTitleAchievementId { get; set; }
+        [ForeignKey("ActiveTitleAchievementId")]
+        public Achievement? ActiveTitleAchievement { get; set; }
 
         [StringLength(160, ErrorMessage = "Biyografi en fazla 160 karakter olabilir.")]
         public string? Bio { get; set; }
@@ -50,7 +74,7 @@ namespace BookManagementApp.Areas.Admin.Models
         public DateTime CreateDate { get; set; } = DateTime.Now;
 
         public ICollection<Book>? Books { get; set; }
-        public ICollection<Category>? Categories { get; set; }
         public ICollection<Contact>? Contacts { get; set; } 
+        public ICollection<UserAchievement>? UserAchievements { get; set; }
     }
 }

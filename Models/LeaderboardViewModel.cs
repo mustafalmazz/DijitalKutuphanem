@@ -10,6 +10,13 @@ namespace BookManagementApp.Models
         public string? ActiveFrameImageUrl { get; set; }
         public int Score { get; set; } // Dakika, Kitap Sayısı veya Gün Serisi olabilir
         public int Rank { get; set; }
+
+        // Kullanıcının profilinde göstermeyi seçtiği başarım etiketi (yoksa null)
+        public string? TitleName { get; set; }
+        public string? TitleIcon { get; set; }
+        public string? TitleColor { get; set; }
+        public int TitleTier { get; set; }
+        public string? TitleDescription { get; set; }
     }
 
     public class LeaderboardViewModel

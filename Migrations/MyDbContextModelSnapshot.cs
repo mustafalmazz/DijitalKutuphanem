@@ -228,6 +228,9 @@ namespace BookManagementApp.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int?>("ActiveTitleAchievementId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Bio")
                         .HasMaxLength(160)
                         .HasColumnType("nvarchar(160)");
@@ -284,6 +287,9 @@ namespace BookManagementApp.Migrations
                     b.Property<int>("StreakFreezes")
                         .HasColumnType("int");
 
+                    b.Property<int>("TotalStonesEarned")
+                        .HasColumnType("int");
+
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -296,6 +302,8 @@ namespace BookManagementApp.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ActiveTitleAchievementId");
 
                     b.HasIndex("Email")
                         .IsUnique()
@@ -331,6 +339,487 @@ namespace BookManagementApp.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserFrames");
+                });
+
+            modelBuilder.Entity("BookManagementApp.Models.Achievement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ColorHex")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("IconClass")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("RewardStones")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TargetValue")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Achievements");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Category = "Okuma",
+                            ColorHex = "#cd7f32",
+                            Description = "İlk kitabınızı okudunuz.",
+                            IconClass = "fa-book-open",
+                            Name = "İlk Adım",
+                            RewardStones = 10,
+                            TargetValue = 1,
+                            Tier = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Category = "Okuma",
+                            ColorHex = "#c0c0c0",
+                            Description = "10 kitap okudunuz.",
+                            IconClass = "fa-book",
+                            Name = "Kitap Sever",
+                            RewardStones = 50,
+                            TargetValue = 10,
+                            Tier = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Category = "Okuma",
+                            ColorHex = "#ffd700",
+                            Description = "50 kitap okudunuz.",
+                            IconClass = "fa-layer-group",
+                            Name = "Kütüphaneci",
+                            RewardStones = 150,
+                            TargetValue = 50,
+                            Tier = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Category = "Okuma",
+                            ColorHex = "#2fb8a0",
+                            Description = "100 kitap okudunuz.",
+                            IconClass = "fa-book-journal-whills",
+                            Name = "Kitap Kurdu",
+                            RewardStones = 500,
+                            TargetValue = 100,
+                            Tier = 4
+                        },
+                        new
+                        {
+                            Id = 24,
+                            Category = "Okuma",
+                            ColorHex = "#b9f2ff",
+                            Description = "250 kitap okudunuz.",
+                            IconClass = "fa-book-bookmark",
+                            Name = "Raf Fatihi",
+                            RewardStones = 1000,
+                            TargetValue = 250,
+                            Tier = 5
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Category = "Okuma",
+                            ColorHex = "#c084fc",
+                            Description = "500 kitap okudunuz.",
+                            IconClass = "fa-book-atlas",
+                            Name = "Okuma Üstadı",
+                            RewardStones = 2000,
+                            TargetValue = 500,
+                            Tier = 6
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Category = "Odaklanma",
+                            ColorHex = "#cd7f32",
+                            Description = "İlk pomodoro seansınızı tamamladınız.",
+                            IconClass = "fa-stopwatch",
+                            Name = "Odak Çırağı",
+                            RewardStones = 10,
+                            TargetValue = 1,
+                            Tier = 1
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Category = "Odaklanma",
+                            ColorHex = "#c0c0c0",
+                            Description = "25 pomodoro seansı tamamladınız.",
+                            IconClass = "fa-hourglass-half",
+                            Name = "Zaman Bekçisi",
+                            RewardStones = 50,
+                            TargetValue = 25,
+                            Tier = 2
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Category = "Odaklanma",
+                            ColorHex = "#ffd700",
+                            Description = "100 pomodoro seansı tamamladınız.",
+                            IconClass = "fa-hourglass-end",
+                            Name = "Zamanın Hakimi",
+                            RewardStones = 250,
+                            TargetValue = 100,
+                            Tier = 3
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Category = "Odaklanma",
+                            ColorHex = "#2fb8a0",
+                            Description = "500 pomodoro seansı tamamladınız.",
+                            IconClass = "fa-brain",
+                            Name = "Odaklanma Ustası",
+                            RewardStones = 1000,
+                            TargetValue = 500,
+                            Tier = 4
+                        },
+                        new
+                        {
+                            Id = 25,
+                            Category = "Odaklanma",
+                            ColorHex = "#b9f2ff",
+                            Description = "1000 pomodoro seansı tamamladınız.",
+                            IconClass = "fa-meteor",
+                            Name = "Derin Odak",
+                            RewardStones = 2000,
+                            TargetValue = 1000,
+                            Tier = 5
+                        },
+                        new
+                        {
+                            Id = 26,
+                            Category = "Odaklanma",
+                            ColorHex = "#c084fc",
+                            Description = "2500 pomodoro seansı tamamladınız.",
+                            IconClass = "fa-infinity",
+                            Name = "Zamanın Efsanesi",
+                            RewardStones = 5000,
+                            TargetValue = 2500,
+                            Tier = 6
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Category = "Sosyal",
+                            ColorHex = "#cd7f32",
+                            Description = "İlk takipçinizi kazandınız.",
+                            IconClass = "fa-user-plus",
+                            Name = "Merhaba Dünya",
+                            RewardStones = 10,
+                            TargetValue = 1,
+                            Tier = 1
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Category = "Sosyal",
+                            ColorHex = "#c0c0c0",
+                            Description = "10 takipçiye ulaştınız.",
+                            IconClass = "fa-users",
+                            Name = "Sosyalleşen",
+                            RewardStones = 40,
+                            TargetValue = 10,
+                            Tier = 2
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Category = "Sosyal",
+                            ColorHex = "#ffd700",
+                            Description = "50 takipçiye ulaştınız.",
+                            IconClass = "fa-people-group",
+                            Name = "Çevresi Geniş",
+                            RewardStones = 100,
+                            TargetValue = 50,
+                            Tier = 3
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Category = "Sosyal",
+                            ColorHex = "#2fb8a0",
+                            Description = "100 takipçiye ulaştınız.",
+                            IconClass = "fa-star",
+                            Name = "Fenomen",
+                            RewardStones = 500,
+                            TargetValue = 100,
+                            Tier = 4
+                        },
+                        new
+                        {
+                            Id = 27,
+                            Category = "Sosyal",
+                            ColorHex = "#b9f2ff",
+                            Description = "250 takipçiye ulaştınız.",
+                            IconClass = "fa-handshake",
+                            Name = "Topluluk Yıldızı",
+                            RewardStones = 1000,
+                            TargetValue = 250,
+                            Tier = 5
+                        },
+                        new
+                        {
+                            Id = 28,
+                            Category = "Sosyal",
+                            ColorHex = "#c084fc",
+                            Description = "500 takipçiye ulaştınız.",
+                            IconClass = "fa-heart",
+                            Name = "Kitap Kulübü Efsanesi",
+                            RewardStones = 2500,
+                            TargetValue = 500,
+                            Tier = 6
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Category = "Etkileşim",
+                            ColorHex = "#cd7f32",
+                            Description = "İlk kitap yorumunuzu yaptınız.",
+                            IconClass = "fa-comment",
+                            Name = "İlk Bakış",
+                            RewardStones = 15,
+                            TargetValue = 1,
+                            Tier = 1
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Category = "Etkileşim",
+                            ColorHex = "#c0c0c0",
+                            Description = "10 kitap yorumu yaptınız.",
+                            IconClass = "fa-comments",
+                            Name = "Eleştirmen",
+                            RewardStones = 75,
+                            TargetValue = 10,
+                            Tier = 2
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Category = "Etkileşim",
+                            ColorHex = "#ffd700",
+                            Description = "50 kitap yorumu yaptınız.",
+                            IconClass = "fa-pen-fancy",
+                            Name = "Uzman Yazar",
+                            RewardStones = 200,
+                            TargetValue = 50,
+                            Tier = 3
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Category = "Etkileşim",
+                            ColorHex = "#2fb8a0",
+                            Description = "100 kitap yorumu yaptınız.",
+                            IconClass = "fa-magnifying-glass-chart",
+                            Name = "Edebiyat Dedektifi",
+                            RewardStones = 500,
+                            TargetValue = 100,
+                            Tier = 4
+                        },
+                        new
+                        {
+                            Id = 29,
+                            Category = "Etkileşim",
+                            ColorHex = "#b9f2ff",
+                            Description = "250 kitap yorumu yaptınız.",
+                            IconClass = "fa-feather",
+                            Name = "Kalem Ustası",
+                            RewardStones = 1000,
+                            TargetValue = 250,
+                            Tier = 5
+                        },
+                        new
+                        {
+                            Id = 30,
+                            Category = "Etkileşim",
+                            ColorHex = "#c084fc",
+                            Description = "500 kitap yorumu yaptınız.",
+                            IconClass = "fa-scroll",
+                            Name = "Edebiyatın Sesi",
+                            RewardStones = 2500,
+                            TargetValue = 500,
+                            Tier = 6
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Category = "Bilgelik",
+                            ColorHex = "#cd7f32",
+                            Description = "100 Bilgelik taşı topladınız.",
+                            IconClass = "fa-gem",
+                            Name = "Çaylak",
+                            RewardStones = 0,
+                            TargetValue = 100,
+                            Tier = 1
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Category = "Bilgelik",
+                            ColorHex = "#c0c0c0",
+                            Description = "1000 Bilgelik taşı topladınız.",
+                            IconClass = "fa-medal",
+                            Name = "Bilge Kişi",
+                            RewardStones = 0,
+                            TargetValue = 1000,
+                            Tier = 2
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Category = "Bilgelik",
+                            ColorHex = "#ffd700",
+                            Description = "5000 Bilgelik taşı topladınız.",
+                            IconClass = "fa-crown",
+                            Name = "Aydınlanmış",
+                            RewardStones = 0,
+                            TargetValue = 5000,
+                            Tier = 3
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Category = "Bilgelik",
+                            ColorHex = "#2fb8a0",
+                            Description = "10000 Bilgelik taşı topladınız.",
+                            IconClass = "fa-chess-king",
+                            Name = "Bilgeliğin Efendisi",
+                            RewardStones = 0,
+                            TargetValue = 10000,
+                            Tier = 4
+                        },
+                        new
+                        {
+                            Id = 31,
+                            Category = "Bilgelik",
+                            ColorHex = "#b9f2ff",
+                            Description = "25000 Bilgelik taşı topladınız.",
+                            IconClass = "fa-coins",
+                            Name = "Hazine Avcısı",
+                            RewardStones = 0,
+                            TargetValue = 25000,
+                            Tier = 5
+                        },
+                        new
+                        {
+                            Id = 32,
+                            Category = "Bilgelik",
+                            ColorHex = "#c084fc",
+                            Description = "50000 Bilgelik taşı topladınız.",
+                            IconClass = "fa-hat-wizard",
+                            Name = "Ebedi Bilge",
+                            RewardStones = 0,
+                            TargetValue = 50000,
+                            Tier = 6
+                        },
+                        new
+                        {
+                            Id = 33,
+                            Category = "İstikrar",
+                            ColorHex = "#cd7f32",
+                            Description = "3 gün üst üste uygulamayı kullandınız.",
+                            IconClass = "fa-bolt",
+                            Name = "İlk Kıvılcım",
+                            RewardStones = 25,
+                            TargetValue = 3,
+                            Tier = 1
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Category = "İstikrar",
+                            ColorHex = "#c0c0c0",
+                            Description = "7 gün üst üste uygulamayı kullandınız.",
+                            IconClass = "fa-calendar-check",
+                            Name = "İstikrarlı",
+                            RewardStones = 100,
+                            TargetValue = 7,
+                            Tier = 2
+                        },
+                        new
+                        {
+                            Id = 23,
+                            Category = "İstikrar",
+                            ColorHex = "#ffd700",
+                            Description = "30 gün üst üste uygulamayı kullandınız.",
+                            IconClass = "fa-fire",
+                            Name = "Demir Disiplin",
+                            RewardStones = 500,
+                            TargetValue = 30,
+                            Tier = 3
+                        },
+                        new
+                        {
+                            Id = 34,
+                            Category = "İstikrar",
+                            ColorHex = "#2fb8a0",
+                            Description = "100 gün üst üste uygulamayı kullandınız.",
+                            IconClass = "fa-shield-halved",
+                            Name = "Sarsılmaz",
+                            RewardStones = 1500,
+                            TargetValue = 100,
+                            Tier = 4
+                        },
+                        new
+                        {
+                            Id = 35,
+                            Category = "İstikrar",
+                            ColorHex = "#b9f2ff",
+                            Description = "180 gün üst üste uygulamayı kullandınız.",
+                            IconClass = "fa-mountain",
+                            Name = "Adanmış Okur",
+                            RewardStones = 3000,
+                            TargetValue = 180,
+                            Tier = 5
+                        },
+                        new
+                        {
+                            Id = 36,
+                            Category = "İstikrar",
+                            ColorHex = "#c084fc",
+                            Description = "365 gün üst üste uygulamayı kullandınız.",
+                            IconClass = "fa-trophy",
+                            Name = "Bir Yılın Hikayesi",
+                            RewardStones = 10000,
+                            TargetValue = 365,
+                            Tier = 6
+                        });
                 });
 
             modelBuilder.Entity("BookManagementApp.Models.Block", b =>
@@ -448,6 +937,50 @@ namespace BookManagementApp.Migrations
                     b.ToTable("BookComments");
                 });
 
+            modelBuilder.Entity("BookManagementApp.Models.BookExcerpt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BookAuthor")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("BookTitle")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImagePublicId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BookExcerpts");
+                });
+
             modelBuilder.Entity("BookManagementApp.Models.BookLike", b =>
                 {
                     b.Property<int>("Id")
@@ -485,12 +1018,7 @@ namespace BookManagementApp.Migrations
                     b.Property<string>("CategoryName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Categories");
                 });
@@ -526,6 +1054,78 @@ namespace BookManagementApp.Migrations
                     b.HasIndex("SenderId");
 
                     b.ToTable("ChatMessages");
+                });
+
+            modelBuilder.Entity("BookManagementApp.Models.ExcerptReaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Emoji")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int>("ExcerptId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ExcerptId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ExcerptReactions");
+                });
+
+            modelBuilder.Entity("BookManagementApp.Models.ExcerptReport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ExcerptId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("ReportedUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReporterId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportedUserId");
+
+                    b.HasIndex("ReporterId");
+
+                    b.ToTable("ExcerptReports");
                 });
 
             modelBuilder.Entity("BookManagementApp.Models.Follow", b =>
@@ -843,6 +1443,32 @@ namespace BookManagementApp.Migrations
                     b.ToTable("StudySessions");
                 });
 
+            modelBuilder.Entity("BookManagementApp.Models.UserAchievement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AchievementId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EarnedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AchievementId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserAchievements");
+                });
+
             modelBuilder.Entity("BookManagementApp.Models.UserAvatar", b =>
                 {
                     b.Property<int>("Id")
@@ -873,6 +1499,15 @@ namespace BookManagementApp.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BookManagementApp.Areas.Admin.Models.User", b =>
+                {
+                    b.HasOne("BookManagementApp.Models.Achievement", "ActiveTitleAchievement")
+                        .WithMany()
+                        .HasForeignKey("ActiveTitleAchievementId");
+
+                    b.Navigation("ActiveTitleAchievement");
                 });
 
             modelBuilder.Entity("BookManagementApp.Areas.Admin.Models.UserFrame", b =>
@@ -950,6 +1585,17 @@ namespace BookManagementApp.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("BookManagementApp.Models.BookExcerpt", b =>
+                {
+                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BookManagementApp.Models.BookLike", b =>
                 {
                     b.HasOne("BookManagementApp.Models.Book", "Book")
@@ -965,15 +1611,6 @@ namespace BookManagementApp.Migrations
                         .IsRequired();
 
                     b.Navigation("Book");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("BookManagementApp.Models.Category", b =>
-                {
-                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "User")
-                        .WithMany("Categories")
-                        .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
@@ -995,6 +1632,44 @@ namespace BookManagementApp.Migrations
                     b.Navigation("Receiver");
 
                     b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("BookManagementApp.Models.ExcerptReaction", b =>
+                {
+                    b.HasOne("BookManagementApp.Models.BookExcerpt", "Excerpt")
+                        .WithMany()
+                        .HasForeignKey("ExcerptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Excerpt");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BookManagementApp.Models.ExcerptReport", b =>
+                {
+                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "ReportedUser")
+                        .WithMany()
+                        .HasForeignKey("ReportedUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ReportedUser");
+
+                    b.Navigation("Reporter");
                 });
 
             modelBuilder.Entity("BookManagementApp.Models.Follow", b =>
@@ -1046,6 +1721,25 @@ namespace BookManagementApp.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("BookManagementApp.Models.UserAchievement", b =>
+                {
+                    b.HasOne("BookManagementApp.Models.Achievement", "Achievement")
+                        .WithMany()
+                        .HasForeignKey("AchievementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BookManagementApp.Areas.Admin.Models.User", "User")
+                        .WithMany("UserAchievements")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Achievement");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BookManagementApp.Models.UserAvatar", b =>
                 {
                     b.HasOne("BookManagementApp.Models.ProfileAvatar", "ProfileAvatar")
@@ -1069,9 +1763,9 @@ namespace BookManagementApp.Migrations
                 {
                     b.Navigation("Books");
 
-                    b.Navigation("Categories");
-
                     b.Navigation("Contacts");
+
+                    b.Navigation("UserAchievements");
                 });
 
             modelBuilder.Entity("BookManagementApp.Models.Category", b =>

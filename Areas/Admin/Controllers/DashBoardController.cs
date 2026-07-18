@@ -23,7 +23,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
             var viewModel = new DashBoardViewModel
             {
                 Books = _context.Books.Where(u => u.UserId == userId).OrderByDescending(x => x.CreateDate).ToList(),
-                Categories = _context.Categories.Where(u => u.UserId == userId).ToList()
+                Categories = _context.Categories.OrderBy(c => c.CategoryName).ToList()
             };
             return View(viewModel);
         }

@@ -260,7 +260,7 @@
             <p class="page-subtitle">Sistemde tanımlı @(Model?.Count() ?? 0) adet kategori bulunmaktadır.</p>
         </div>
         <div>
-            <a asp-action="Create" class="btn btn-gold">
+            <a asp-action="Add" class="btn btn-gold">
                 <i class="bi bi-plus-lg"></i> Yeni Kategori
             </a>
         </div>
@@ -269,7 +269,7 @@
     <div class="search-card">
         <div style="flex-grow: 1;">
             <form method="get" asp-action="List" style="display: flex; gap: 10px;">
-                <input type="text" id="categorySearchInput" name="q" class="input-dark" placeholder="Kategori veya Kullanıcı ara..." value="@Context.Request.Query["q"]">
+                <input type="text" id="categorySearchInput" name="q" class="input-dark" placeholder="Kategori ara..." value="@Context.Request.Query["q"]">
                 <button type="button" class="btn-gold btn-sm" style="pointer-events: none;">
                     <i class="bi bi-search"></i>
                 </button>
@@ -283,7 +283,7 @@
                 <thead>
                     <tr>
                         <th style="width: 80px;">#ID</th>
-                        <th>OLUŞTURAN</th>
+                        <th>KİTAP</th>
                         <th>KATEGORİ ADI</th>
                         <th style="text-align:right;">İŞLEMLER</th>
                     </tr>
@@ -298,8 +298,8 @@
 
                                 <td>
                                     <div class="user-badge">
-                                        <i class="bi bi-person-circle"></i>
-                                        <span>@(item.User?.UserName ?? "Sistem")</span>
+                                        <i class="bi bi-book"></i>
+                                        <span>@(item.Books?.Count ?? 0) kitap</span>
                                     </div>
                                 </td>
 

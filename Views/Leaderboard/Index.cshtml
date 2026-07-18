@@ -261,9 +261,57 @@
         color: #4a3f35;
         font-size: 1.05rem;
         margin-bottom: 2px;
-        white-space: nowrap;
+        /* İsim + başarım etiketi aynı satırda; isim önceliklidir */
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+    }
+
+        /* İsim uzunsa kısalır, rozet ezilmez */
+        .user-name > a,
+        .user-name > span:not(.lb-title) {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+
+    /* --- LİDERLİK TABLOSU BAŞARIM ETİKETİ --- */
+    .lb-title {
+        flex-shrink: 1;
+        min-width: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 45%;
+        padding: 2px 9px;
+        border-radius: 50px;
+        background: color-mix(in srgb, var(--lb-title-color, #8b6f47) 14%, transparent);
+        color: color-mix(in srgb, var(--lb-title-color, #8b6f47) 78%, #2b2118);
+        border: 1px solid color-mix(in srgb, var(--lb-title-color, #8b6f47) 38%, transparent);
+        font-size: 0.72rem;
+        font-weight: 700;
+        font-style: normal;
+        line-height: 1.5;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.2s;
+    }
+
+        .lb-title:hover {
+            background: color-mix(in srgb, var(--lb-title-color, #8b6f47) 24%, transparent);
+        }
+
+        .lb-title i {
+            flex-shrink: 0;
+            font-size: 0.68rem;
+        }
+
+    .lb-title-text {
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .user-title {
@@ -420,7 +468,24 @@
 
         .user-name {
             font-size: 0.9rem;
+            gap: 5px;
         }
+
+        /* Dar ekranda etiket metni gizlenir, ikon rozet olarak kalır;
+           tam adı görmek için etikete dokunmak yeterli (detay baloncuğu açılır) */
+        .lb-title {
+            max-width: none;
+            padding: 3px 7px;
+            font-size: 0.68rem;
+        }
+
+            .lb-title .lb-title-text {
+                display: none;
+            }
+
+            .lb-title i {
+                font-size: 0.72rem;
+            }
 
         .user-title {
             font-size: 0.72rem;
@@ -538,6 +603,7 @@
                                     <div class="user-info">
                                         <div class="user-name">
                                             <a href="/Profile/PublicProfile?id=@item.UserId" style="text-decoration: none; color: inherit;">@item.UserName</a>
+                                            <partial name="_RankTitleBadge" model="item" />
                                         </div>
                                         <div class="user-title">
                                             @(item.Rank == 1 ? "🥇 Aylık Şampiyon" : item.Rank == 2 ? "🥈 Üstün Başarı" : item.Rank == 3 ? "🥉 Harika İlerleme" : "📚 İstikrarlı Okur")
@@ -573,7 +639,10 @@
                                         }
                                     </div>
                                     <div class="user-info">
-                                        <div class="user-name">Siz (@Model.CurrentUserBookworm.UserName)</div>
+                                        <div class="user-name">
+                                            <span>Siz (@Model.CurrentUserBookworm.UserName)</span>
+                                            <partial name="_RankTitleBadge" model="Model.CurrentUserBookworm" />
+                                        </div>
                                         <div class="user-title">Okuma Yolculuğu Devam Ediyor</div>
                                     </div>
                                     <div class="score-badge">
@@ -636,6 +705,7 @@
                                     <div class="user-info">
                                         <div class="user-name">
                                             <a href="/Profile/PublicProfile?id=@item.UserId" style="text-decoration: none; color: inherit;">@item.UserName</a>
+                                            <partial name="_RankTitleBadge" model="item" />
                                         </div>
                                         <div class="user-title">Odaklanma Ustası</div>
                                     </div>
@@ -669,7 +739,10 @@
                                         }
                                     </div>
                                     <div class="user-info">
-                                        <div class="user-name">Siz (@Model.CurrentUserStudier.UserName)</div>
+                                        <div class="user-name">
+                                            <span>Siz (@Model.CurrentUserStudier.UserName)</span>
+                                            <partial name="_RankTitleBadge" model="Model.CurrentUserStudier" />
+                                        </div>
                                         <div class="user-title">Odaklanma Ustası Olma Yolunda</div>
                                     </div>
                                     <div class="score-badge">
@@ -732,6 +805,7 @@
                                     <div class="user-info">
                                         <div class="user-name">
                                             <a href="/Profile/PublicProfile?id=@item.UserId" style="text-decoration: none; color: inherit;">@item.UserName</a>
+                                            <partial name="_RankTitleBadge" model="item" />
                                         </div>
                                         <div class="user-title">Disiplin Timsali</div>
                                     </div>
@@ -765,7 +839,10 @@
                                         }
                                     </div>
                                     <div class="user-info">
-                                        <div class="user-name">Siz (@Model.CurrentUserStreak.UserName)</div>
+                                        <div class="user-name">
+                                            <span>Siz (@Model.CurrentUserStreak.UserName)</span>
+                                            <partial name="_RankTitleBadge" model="Model.CurrentUserStreak" />
+                                        </div>
                                         <div class="user-title">Disiplin Yolcusu</div>
                                     </div>
                                     <div class="score-badge">
@@ -789,3 +866,5 @@
         </div>
     </div>
 </div>
+
+@await Html.PartialAsync("_TitlePopover")

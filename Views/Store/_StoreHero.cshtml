@@ -1,0 +1,36 @@
+@using BookManagementApp.Models
+@using BookManagementApp.Areas.Admin.Models
+@{
+    var heroUser = ViewBag.User as User;
+    var heroIcon = ViewData["HeroIcon"] as string ?? "fa-solid fa-store";
+    var heroTitle = ViewData["HeroTitle"] as string ?? "Mağaza";
+    var heroSubtitle = ViewData["HeroSubtitle"] as string ?? "Bilgelik Taşlarınla profilini özelleştir!";
+    var showBack = ViewData["HeroBack"] as bool? ?? false;
+}
+
+<div class="store-hero @(showBack ? "store-hero--with-back" : "")">
+    @if (showBack)
+    {
+        <a asp-controller="Store" asp-action="Index" class="hero-back">
+            <i class="fa-solid fa-arrow-left"></i> Mağaza
+        </a>
+    }
+
+    <h1 class="store-title">
+        <i class="@heroIcon"></i> @heroTitle
+    </h1>
+    <p class="store-subtitle">@heroSubtitle</p>
+
+    @if (heroUser != null)
+    {
+        <div class="balance-badge">
+            <i class="fa-solid fa-gem balance-icon"></i>
+            <div>
+                <div class="balance-amount">@heroUser.WisdomStones</div>
+                <div class="balance-label">Bilgelik Taşı</div>
+            </div>
+        </div>
+    }
+</div>
+
+@* Sunucu mesajları satır içi şerit yerine _StoreNotify modalında gösteriliyor. *@

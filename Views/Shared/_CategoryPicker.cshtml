@@ -1,0 +1,75 @@
+﻿@using BookManagementApp.Models
+@model CategoryPickerModel
+@*
+    KATEGORİ SEÇİCİ (MODAL)
+    -----------------------
+    Native <select> yerine mobilde rahat kullanılan, aranabilir bir modal.
+    Değer gizli bir input'ta tutulur; form gönderimi ve mevcut JS'ler
+    bu input üzerinden çalışmaya devam eder.
+
+    Kullanımı:
+    @await Html.PartialAsync("_CategoryPicker", new CategoryPickerModel {
+        Categories = ViewBag.Categories as List<Category>,
+        SelectedId = Model?.CategoryId,
+        Required   = true
+    })
+*@
+@{
+    var pkCategories = Model?.Categories ?? new List<Category>();
+    var pkName = Model?.InputName ?? "CategoryId";
+    var pkId = Model?.ResolvedId ?? pkName;
+    var pkRequired = Model?.Required ?? false;
+    var pkSelected = (Model?.SelectedId is int sv && sv > 0) ? (int?)sv : null;
+
+    var pkSelectedName = pkCategories.FirstOrDefault(c => c.Id == pkSelected)?.CategoryName;
+    var pkModalId = pkId + "__modal";
+}
+
+<div class="catpick" data-catpick="@pkId">
+    <input type="hidden" name="@pkName" id="@pkId" value="@(pkSelected?.ToString() ?? "")" />
+
+    <button type="button" class="catpick-trigger @(pkSelected == null ? "empty" : "")"
+            data-catpick-open="@pkModalId"
+            aria-haspopup="dialog">
+        <span class="catpick-trigger-icon"><i class="fa-solid fa-layer-group"></i></span>
+        <span class="catpick-trigger-text" data-catpick-label>
+            @(pkSelectedName ?? "Kategori Seçiniz")
+        </span>
+        <span class="catpick-trigger-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+    </button>
+
+    @if (pkRequired)
+    {
+        <span class="catpick-error" data-catpick-error hidden>Lütfen bir kategori seç.</span>
+    }
+</div>
+
+<div class="catpick-sheet" id="@pkModalId" data-catpick-target="@pkId" role="dialog" aria-modal="true" aria-label="Kategori seç" hidden>
+    <div class="catpick-panel">
+        <div class="catpick-head">
+            <h3 class="catpick-title">Kategori Seç</h3>
+            <button type="button" class="catpick-close" data-catpick-close aria-label="Kapat">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="catpick-search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" class="catpick-search" data-catpick-search placeholder="Kategori ara..." autocomplete="off" />
+        </div>
+
+        <div class="catpick-list" data-catpick-list>
+            @foreach (var c in pkCategories.OrderBy(c => c.CategoryName))
+            {
+                <button type="button"
+                        class="catpick-option @(c.Id == pkSelected ? "selected" : "")"
+                        data-catpick-value="@c.Id"
+                        data-catpick-name="@c.CategoryName">
+                    <span class="catpick-option-name">@c.CategoryName</span>
+                    <span class="catpick-option-check"><i class="fa-solid fa-check"></i></span>
+                </button>
+            }
+            <p class="catpick-empty" data-catpick-empty hidden>Eşleşen kategori yok.</p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,161 @@
+@*
+    Mağaza sayfaları için ortak bildirim modalı.
+    Tarayıcının alert() kutusu yerine bunu kullanıyoruz:
+        storeNotify('success' | 'error' | 'info', 'Mesaj', 'Opsiyonel Başlık')
+*@
+@{
+    var notifySuccess = TempData["SuccessMessage"] as string;
+    var notifyError = TempData["ErrorMessage"] as string;
+}
+
+<style>
+    .store-notify .modal-content {
+        border: none;
+        border-radius: 22px;
+        overflow: hidden;
+        font-family: 'Georgia', serif;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+    }
+
+    .store-notify .modal-dialog {
+        max-width: 420px;
+        margin: 1rem auto;
+    }
+
+    .store-notify-body {
+        background: #fdfbf7;
+        padding: clamp(24px, 5vw, 36px) clamp(20px, 4vw, 32px);
+        text-align: center;
+    }
+
+    .store-notify-icon {
+        display: grid;
+        place-items: center;
+        width: clamp(58px, 15vw, 74px);
+        height: clamp(58px, 15vw, 74px);
+        margin: 0 auto clamp(14px, 3vw, 20px);
+        border-radius: 50%;
+        font-size: clamp(1.5rem, 5vw, 2rem);
+        color: #fff;
+    }
+
+    .store-notify-title {
+        margin: 0 0 8px;
+        color: #4a3f35;
+        font-size: clamp(1.1rem, 4vw, 1.35rem);
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .store-notify-text {
+        margin: 0;
+        color: #8b6f47;
+        font-size: clamp(0.88rem, 3.2vw, 1rem);
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+    }
+
+    .store-notify-foot {
+        background: #f5f0e8;
+        border-top: 1px solid rgba(139,111,71,0.12);
+        padding: clamp(14px, 3vw, 18px);
+        text-align: center;
+    }
+
+    .store-notify-ok {
+        width: 100%;
+        max-width: 220px;
+        border: none;
+        border-radius: 50px;
+        padding: clamp(10px, 2.6vw, 12px) 28px;
+        font-family: 'Georgia', serif;
+        font-weight: 700;
+        font-size: clamp(0.88rem, 3vw, 1rem);
+        color: #fff;
+        background: linear-gradient(135deg, #8b6f47, #6b5541);
+        box-shadow: 0 6px 18px rgba(107,85,65,0.28);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .store-notify-ok:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 9px 22px rgba(107,85,65,0.36);
+        }
+
+    /* Tür renkleri */
+    .store-notify[data-type="success"] .store-notify-icon {
+        background: linear-gradient(135deg, #48bb78, #2f855a);
+        box-shadow: 0 10px 24px rgba(72,187,120,0.35);
+    }
+
+    .store-notify[data-type="error"] .store-notify-icon {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        box-shadow: 0 10px 24px rgba(231,76,60,0.32);
+    }
+
+    .store-notify[data-type="info"] .store-notify-icon {
+        background: linear-gradient(135deg, #00acc1, #00838f);
+        box-shadow: 0 10px 24px rgba(0,131,143,0.32);
+    }
+
+    @@media (max-width: 420px) {
+        .store-notify .modal-dialog {
+            margin: 0.75rem;
+        }
+    }
+</style>
+
+<div class="modal fade store-notify" id="storeNotifyModal" data-type="info" tabindex="-1" aria-labelledby="storeNotifyTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="store-notify-body">
+                <div class="store-notify-icon"><i class="fa-solid fa-circle-info" id="storeNotifyIcon"></i></div>
+                <h2 class="store-notify-title" id="storeNotifyTitle">Bilgi</h2>
+                <p class="store-notify-text" id="storeNotifyText"></p>
+            </div>
+            <div class="store-notify-foot">
+                <button type="button" class="store-notify-ok" data-bs-dismiss="modal">Tamam</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var config = {
+            success: { icon: 'fa-solid fa-circle-check', title: 'Başarılı' },
+            error:   { icon: 'fa-solid fa-circle-exclamation', title: 'Bir sorun oldu' },
+            info:    { icon: 'fa-solid fa-circle-info', title: 'Bilgi' }
+        };
+
+        var instance = null;
+
+        window.storeNotify = function (type, message, title) {
+            var el = document.getElementById('storeNotifyModal');
+            if (!el) return;
+
+            var preset = config[type] || config.info;
+            el.setAttribute('data-type', config[type] ? type : 'info');
+            document.getElementById('storeNotifyIcon').className = preset.icon;
+            document.getElementById('storeNotifyTitle').textContent = title || preset.title;
+            document.getElementById('storeNotifyText').textContent = message || '';
+
+            if (!instance) instance = new bootstrap.Modal(el);
+            instance.show();
+        };
+
+        // Sunucudan gelen TempData mesajları da aynı modalda gösterilir.
+        var pending = @Html.Raw(Json.Serialize(new
+        {
+            success = notifySuccess,
+            error = notifyError
+        }));
+
+        if (pending && (pending.success || pending.error)) {
+            document.addEventListener('DOMContentLoaded', function () {
+                if (pending.error) storeNotify('error', pending.error);
+                else storeNotify('success', pending.success);
+            });
+        }
+    })();
+</script>

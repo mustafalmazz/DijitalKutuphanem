@@ -163,6 +163,7 @@
             function updateBadgeCount(count) {
                 var menuDot = $('#mobileMenuDot');
                 var hasFollowReq = menuDot.data('follow-requests') === true;
+                var hasAch = menuDot.data('achievements') === true;
 
                 if (count > 0) {
                     if (badge.length) badge.text(count).removeClass('d-none');
@@ -171,7 +172,8 @@
                 } else {
                     if (badge.length) badge.addClass('d-none');
                     if (mobileBadge.length) mobileBadge.addClass('d-none');
-                    if (menuDot.length && !hasFollowReq) {
+                    // Mesaj yoksa bile takip isteği VEYA toplanabilir başarım varsa nokta kalır
+                    if (menuDot.length && !hasFollowReq && !hasAch) {
                         menuDot.addClass('d-none');
                     }
                 }

@@ -330,7 +330,8 @@
     .card-img-wrapper {
         position: relative;
         width: 100%;
-        height: 320px;
+        /* Sabit yükseklik yerine kitap kapağı oranı: kapaklar kırpılmasın */
+        aspect-ratio: 2 / 3;
         overflow: hidden;
         background: linear-gradient(135deg, #f5ede0 0%, #e8dcc8 100%);
     }
@@ -338,7 +339,8 @@
     .card-img-top {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        /* contain: kapağın tamamı görünür, en-boy oranı korunur */
+        object-fit: contain;
         transition: transform 0.4s ease;
         position: relative;
         z-index: 1;
@@ -578,7 +580,8 @@
         }
 
         .card-img-wrapper {
-            height: 200px;
+            /* aspect-ratio devrede; sabit yükseklik override edilmiyor */
+            aspect-ratio: 2 / 3;
         }
 
         .card-body {
@@ -922,15 +925,13 @@
                                 <label for="categorySelect" style="color: #8b6f47; font-weight: 600; margin-bottom: 5px;">
                                     <i class="fa-solid fa-layer-group"></i> Kategori
                                 </label>
-                                <select id="categorySelect" class="form-select" 
-                                        style="border: 2px solid #8b6f47; border-radius: 10px; font-family: 'Georgia', serif;">
-                                    @foreach (var category in Model.AllCategories)
-                                    {
-                                        <option value="@category.Id" @@(category.Id == Model.Book.CategoryId ? "selected" : "")>
-                                            @category.CategoryName
-                                        </option>
-                                    }
-                                </select>
+                                @* Gizli input'un id'si categorySelect kalıyor: kaydetme JS'i bu değeri okuyor *@
+                                @await Html.PartialAsync("_CategoryPicker", new BookManagementApp.Models.CategoryPickerModel {
+                                    Categories = Model.AllCategories ?? new List<BookManagementApp.Models.Category>(),
+                                    SelectedId = (int?)Model.Book.CategoryId,
+                                    InputId    = "categorySelect",
+                                    InputName  = "categorySelect"
+                                })
                             </div>
                             <div class="col-md-6">
                                 <label for="pagesInput" style="color: #8b6f47; font-weight: 600; margin-bottom: 5px;">
@@ -1279,3 +1280,5 @@
         }
     });
 </script>
+
+@await Html.PartialAsync("_CategoryPickerAssets")

@@ -392,7 +392,7 @@
 
                     <!-- İsim -->
                     <div class="ep-form-group">
-                        <input class="ep-input" asp-for="UserName" placeholder="Kullanıcı Adı" autocomplete="off" required />
+                        <input class="ep-input" asp-for="UserName" placeholder="Kullanıcı Adı" autocomplete="off" required minlength="3" maxlength="30" />
                         <i class="fa-solid fa-at ep-form-icon"></i>
                     </div>
 
@@ -468,23 +468,38 @@
 
                 <div class="tab-content" id="avatarTabsContent">
                     <div class="tab-pane fade show active" id="select-pane" role="tabpanel">
-                        <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
-                        <div class="text-center mt-2 mb-3">
-                            <form asp-action="RemoveAvatar" asp-controller="Profile" method="post">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="returnUrl" value="/Profile/Edit" />
-                                <button type="submit" class="btn btn-sm" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Avatarı Kaldır</button>
-                            </form>
-                        </div>
-                        <div class="avatar-grid" style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
-                            @if (ViewBag.Avatars != null)
+                        @{
+                            int editAvatarCount = 0;
+                            if (ViewBag.Avatars != null)
                             {
-                                foreach (var avatar in ViewBag.Avatars)
+                                foreach (var a in ViewBag.Avatars) { editAvatarCount++; }
+                            }
+                        }
+                        @if (editAvatarCount > 0)
+                        {
+                            <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
+                            <div class="text-center mt-2 mb-3">
+                                <form asp-action="RemoveAvatar" asp-controller="Profile" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="returnUrl" value="/Profile/Edit" />
+                                    <button type="submit" class="btn btn-sm" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Avatarı Kaldır</button>
+                                </form>
+                            </div>
+                            <div class="avatar-grid" style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
+                                @foreach (var avatar in ViewBag.Avatars)
                                 {
                                     <img src="@avatar.ImageUrl" class="avatar-option" onclick="selectAvatar(this)" title="@avatar.Name">
                                 }
-                            }
-                        </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fa-solid fa-store" style="font-size: 2.5rem; color: #e8dcc8; margin-bottom: 10px;"></i>
+                                <p style="color: #8b6f47; font-size: 0.9rem;">Henüz avatarın yok!</p>
+                                <a asp-controller="Store" asp-action="Index" asp-area="" class="btn btn-sm" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 20px; padding: 8px 20px; font-weight: 600;">Mağazaya Git</a>
+                            </div>
+                        }
                     </div>
 
                     <div class="tab-pane fade" id="upload-pane" role="tabpanel">

@@ -41,7 +41,7 @@ namespace BookManagementApp.Controllers
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId != null)
             {
-                ViewBag.Categories = _context.Categories.Where(x => x.UserId == userId).ToList();
+                ViewBag.Categories = _context.Categories.OrderBy(c => c.CategoryName).ToList();
 
             }
             else
@@ -375,7 +375,6 @@ namespace BookManagementApp.Controllers
 
             // ⭐ YENİ EKLENEN - Tüm kategorileri getir
             var allCategories = _context.Categories
-                .Where(c => c.UserId == userId)
                 .OrderBy(c => c.CategoryName)
                 .ToList();
 

@@ -1,4 +1,4 @@
-﻿using BookManagementApp.Models;
+using BookManagementApp.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies; 
 using Microsoft.AspNetCore.Authentication.Google;
@@ -47,6 +47,8 @@ namespace BookManagementApp
             builder.Services.AddControllersWithViews();
             builder.Services.AddSession();
             builder.Services.AddSignalR(); // SignalR servisi eklendi
+            builder.Services.AddScoped<BookManagementApp.Services.AchievementService>();
+            builder.Services.AddHostedService<BookManagementApp.Services.ExcerptCleanupService>();
 
             var app = builder.Build();
 

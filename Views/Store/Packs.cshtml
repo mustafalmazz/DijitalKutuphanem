@@ -1,0 +1,501 @@
+@using BookManagementApp.Models
+@using BookManagementApp.Areas.Admin.Models
+@model StoreViewModel
+@{
+    ViewData["Title"] = "Sürpriz Paketler";
+    ViewData["HeroTitle"] = "Sürpriz Paketler";
+    ViewData["HeroSubtitle"] = "Koleksiyonunu tamamla, sürpriz avatarlar kap";
+    ViewData["HeroIcon"] = "fa-solid fa-gift";
+    ViewData["HeroBack"] = true;
+
+    var user = ViewBag.User as User;
+    var ownedAvatarIds = ViewBag.OwnedAvatarIds as List<int> ?? new List<int>();
+}
+
+@await Html.PartialAsync("_StoreStyles")
+
+<style>
+    /* ---- Sürpriz Paket Banner ---- */
+    .pack-banner {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #fff, #fef8f0);
+        border: 2px solid var(--pack-theme);
+        border-radius: 20px;
+        padding: clamp(18px, 3vw, 40px);
+        margin-bottom: clamp(18px, 2.5vw, 40px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+    }
+
+    .pack-banner-bg {
+        position: absolute;
+        right: -50px;
+        top: -50px;
+        font-size: clamp(7rem, 18vw, 15rem);
+        line-height: 1;
+        color: var(--pack-theme);
+        opacity: 0.1;
+        pointer-events: none;
+    }
+
+    .pack-banner-body {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "info    preview"
+            "actions preview";
+        align-items: center;
+        column-gap: clamp(16px, 3vw, 32px);
+    }
+
+    .pack-info {
+        grid-area: info;
+        min-width: 0;
+    }
+
+    .pack-title {
+        color: var(--pack-theme);
+        font-weight: 800;
+        font-size: clamp(1.25rem, 3.2vw, 2.2rem);
+        margin-bottom: 10px;
+    }
+
+    .pack-desc {
+        color: #6b5541;
+        font-size: clamp(0.9rem, 1.6vw, 1.1rem);
+        margin-bottom: clamp(14px, 2vw, 25px);
+    }
+
+    .pack-actions {
+        grid-area: actions;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: clamp(8px, 1.5vw, 16px);
+    }
+
+    .pack-price {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,152,0,0.1);
+        color: #d35400;
+        border-radius: 50px;
+        padding: clamp(6px, 1vw, 10px) clamp(12px, 1.6vw, 20px);
+        font-weight: 700;
+        font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+        white-space: nowrap;
+    }
+
+        .pack-price i {
+            color: #00bcd4;
+        }
+
+    .pack-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, var(--pack-theme), #ff5722);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: clamp(8px, 1.1vw, 12px) clamp(16px, 2vw, 30px);
+        font-weight: 700;
+        font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+        white-space: nowrap;
+        box-shadow: 0 8px 20px rgba(255,87,34,0.25);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .pack-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(255,87,34,0.35);
+        }
+
+    .pack-preview {
+        grid-area: preview;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-shrink: 0;
+        gap: clamp(6px, 1vw, 14px);
+    }
+
+    .pack-avatar {
+        width: clamp(38px, 6vw, 75px);
+        height: clamp(38px, 6vw, 75px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        border: 2px solid var(--pack-theme);
+        border-radius: clamp(9px, 1.2vw, 15px);
+        box-shadow: 0 8px 20px rgba(255,152,0,0.15);
+        transition: transform 0.2s;
+    }
+
+        .pack-avatar:hover {
+            transform: scale(1.08);
+        }
+
+        .pack-avatar img {
+            width: 74%;
+            height: 74%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+    .pack-avatar-more {
+        background: rgba(255,152,0,0.05);
+        border-style: dashed;
+        color: var(--pack-theme);
+        font-weight: 800;
+        font-size: clamp(0.75rem, 1.2vw, 1.3rem);
+        cursor: pointer;
+    }
+
+        .pack-avatar-more:hover {
+            background: rgba(255,152,0,0.15);
+        }
+
+    @@media (max-width: 575.98px) {
+        .pack-banner-body {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas:
+                "info"
+                "preview"
+                "actions";
+            row-gap: 14px;
+            text-align: center;
+        }
+
+        .pack-desc {
+            margin-bottom: 0;
+        }
+
+        .pack-actions {
+            justify-content: center;
+        }
+
+        .pack-preview {
+            justify-content: center;
+        }
+
+        .pack-avatar {
+            width: 46px;
+            height: 46px;
+        }
+    }
+
+    /* ---- Gacha Animasyon Overlay ---- */
+    #gachaOverlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 999999;
+        display: none; flex-direction: column; justify-content: center; align-items: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .gacha-box {
+        font-size: 8rem; color: #ff9800;
+        animation: shake 0.5s infinite alternate;
+        filter: drop-shadow(0 0 20px #ff9800);
+    }
+
+        .gacha-box.burst {
+            animation: burst 0.6s forwards;
+        }
+
+    .gacha-result {
+        display: none; flex-direction: column; align-items: center;
+        transform: scale(0);
+        animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .gacha-card {
+        background: linear-gradient(135deg, #fff, #fef8f0);
+        border: 4px solid #ffcc80; border-radius: 20px;
+        padding: 30px; box-shadow: 0 0 50px rgba(255,204,128,0.5);
+        display: flex; flex-direction: column; align-items: center;
+    }
+
+    @@keyframes shake {
+        0% { transform: rotate(-5deg) scale(1); }
+        100% { transform: rotate(5deg) scale(1.1); filter: drop-shadow(0 0 40px #ff9800); }
+    }
+
+    @@keyframes burst {
+        0% { transform: scale(1.1); opacity: 1; }
+        50% { transform: scale(2); filter: brightness(2) drop-shadow(0 0 100px #fff); }
+        100% { transform: scale(0); opacity: 0; }
+    }
+
+    @@keyframes popIn {
+        0% { transform: scale(0) rotateY(-180deg); opacity: 0; }
+        100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+    }
+
+    @@media (max-width: 768px) {
+        .gacha-box {
+            font-size: 5rem !important;
+        }
+
+        .gacha-result h2 {
+            font-size: 2.2rem !important;
+        }
+
+        .gacha-card img {
+            width: 100px !important;
+            height: 100px !important;
+        }
+
+        .gacha-card h3 {
+            font-size: 1.2rem !important;
+        }
+    }
+</style>
+
+<div class="store-page">
+    @await Html.PartialAsync("_StoreHero")
+    @await Html.PartialAsync("_StoreNotify")
+
+    <div class="store-container">
+        @if (Model.Packages == null || !Model.Packages.Any())
+        {
+            <div class="text-center" style="padding: 50px; color: #8b6f47;">
+                <i class="fa-solid fa-box-open" style="font-size: 4rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h4>Şu an hiç sürpriz paket bulunmuyor.</h4>
+            </div>
+        }
+        else
+        {
+            @foreach (var package in Model.Packages)
+            {
+                var packAvatars = Model.PackAvatars.Where(a => a.PackCategory == package.CategoryCode).ToList();
+                var packTotal = packAvatars.Count();
+                var packOwned = packAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
+                var themeColor = package.ThemeColor ?? "#ff9800";
+                var iconClass = package.IconClass ?? "fa-solid fa-box";
+
+                <div class="pack-banner" style="--pack-theme: @themeColor;">
+                    <!-- Banner Arkaplan Deseni -->
+                    <div class="pack-banner-bg" aria-hidden="true">
+                        <i class="@iconClass"></i>
+                    </div>
+
+                    <div class="pack-banner-body">
+                        <div class="pack-info">
+                            <h2 class="pack-title">
+                                <i class="@iconClass"></i> @package.Title
+                            </h2>
+                            <p class="pack-desc">
+                                @package.Description <br />
+                                Koleksiyonu tamamlayabilecek misin? (@packOwned / @packTotal)
+                            </p>
+                        </div>
+
+                        <div class="pack-actions">
+                            <div class="pack-price">
+                                <i class="fa-solid fa-gem"></i> @package.PriceInStones Taş
+                            </div>
+
+                            <button type="button" class="pack-btn" data-bs-toggle="modal" data-bs-target="#packModal-@package.Id">
+                                <i class="fa-solid fa-box-open"></i> Paketi İncele
+                            </button>
+                        </div>
+
+                        <div class="pack-preview">
+                            @foreach (var item in packAvatars.Take(3))
+                            {
+                                <div class="pack-avatar" title="@item.Name">
+                                    <img src="@item.ImageUrl" alt="@item.Name" loading="lazy" />
+                                </div>
+                            }
+                            @if (packAvatars.Count() > 3)
+                            {
+                                <div class="pack-avatar pack-avatar-more" role="button" tabindex="0" data-bs-toggle="modal" data-bs-target="#packModal-@package.Id">
+                                    +@(packAvatars.Count() - 3)
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@if (Model.Packages != null)
+{
+    foreach (var package in Model.Packages)
+    {
+        var packAvatars = Model.PackAvatars.Where(a => a.PackCategory == package.CategoryCode).ToList();
+        var packTotal = packAvatars.Count();
+        var packOwned = packAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
+        bool canBuyPack = packOwned < packTotal && user != null && user.WisdomStones >= package.PriceInStones;
+        var themeColor = package.ThemeColor ?? "#ff9800";
+        var iconClass = package.IconClass ?? "fa-solid fa-box";
+
+        <!-- Paket Modal -->
+        <div class="modal fade" id="packModal-@package.Id" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+                <div class="modal-content" style="border-radius: 20px; border: none; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.3);">
+                    <div class="modal-header" style="background: linear-gradient(135deg, @themeColor, #e65100); color: white; border-bottom: none; padding: 25px;">
+                        <h5 class="modal-title" style="font-weight: 800; font-size: 1.5rem;"><i class="@iconClass"></i> @package.Title İçeriği</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                    </div>
+                    <div class="modal-body" style="background: #fdfbf7; padding: 30px;">
+                        <p style="color: #6b5541; font-weight: 600; margin-bottom: 20px; text-align: center;">Koleksiyon Durumu: @packOwned / @packTotal</p>
+
+                        <div class="store-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
+                            @foreach (var item in packAvatars)
+                            {
+                                bool isItemOwned = ownedAvatarIds.Contains(item.Id);
+
+                                <div class="frame-card" style="@(isItemOwned ? "opacity: 0.5; filter: grayscale(100%); border-color: rgba(0,0,0,0.1);" : $"border-color: {themeColor}; box-shadow: 0 0 15px rgba(255,152,0,0.1); background: white;")" id="packItem-@item.Id">
+                                    <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 100px;">
+                                        <img src="@item.ImageUrl" alt="@item.Name" style="width: 70px; height: 70px; object-fit: contain; border-radius: 10px;" />
+                                    </div>
+                                    <div class="frame-info text-center" style="padding: 10px;">
+                                        <div style="font-size: 0.8rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">@item.Name</div>
+                                        @if (isItemOwned)
+                                        {
+                                            <div style="font-weight: bold; color: #6c757d; font-size: 0.75rem;"><i class="fa-solid fa-check"></i> Alındı</div>
+                                        }
+                                        else
+                                        {
+                                            <div style="font-weight: bold; color: @themeColor; font-size: 0.75rem;"><i class="fa-solid fa-star"></i> Çıkmadı</div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between align-items-center" style="background: #f5f0e8; border-top: 1px solid rgba(139,111,71,0.1); padding: 20px;">
+                        <div style="font-weight: bold; font-size: 1.1rem; color: #d35400;">
+                            <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> @package.PriceInStones Taş
+                        </div>
+
+                        @Html.AntiForgeryToken()
+                        <button onclick="buyPack(this, @package.Id)" class="btn btn-lg" style="background: linear-gradient(135deg, @themeColor, #ff5722); color: white; border-radius: 50px; padding: 10px 25px; font-weight: bold; box-shadow: 0 8px 20px rgba(255,87,34,0.3); transition: transform 0.2s;" @(canBuyPack ? "" : "disabled")>
+                            @if (packOwned >= packTotal && packTotal > 0)
+                            {
+                                <text><i class="fa-solid fa-check-double"></i> Koleksiyon Tamamlandı</text>
+                            }
+                            else if (user != null && user.WisdomStones < package.PriceInStones)
+                            {
+                                <text><i class="fa-solid fa-lock"></i> Yetersiz Bakiye</text>
+                            }
+                            else
+                            {
+                                <text><i class="fa-solid fa-cube"></i> Paketi Aç</text>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<div id="gachaOverlay">
+    <div class="gacha-box" id="gachaBox">
+        <i class="fa-solid fa-box"></i>
+    </div>
+    <div class="gacha-result" id="gachaResult">
+        <h2 style="color: #ff9800; font-weight: 900; font-size: 3rem; text-shadow: 0 4px 20px rgba(0,0,0,0.5); margin-bottom: 20px;">
+            TEBRİKLER!
+        </h2>
+        <div class="gacha-card">
+            <img id="gachaAvatarImage" src="" style="width: 150px; height: 150px; object-fit: contain; margin-bottom: 15px;" />
+            <h3 id="gachaAvatarName" style="color: #4a3f35; font-weight: 700; margin: 0;">Gizemli Hayvan</h3>
+        </div>
+        <button class="btn btn-light mt-4 px-5 py-2 fw-bold rounded-pill" onclick="closeGacha()" style="font-size: 1.2rem;">Harika!</button>
+    </div>
+</div>
+
+<script>
+    function buyPack(btn, packageId) {
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Açılıyor...';
+        btn.disabled = true;
+
+        fetch('/Store/BuyPack?packageId=' + packageId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                // Bakiyeyi güncelle
+                document.querySelectorAll('.navbar .fa-gem').forEach(function(gemIcon) {
+                    var textNode = gemIcon.nextSibling;
+                    if(textNode && textNode.nodeType === 3 && textNode.nodeValue.trim().length > 0) {
+                        var valStr = textNode.nodeValue.replace('+', '').trim();
+                        if(!isNaN(parseInt(valStr))) {
+                            textNode.nodeValue = ' ' + data.newBalance;
+                        }
+                    }
+                });
+
+                // Gacha Animasyonunu Başlat
+                var overlay = document.getElementById('gachaOverlay');
+                var box = document.getElementById('gachaBox');
+                var result = document.getElementById('gachaResult');
+
+                // Reset
+                box.className = 'gacha-box';
+                box.style.display = 'block';
+                result.style.display = 'none';
+                overlay.style.display = 'flex';
+
+                // Result datasını doldur
+                document.getElementById('gachaAvatarImage').src = data.avatarImage;
+                document.getElementById('gachaAvatarName').innerText = data.avatarName || 'Gizemli Hayvan';
+
+                // Koleksiyon gridindeki silik durumu uygula
+                var card = document.getElementById('packItem-' + data.avatarId);
+                if(card) {
+                    card.style = "opacity: 0.5; filter: grayscale(80%); border-color: rgba(0,0,0,0.1);";
+                    card.querySelector('img').style = "width: 80px; height: 80px; object-fit: contain; border-radius: 10px;";
+                    card.querySelector('.frame-info').innerHTML = '<div style="font-size: 0.85rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">' + (data.avatarName || 'Gizemli Hayvan') + '</div><div style="font-weight: bold; color: #6c757d; font-size: 0.8rem;"><i class="fa-solid fa-check"></i> Sende Var</div>';
+                }
+
+                // Butonu düzelt
+                btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
+                btn.disabled = false;
+
+                // Animasyon Akışı
+                setTimeout(function() {
+                    box.classList.add('burst'); // Kutu patlar
+                    setTimeout(function() {
+                        box.style.display = 'none'; // Kutu yok olur
+                        result.style.display = 'flex'; // Kart belirir (popIn)
+                    }, 500);
+                }, 2000); // 2 saniye sallanma süresi
+
+            } else {
+                storeNotify('error', data.message);
+                btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            storeNotify('error', 'Paket açılırken bir hata oluştu. Lütfen tekrar dene.');
+            btn.innerHTML = '<i class="fa-solid fa-cube"></i> Paketi Aç';
+            btn.disabled = false;
+        });
+    }
+
+    function closeGacha() {
+        document.getElementById('gachaOverlay').style.display = 'none';
+        // Reload page to reflect exact collection counts if preferred, or just let user stay.
+        // window.location.reload();
+    }
+</script>

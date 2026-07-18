@@ -1,0 +1,130 @@
+@using BookManagementApp.Models
+@using BookManagementApp.Areas.Admin.Models
+@model StoreViewModel
+@{
+    ViewData["Title"] = "Avatar Dükkanı";
+    ViewData["HeroTitle"] = "Avatar Dükkanı";
+    ViewData["HeroSubtitle"] = "Profilini yansıtan karakterler";
+    ViewData["HeroIcon"] = "fa-solid fa-user-astronaut";
+    ViewData["HeroBack"] = true;
+
+    var user = ViewBag.User as User;
+    var ownedAvatarIds = ViewBag.OwnedAvatarIds as List<int> ?? new List<int>();
+    int userBookCount = ViewBag.UserBookCount;
+}
+
+@await Html.PartialAsync("_StoreStyles")
+
+<div class="store-page">
+    @await Html.PartialAsync("_StoreHero")
+    @await Html.PartialAsync("_StoreNotify")
+
+    <div class="store-container">
+        @if (Model.Avatars == null || !Model.Avatars.Any())
+        {
+            <div class="text-center" style="padding: 50px; color: #8b6f47;">
+                <i class="fa-solid fa-user-astronaut" style="font-size: 4rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h4>Şu an hiç avatar bulunmuyor.</h4>
+            </div>
+        }
+        else
+        {
+            <div class="store-grid">
+                @foreach (var avatar in Model.Avatars)
+                {
+                    bool isOwnedA = ownedAvatarIds.Contains(avatar.Id);
+                    bool isEquippedA = user?.ProfileImageUrl == avatar.ImageUrl;
+                    bool hasEnoughStonesA = user != null && user.WisdomStones >= avatar.PriceInStones;
+                    bool meetsBookReqA = avatar.RequiredBookCount == 0 || userBookCount >= avatar.RequiredBookCount;
+                    bool canBuyA = !isOwnedA && hasEnoughStonesA && meetsBookReqA;
+
+                    <div class="frame-card @(isEquippedA ? "equipped" : isOwnedA ? "owned" : "")">
+
+                        @if (isEquippedA)
+                        {
+                            <span class="owned-badge equipped-badge">✨ Aktif</span>
+                        }
+                        else if (isOwnedA)
+                        {
+                            <span class="owned-badge">✓ Sahip</span>
+                        }
+
+                        <div class="frame-preview d-flex justify-content-center align-items-center">
+                            <img src="@avatar.ImageUrl" alt="@avatar.Name" style="width: 100px; height: 100px; object-fit: contain; border-radius: 10px;" />
+                        </div>
+
+                        <div class="frame-info">
+                            <div class="frame-name">
+                                @avatar.Name
+                            </div>
+                            <p class="frame-desc">@avatar.Description</p>
+
+                            @if (avatar.RequiredBookCount > 0)
+                            {
+                                if (meetsBookReqA)
+                                {
+                                    <div class="frame-requirement frame-requirement-met">
+                                        ✓ @avatar.RequiredBookCount kitap gereksinimi karşılandı
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="frame-requirement">
+                                        <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i>
+                                        En az @avatar.RequiredBookCount kitap gerekli (@userBookCount / @avatar.RequiredBookCount)
+                                    </div>
+                                }
+                            }
+
+                            <div class="frame-price">
+                                <i class="fa-solid fa-gem"></i>
+                                @avatar.PriceInStones Bilgelik Taşı
+                            </div>
+
+                            @if (isOwnedA)
+                            {
+                                <form asp-action="EquipAvatar" asp-controller="Store" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@avatar.Id" />
+                                    <button type="submit" class="btn-buy @(isEquippedA ? "btn-buy-equipped" : "btn-buy-equip")" @(isEquippedA ? "disabled" : "")>
+                                        @if (isEquippedA)
+                                        {
+                                            <text><i class="fa-solid fa-check"></i> Şu An Kullanımda</text>
+                                        }
+                                        else
+                                        {
+                                            <text><i class="fa-solid fa-wand-magic-sparkles"></i> Kullan</text>
+                                        }
+                                    </button>
+                                </form>
+                            }
+                            else if (canBuyA)
+                            {
+                                <form asp-action="BuyAvatar" asp-controller="Store" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@avatar.Id" />
+                                    <button type="submit" class="btn-buy btn-buy-available">
+                                        <i class="fa-solid fa-cart-shopping"></i> Satın Al
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button class="btn-buy btn-buy-locked" disabled>
+                                    @if (!meetsBookReqA)
+                                    {
+                                        <text><i class="fa-solid fa-lock"></i> Kitap Gereksinimi Karşılanmadı</text>
+                                    }
+                                    else
+                                    {
+                                        <text><i class="fa-solid fa-lock"></i> Yetersiz Bilgelik Taşı</text>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

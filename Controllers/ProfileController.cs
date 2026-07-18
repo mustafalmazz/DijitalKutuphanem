@@ -11,11 +11,13 @@ namespace BookManagementApp.Controllers
     {
         private readonly MyDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly BookManagementApp.Services.AchievementService _achievementService;
 
-        public ProfileController(MyDbContext context, IConfiguration configuration)
+        public ProfileController(MyDbContext context, IConfiguration configuration, BookManagementApp.Services.AchievementService achievementService)
         {
             _context = context;
             _configuration = configuration;
+            _achievementService = achievementService;
         }
 
         // --- 1. YILLIK HEDEF GÜNCELLEME ---
@@ -58,14 +60,20 @@ namespace BookManagementApp.Controllers
             return Json(new { success = false, message = "Kullanıcı veritabanında bulunamadı." });
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             // 1. Oturum Kontrolü
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null) return RedirectToAction("Login", "Account");
 
+            // Başarımları Kontrol Et
+            await _achievementService.CheckAndAwardAchievementsAsync(userId.Value);
+
             // 2. Kullanıcıyı Çek
-            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            var user = await _context.Users
+                .Include(u => u.UserAchievements)
+                .ThenInclude(ua => ua.Achievement)
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return NotFound();
 
             // 3. Kullanıcının Kitaplarını Çek
@@ -134,7 +142,8 @@ namespace BookManagementApp.Controllers
                 TodayStudyMinutes = todayStudyMins,
                 ThisMonthStudyMinutes = monthStudyMins,
                 TotalPomodoroCompleted = completedPomodoros,
-                User = user
+                User = user,
+                UserAchievements = user.UserAchievements
             };
             // --- ÇERÇEVE BİLGİLERİ ---
             var ownedFrames = _context.UserFrames
@@ -153,6 +162,11 @@ namespace BookManagementApp.Controllers
             ViewBag.Avatars = _context.ProfileAvatars
                 .Where(a => ownedAvatarIds.Contains(a.Id))
                 .ToList();
+
+            // Başarımlar partial'ı (_ProfileAchievements) için gerekli veriler
+            ViewBag.AllAchievements = await _context.Achievements.ToListAsync();
+            ViewBag.AchievementStats = await _achievementService.GetUserStatsAsync(userId.Value);
+            ViewBag.LoggedInUserId = userId.Value;
 
             return View(model);
         }
@@ -238,12 +252,19 @@ namespace BookManagementApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult PublicProfile(int id)
+        public async Task<IActionResult> PublicProfile(int id)
         {
             var loggedInUserId = HttpContext.Session.GetInt32("UserId");
             if (loggedInUserId == null) return RedirectToAction("Login", "Account");
 
-            var user = _context.Users.Include(u => u.Books).FirstOrDefault(u => u.Id == id);
+            await _achievementService.CheckAndAwardAchievementsAsync(id);
+
+            var user = await _context.Users
+                .Include(u => u.Books)
+                .Include(u => u.UserAchievements)
+                .ThenInclude(ua => ua.Achievement)
+                .FirstOrDefaultAsync(u => u.Id == id);
+                
             if (user == null) return NotFound();
 
             var isBlockedByMe = _context.Blocks.Any(b => b.BlockerId == loggedInUserId.Value && b.BlockedId == id);
@@ -269,6 +290,22 @@ namespace BookManagementApp.Controllers
             ViewBag.IsBlockedByMe = isBlockedByMe;
             ViewBag.IsBlockingMe = isBlockingMe;
             ViewBag.IsPrivate = user.IsPrivate;
+
+            // Başarımlar sekmesi için: tüm başarımlar + kategori bazlı kullanıcı metrikleri
+            ViewBag.AllAchievements = await _context.Achievements.ToListAsync();
+            ViewBag.AchievementStats = await _achievementService.GetUserStatsAsync(id);
+
+            // Kitaplık kartlarındaki hızlı beğeni (kalp) için: beğeni sayıları + benim beğendiklerim
+            var bookIds = user.Books?.Select(b => b.Id).ToList() ?? new List<int>();
+            ViewBag.BookLikeCounts = await _context.BookLikes
+                .Where(bl => bookIds.Contains(bl.BookId))
+                .GroupBy(bl => bl.BookId)
+                .Select(g => new { BookId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.BookId, x => x.Count);
+            ViewBag.MyLikedBookIds = (await _context.BookLikes
+                .Where(bl => bl.UserId == loggedInUserId.Value && bookIds.Contains(bl.BookId))
+                .Select(bl => bl.BookId)
+                .ToListAsync()).ToHashSet();
 
             if (loggedInUserId == id)
             {
@@ -296,6 +333,167 @@ namespace BookManagementApp.Controllers
             return View(user);
         }
 
+        // --- TAKİPÇİ / TAKİP EDİLEN LİSTESİ (MODAL İÇİN JSON) ---
+        [HttpGet]
+        public async Task<IActionResult> FollowList(int id, string type)
+        {
+            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
+            if (loggedInUserId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            var target = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+            if (target == null) return Json(new { success = false, message = "Kullanıcı bulunamadı." });
+
+            // Gizlilik: kendi profili ya da gizli olmayan hesap ya da takipçisi olunan gizli hesap görülebilir
+            bool isSelf = loggedInUserId.Value == id;
+            bool isFollowingTarget = _context.Follows.Any(f => f.FollowerId == loggedInUserId.Value && f.FollowingId == id && f.IsAccepted);
+            if (!isSelf && target.IsPrivate && !isFollowingTarget)
+            {
+                return Json(new { success = false, message = "Bu hesabın listesi gizli." });
+            }
+
+            // Engelleme iki yönlü uygulanır: görüntüleyenin engellediği VE görüntüleyeni engelleyen
+            // kullanıcılar listeden çıkarılır. Modal başlığındaki sayı, listenin gerçek uzunluğuyla
+            // (aşağıdaki count) senkronlandığı için bu filtreleme sayı/liste uyumsuzluğu yaratmaz.
+            var hiddenByBlock = _context.Blocks
+                .Where(b => b.BlockerId == loggedInUserId.Value || b.BlockedId == loggedInUserId.Value)
+                .Select(b => b.BlockerId == loggedInUserId.Value ? b.BlockedId : b.BlockerId)
+                .ToHashSet();
+
+            // Navigation property'ye bağımlı kalmadan explicit join kullanılır (kod tabanındaki mevcut desenle uyumlu).
+            // type: "following" => bu kullanıcının takip ettikleri, aksi halde => takipçileri
+            List<FollowListItem> rawList;
+            if (type == "following")
+            {
+                rawList = await (from f in _context.Follows
+                                 join u in _context.Users on f.FollowingId equals u.Id
+                                 where f.FollowerId == id && f.IsAccepted
+                                 orderby f.CreatedAt descending
+                                 select new FollowListItem
+                                 {
+                                     Id = u.Id,
+                                     UserName = u.UserName,
+                                     ProfileImageUrl = u.ProfileImageUrl,
+                                     ActiveFrameImageUrl = u.ActiveFrameImageUrl,
+                                     Bio = u.Bio
+                                 }).ToListAsync();
+            }
+            else
+            {
+                rawList = await (from f in _context.Follows
+                                 join u in _context.Users on f.FollowerId equals u.Id
+                                 where f.FollowingId == id && f.IsAccepted
+                                 orderby f.CreatedAt descending
+                                 select new FollowListItem
+                                 {
+                                     Id = u.Id,
+                                     UserName = u.UserName,
+                                     ProfileImageUrl = u.ProfileImageUrl,
+                                     ActiveFrameImageUrl = u.ActiveFrameImageUrl,
+                                     Bio = u.Bio
+                                 }).ToListAsync();
+            }
+
+            // Takip / bekleyen istek kümeleri — her satırdaki buton durumu için
+            var myFollowingIds = _context.Follows
+                .Where(f => f.FollowerId == loggedInUserId.Value && f.IsAccepted)
+                .Select(f => f.FollowingId)
+                .ToHashSet();
+            var myPendingIds = _context.Follows
+                .Where(f => f.FollowerId == loggedInUserId.Value && !f.IsAccepted)
+                .Select(f => f.FollowingId)
+                .ToHashSet();
+
+            var users = rawList
+                .Where(u => !hiddenByBlock.Contains(u.Id))
+                .Select(u => new
+                {
+                    id = u.Id,
+                    userName = u.UserName,
+                    profileImageUrl = u.ProfileImageUrl,
+                    frameImageUrl = u.ActiveFrameImageUrl,
+                    bio = u.Bio,
+                    initial = string.IsNullOrEmpty(u.UserName) ? "?" : u.UserName.Substring(0, 1).ToUpper(),
+                    isSelf = u.Id == loggedInUserId.Value,
+                    isFollowing = myFollowingIds.Contains(u.Id),
+                    isPending = myPendingIds.Contains(u.Id)
+                })
+                .ToList();
+
+            // count = listenin gerçek uzunluğu; modal başlığı bununla senkronlanır
+            return Json(new { success = true, count = users.Count, users });
+        }
+
+        // --- BAŞARIM ÖDÜLÜNÜ MANUEL TOPLA ---
+        [HttpPost]
+        public async Task<IActionResult> ClaimAchievement(int achievementId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            var result = await _achievementService.ClaimAchievementAsync(userId.Value, achievementId);
+            return Json(new
+            {
+                success = result.Success,
+                message = result.Message,
+                reward = result.RewardStones,
+                newTotal = result.NewTotal
+            });
+        }
+
+        // --- PROFİLDE GÖSTERİLECEK ETİKETİ SEÇ ---
+        // achievementId = 0 gönderilirse takılı etiket kaldırılır.
+        [HttpPost]
+        public async Task<IActionResult> EquipTitle(int achievementId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return Json(new { success = false, message = "Kullanıcı bulunamadı." });
+
+            if (achievementId == 0)
+            {
+                user.ActiveTitleAchievementId = null;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "Etiket kaldırıldı.", equippedId = 0 });
+            }
+
+            // Sunucu tarafı doğrulama: yalnızca gerçekten kazanılmış bir başarım takılabilir.
+            bool owned = await _context.UserAchievements
+                .AnyAsync(ua => ua.UserId == userId && ua.AchievementId == achievementId);
+
+            if (!owned)
+            {
+                return Json(new { success = false, message = "Bu etikete henüz sahip değilsin." });
+            }
+
+            var achievement = await _context.Achievements.FirstOrDefaultAsync(a => a.Id == achievementId);
+            if (achievement == null) return Json(new { success = false, message = "Başarım bulunamadı." });
+
+            user.ActiveTitleAchievementId = achievementId;
+            await _context.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = $"\"{achievement.Name}\" artık profilinde görünüyor.",
+                equippedId = achievementId,
+                name = achievement.Name,
+                iconClass = achievement.IconClass,
+                colorHex = achievement.ColorHex
+            });
+        }
+
+        // FollowList sorgusu için basit taşıyıcı (projeksiyon tipi)
+        private class FollowListItem
+        {
+            public int Id { get; set; }
+            public string UserName { get; set; }
+            public string ProfileImageUrl { get; set; }
+            public string ActiveFrameImageUrl { get; set; }
+            public string Bio { get; set; }
+        }
+
         [HttpPost]
         public IActionResult EditProfileInline(User model)
         {
@@ -305,9 +503,22 @@ namespace BookManagementApp.Controllers
             var user = _context.Users.FirstOrDefault(u => u.Id == userId);
             if (user == null) return NotFound();
 
+            var newInlineName = (model.UserName ?? "").Trim();
+            if (newInlineName.Length < 3 || newInlineName.Length > 30)
+            {
+                TempData["ErrorMessage"] = "Kullanıcı adı 3 ile 30 karakter arasında olmalı.";
+                return RedirectToAction("PublicProfile", new { id = userId });
+            }
+
+            if (_context.Users.Any(u => u.UserName == newInlineName && u.Id != userId))
+            {
+                TempData["ErrorMessage"] = "Bu kullanıcı adı zaten kullanılıyor.";
+                return RedirectToAction("PublicProfile", new { id = userId });
+            }
+
             try
             {
-                user.UserName = model.UserName;
+                user.UserName = newInlineName;
                 user.Bio = model.Bio;
                 user.IsPrivate = model.IsPrivate;
 
@@ -437,6 +648,128 @@ namespace BookManagementApp.Controllers
         }
 
         [HttpGet]
+        // ================== HESAP AYARLARI ==================
+
+        [HttpGet]
+        public IActionResult Settings()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user == null) return NotFound();
+
+            // Google ile kayıt olanların şifresi olmayabilir; görünüm buna göre şekillenir
+            ViewBag.HasPassword = !string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash.StartsWith("$2");
+
+            return View(user);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdateUsername(string newUserName)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user == null) return NotFound();
+
+            newUserName = (newUserName ?? "").Trim();
+
+            if (newUserName.Length < 3 || newUserName.Length > 30)
+            {
+                TempData["SettingsError"] = "Kullanıcı adı 3 ile 30 karakter arasında olmalı.";
+                return RedirectToAction(nameof(Settings));
+            }
+
+            if (newUserName == user.UserName)
+            {
+                TempData["SettingsError"] = "Yeni kullanıcı adı mevcut adınızla aynı.";
+                return RedirectToAction(nameof(Settings));
+            }
+
+            var taken = _context.Users.Any(u => u.UserName == newUserName && u.Id != userId);
+            if (taken)
+            {
+                TempData["SettingsError"] = "Bu kullanıcı adı zaten kullanılıyor.";
+                return RedirectToAction(nameof(Settings));
+            }
+
+            user.UserName = newUserName;
+            _context.SaveChanges();
+
+            TempData["SettingsSuccess"] = "Kullanıcı adınız güncellendi.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdatePassword(string? currentPassword, string newPassword, string confirmPassword)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user == null) return NotFound();
+
+            var hasPassword = !string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash.StartsWith("$2");
+
+            // Mevcut şifresi olan kullanıcıdan önce onu doğrulamasını iste
+            if (hasPassword)
+            {
+                if (string.IsNullOrEmpty(currentPassword) ||
+                    !BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+                {
+                    TempData["SettingsError"] = "Mevcut şifreniz hatalı.";
+                    return RedirectToAction(nameof(Settings));
+                }
+            }
+
+            if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+            {
+                TempData["SettingsError"] = "Yeni şifre en az 6 karakter olmalı.";
+                return RedirectToAction(nameof(Settings));
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                TempData["SettingsError"] = "Yeni şifreler birbiriyle uyuşmuyor.";
+                return RedirectToAction(nameof(Settings));
+            }
+
+            if (hasPassword && BCrypt.Net.BCrypt.Verify(newPassword, user.PasswordHash))
+            {
+                TempData["SettingsError"] = "Yeni şifre eski şifrenizle aynı olamaz.";
+                return RedirectToAction(nameof(Settings));
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            _context.SaveChanges();
+
+            TempData["SettingsSuccess"] = "Şifreniz başarıyla güncellendi.";
+            return RedirectToAction(nameof(Settings));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult UpdatePrivacy(bool isPrivate)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user == null) return NotFound();
+
+            user.IsPrivate = isPrivate;
+            _context.SaveChanges();
+
+            TempData["SettingsSuccess"] = isPrivate
+                ? "Hesabınız gizli hesaba çevrildi. Kitaplığınızı ve istatistiklerinizi sadece takipçileriniz görebilir."
+                : "Hesabınız herkese açık hale getirildi.";
+            return RedirectToAction(nameof(Settings));
+        }
+
         public IActionResult Edit()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -477,9 +810,22 @@ namespace BookManagementApp.Controllers
             var user = _context.Users.FirstOrDefault(u => u.Id == userId);
             if (user == null) return NotFound();
 
+            var newName = (model.UserName ?? "").Trim();
+            if (newName.Length < 3 || newName.Length > 30)
+            {
+                TempData["ErrorMessage"] = "Kullanıcı adı 3 ile 30 karakter arasında olmalı.";
+                return RedirectToAction("Edit");
+            }
+
+            if (_context.Users.Any(u => u.UserName == newName && u.Id != userId))
+            {
+                TempData["ErrorMessage"] = "Bu kullanıcı adı zaten kullanılıyor.";
+                return RedirectToAction("Edit");
+            }
+
             try
             {
-                user.UserName = model.UserName;
+                user.UserName = newName;
                 user.Bio = model.Bio;
 
                 if (!string.IsNullOrEmpty(model.PasswordHash))
@@ -517,6 +863,7 @@ namespace BookManagementApp.Controllers
             // "Sonuç Bulunamadı" yerine boş liste görünmesine yol açıyordu)
             var query = _context.Users
                 .Include(u => u.Books)
+                .Include(u => u.ActiveTitleAchievement)
                 .Where(u =>
                 !u.IsBanned &&
                 u.Id != loggedInUserId.Value &&
@@ -666,7 +1013,8 @@ namespace BookManagementApp.Controllers
             {
                 _context.BookLikes.Remove(existingLike);
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, isLiked = false });
+                int likeCount = await _context.BookLikes.CountAsync(bl => bl.BookId == bookId);
+                return Json(new { success = true, isLiked = false, likeCount });
             }
             else
             {
@@ -677,7 +1025,8 @@ namespace BookManagementApp.Controllers
                 };
                 _context.BookLikes.Add(newLike);
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, isLiked = true });
+                int likeCount = await _context.BookLikes.CountAsync(bl => bl.BookId == bookId);
+                return Json(new { success = true, isLiked = true, likeCount });
             }
         }
 

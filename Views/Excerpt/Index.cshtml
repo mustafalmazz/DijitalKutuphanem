@@ -1,0 +1,966 @@
+@model ExcerptFeedPageViewModel
+@{
+    ViewData["Title"] = "Kitap Akışı";
+    var hasMore = (bool)(ViewBag.HasMore ?? false);
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .feed-wrap {
+        font-family: 'Georgia', serif;
+    }
+
+    /* --- SAYFA BAŞLIĞI --- */
+    .feed-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+        .feed-header h2 {
+            color: #5c4b3d;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .feed-header h2 i {
+                color: #8b6f47;
+            }
+
+    .feed-subtitle {
+        color: #9c8468;
+        font-size: 0.88rem;
+        font-style: italic;
+    }
+
+    /* --- PAYLAŞIM MODALI --- */
+    .share-modal .modal-content {
+        background: linear-gradient(160deg, #fffdf9 0%, #f7f1e6 100%);
+        border: 1px solid #e6dac8;
+        border-radius: 16px;
+        font-family: 'Georgia', serif;
+    }
+
+    .share-modal .modal-header {
+        border-bottom: 1px solid #ecdfc9;
+    }
+
+    .share-modal .modal-title {
+        color: #6b5541;
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .caption-counter {
+        font-size: 0.72rem;
+        color: #b9a88f;
+        text-align: right;
+        margin-top: 3px;
+    }
+
+    /* --- KIRPMA ALANI --- */
+    .crop-box {
+        max-height: 380px;
+        overflow: hidden;
+        border-radius: 12px;
+        border: 1px solid #dccbb2;
+        background: #2b2118;
+    }
+
+        .crop-box img {
+            display: block;
+            max-width: 100%;
+        }
+
+    .crop-toolbar {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+
+    .crop-tool-btn {
+        background: #f5efe3;
+        border: 1px solid #dccbb2;
+        color: #6b5541;
+        font-family: 'Georgia', serif;
+        font-size: 0.85rem;
+        padding: 6px 14px;
+        border-radius: 18px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+        .crop-tool-btn:hover {
+            background: #ece2cf;
+            border-color: #c89666;
+        }
+
+        .crop-tool-btn.change {
+            color: #8b6f47;
+            font-weight: 600;
+        }
+
+    /* Cropper kesim çerçevesini temaya uydur */
+    .cropper-view-box, .cropper-face {
+        border-radius: 4px;
+    }
+
+    .cropper-view-box {
+        outline: 2px solid #ffd782;
+        outline-color: rgba(255, 215, 130, 0.9);
+    }
+
+    .cropper-point {
+        background-color: #ffd782;
+    }
+
+    .cropper-line {
+        background-color: #ffd782;
+    }
+
+    /* --- BİLDİRİM MODALI --- */
+    .notice-modal .modal-content {
+        background: linear-gradient(160deg, #fffdf9 0%, #f7f1e6 100%);
+        border: 1px solid #e6dac8;
+        border-radius: 18px;
+        font-family: 'Georgia', serif;
+        text-align: center;
+        padding: 26px 22px 20px;
+    }
+
+    .notice-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 14px;
+        font-size: 1.7rem;
+    }
+
+        .notice-icon.success {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+            box-shadow: 0 4px 14px rgba(46, 125, 50, 0.25);
+        }
+
+        .notice-icon.error {
+            background: linear-gradient(135deg, #fdecea, #f9d0cb);
+            color: #c0392b;
+            box-shadow: 0 4px 14px rgba(192, 57, 43, 0.25);
+        }
+
+    .notice-text {
+        color: #5c4b3d;
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin-bottom: 18px;
+    }
+
+    .notice-ok-btn {
+        background: linear-gradient(135deg, #a0785a 0%, #8b6f47 100%);
+        border: none;
+        color: #f5f0e8;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        padding: 8px 34px;
+        border-radius: 22px;
+        transition: all 0.25s ease;
+    }
+
+        .notice-ok-btn:hover {
+            background: linear-gradient(135deg, #c89666 0%, #a0785a 100%);
+            color: #fff;
+        }
+
+    .notice-cancel-btn {
+        background: #f5efe3;
+        border: 1px solid #dccbb2;
+        color: #6b5541;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        padding: 8px 24px;
+        border-radius: 22px;
+        transition: all 0.25s ease;
+    }
+
+        .notice-cancel-btn:hover {
+            background: #ece2cf;
+        }
+
+    .notice-danger-btn {
+        background: linear-gradient(135deg, #d35d4e 0%, #b83a2e 100%);
+        border: none;
+        color: #fff;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        padding: 8px 24px;
+        border-radius: 22px;
+        transition: all 0.25s ease;
+        box-shadow: 0 3px 10px rgba(184, 58, 46, 0.3);
+    }
+
+        .notice-danger-btn:hover {
+            background: linear-gradient(135deg, #e0705f 0%, #c94a3d 100%);
+            color: #fff;
+        }
+
+    .notice-icon.flag {
+        background: linear-gradient(135deg, #fdf3e0, #f7e2b8);
+        color: #d98e04;
+        box-shadow: 0 4px 14px rgba(217, 142, 4, 0.25);
+    }
+
+    .share-input, .share-select {
+        border: 1px solid #dccbb2;
+        border-radius: 10px;
+        background: #fffefb;
+        color: #5c4b3d;
+        font-family: 'Georgia', serif;
+        font-size: 0.92rem;
+        padding: 9px 12px;
+        transition: all 0.25s ease;
+        width: 100%;
+    }
+
+        .share-input:focus, .share-select:focus {
+            outline: none;
+            border-color: #c89666;
+            box-shadow: 0 0 0 3px rgba(200, 150, 102, 0.15);
+        }
+
+    /* Fotoğraf yükleme alanı */
+    .upload-zone {
+        border: 2px dashed #d3bfa2;
+        border-radius: 12px;
+        background: #fdfaf4;
+        padding: 14px;
+        text-align: center;
+        cursor: pointer;
+        color: #9c8468;
+        font-size: 0.9rem;
+        transition: all 0.25s ease;
+        position: relative;
+        min-height: 92px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+        .upload-zone:hover {
+            border-color: #c89666;
+            background: #fbf5ea;
+            color: #6b5541;
+        }
+
+        .upload-zone i {
+            font-size: 1.5rem;
+            color: #c89666;
+        }
+
+        .upload-zone img.preview {
+            max-height: 140px;
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(107, 85, 65, 0.2);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+    .share-btn {
+        background: linear-gradient(135deg, #a0785a 0%, #8b6f47 100%);
+        border: none;
+        color: #f5f0e8;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 9px 26px;
+        border-radius: 22px;
+        transition: all 0.25s ease;
+        box-shadow: 0 3px 10px rgba(139, 111, 71, 0.3);
+    }
+
+        .share-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #c89666 0%, #a0785a 100%);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 14px rgba(139, 111, 71, 0.4);
+        }
+
+        .share-btn:disabled {
+            opacity: 0.7;
+        }
+
+    /* --- YENİ KESİT UYARISI --- */
+    .new-excerpt-alert {
+        background: linear-gradient(135deg, #8b6f47, #6b5541);
+        color: #ffd782;
+        border: none;
+        border-radius: 30px;
+        padding: 10px 22px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(107, 85, 65, 0.35);
+        margin-bottom: 20px;
+        animation: pulseIn 0.4s ease;
+    }
+
+    @@keyframes pulseIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- KESİT KARTLARI --- */
+    .excerpt-card {
+        background: #fffdf9;
+        border: 1px solid #e9dfd0;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 3px 14px rgba(107, 85, 65, 0.08);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+        .excerpt-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(107, 85, 65, 0.15);
+        }
+
+    .excerpt-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid #f0e8da;
+    }
+
+    .excerpt-user {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+    }
+
+        .excerpt-user img {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+        }
+
+        .excerpt-user .uname {
+            color: #5c4b3d;
+            font-weight: 700;
+            font-size: 0.88rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+    .time-badge {
+        background: #f5efe3;
+        color: #9c8468;
+        border-radius: 12px;
+        font-size: 0.72rem;
+        padding: 4px 10px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+        .time-badge i {
+            color: #c89666;
+            margin-right: 3px;
+        }
+
+    .excerpt-img-wrap {
+        background: repeating-linear-gradient(0deg, #f5efe3, #f5efe3 28px, #f1eadb 28px, #f1eadb 29px);
+        cursor: zoom-in;
+        text-align: center;
+    }
+
+        .excerpt-img-wrap img {
+            max-height: 380px;
+            width: 100%;
+            object-fit: contain;
+        }
+
+    .excerpt-book {
+        padding: 10px 14px 4px;
+        color: #6b5541;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+        .excerpt-book i {
+            color: #c89666;
+        }
+
+        .excerpt-book .btitle {
+            font-weight: 700;
+        }
+
+        .excerpt-book .bauthor {
+            color: #9c8468;
+            font-style: italic;
+            font-size: 0.82rem;
+        }
+
+    .excerpt-caption {
+        padding: 2px 14px 8px;
+        color: #7a6a58;
+        font-size: 0.86rem;
+        font-style: italic;
+        /* Mobilde yer kaplamasın: en fazla 2 satır göster */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .excerpt-actions {
+        margin-top: auto;
+        padding: 10px 12px;
+        border-top: 1px solid #f0e8da;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .reaction-bar {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .reaction-btn {
+        border: 1px solid #e6dac8;
+        background: #fbf7ef;
+        border-radius: 16px;
+        padding: 3px 9px;
+        font-size: 0.9rem;
+        line-height: 1.3;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        color: #6b5541;
+    }
+
+        .reaction-btn:hover {
+            transform: scale(1.12);
+            border-color: #c89666;
+            background: #f7efdf;
+        }
+
+        .reaction-btn.selected {
+            background: linear-gradient(135deg, #ffd782, #f3c56a);
+            border-color: #d9a94e;
+            box-shadow: 0 2px 6px rgba(217, 169, 78, 0.35);
+        }
+
+        .reaction-btn .reaction-count {
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: #6b5541;
+        }
+
+    .tool-btn {
+        border: none;
+        background: transparent;
+        color: #b9a88f;
+        font-size: 0.9rem;
+        padding: 5px 8px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+        .tool-btn:hover {
+            background: #f5efe3;
+        }
+
+        .tool-btn.danger:hover {
+            color: #c0392b;
+        }
+
+        .tool-btn.flag:hover {
+            color: #d98e04;
+        }
+
+    /* --- BOŞ DURUM --- */
+    .feed-empty {
+        text-align: center;
+        padding: 50px 20px;
+        background: linear-gradient(160deg, #fffdf9 0%, #f7f1e6 100%);
+        border: 1px dashed #dccbb2;
+        border-radius: 16px;
+        color: #9c8468;
+    }
+
+        .feed-empty i {
+            font-size: 2.4rem;
+            color: #d3bfa2;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .feed-empty .lead-text {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #6b5541;
+        }
+
+    /* --- LIGHTBOX --- */
+    .excerpt-lightbox {
+        position: fixed;
+        inset: 0;
+        background: rgba(40, 30, 20, 0.88);
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        cursor: zoom-out;
+    }
+
+        .excerpt-lightbox.show {
+            display: flex;
+        }
+
+        .excerpt-lightbox img {
+            max-width: 100%;
+            max-height: 92vh;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+    /* Mobil alt bara yer bırak + başlığı ortala */
+    @@media (max-width: 991.98px) {
+        .feed-wrap {
+            padding-bottom: 70px;
+        }
+
+        .feed-header {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+            .feed-header h2 {
+                justify-content: center;
+            }
+    }
+</style>
+
+<div class="feed-wrap">
+
+    <div class="feed-header">
+        <div>
+            <h2><i class="fa-solid fa-camera-retro"></i> Kitap Akışı</h2>
+            <div class="feed-subtitle">Okuduğun kitaptan bir kesit paylaş — 24 saat sonra kaybolur</div>
+        </div>
+        <button type="button" class="share-btn" data-bs-toggle="modal" data-bs-target="#shareModal">
+            <i class="fa-solid fa-feather-pointed me-1"></i> Kesit Paylaş
+        </button>
+    </div>
+
+    <div id="newExcerptAlert" class="new-excerpt-alert d-none" onclick="location.reload()">
+        <i class="fas fa-arrow-up me-1"></i> Yeni kesitler var — görmek için tıkla
+    </div>
+
+    @if (!Model.Excerpts.Any())
+    {
+        <div class="feed-empty">
+            <i class="fa-solid fa-book-open"></i>
+            <div class="lead-text">Akış şimdilik sessiz...</div>
+            <div class="mt-1">Son 24 saatte paylaşılan kesit yok. İlk kesiti sen paylaş!</div>
+        </div>
+    }
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="feedGrid">
+        <partial name="_ExcerptCards" model="Model" />
+    </div>
+
+    <div id="feedSentinel" class="text-center py-4 @(hasMore ? "" : "d-none")">
+        <span class="spinner-border spinner-border-sm" style="color:#a0785a"></span>
+    </div>
+</div>
+
+<!-- PAYLAŞIM MODALI -->
+<div class="modal fade share-modal" id="shareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-feather-pointed"></i> Kesit Paylaş</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <form asp-action="Create" method="post" enctype="multipart/form-data" id="excerptForm">
+                    <div class="d-flex flex-column gap-3">
+                        <select name="bookId" class="share-select" required asp-items="ViewBag.MyBooks">
+                            <option value="">📚 Kitabını seç...</option>
+                        </select>
+
+                        <div class="upload-zone" id="uploadZone">
+                            <i class="fa-solid fa-camera"></i>
+                            <span id="uploadText">Fotoğraf çek veya galeriden / bilgisayardan seç</span>
+                            <input type="file" name="imageFile" id="imageFileInput" accept="image/*" required
+                                   title="Fotoğraf çek veya galeriden/bilgisayardan seç" />
+                        </div>
+
+                        <!-- KIRPMA ALANI -->
+                        <div id="cropStage" class="d-none">
+                            <div class="crop-box">
+                                <img id="cropImage" src="" alt="Kırpılacak fotoğraf" />
+                            </div>
+                            <div class="crop-toolbar">
+                                <button type="button" class="crop-tool-btn" id="cropRotateLeft" title="Sola döndür">
+                                    <i class="fas fa-rotate-left"></i>
+                                </button>
+                                <button type="button" class="crop-tool-btn" id="cropRotateRight" title="Sağa döndür">
+                                    <i class="fas fa-rotate-right"></i>
+                                </button>
+                                <button type="button" class="crop-tool-btn" id="cropReset" title="Sıfırla">
+                                    <i class="fas fa-arrows-rotate"></i>
+                                </button>
+                                <button type="button" class="crop-tool-btn change" id="cropChangePhoto" title="Farklı fotoğraf seç">
+                                    <i class="fas fa-image"></i> Değiştir
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <input type="text" name="caption" id="captionInput" class="share-input" maxlength="100"
+                                   placeholder="Kısa bir not ekle (isteğe bağlı)" />
+                            <div class="caption-counter"><span id="captionCount">0</span>/100</div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="share-btn" id="shareBtn">
+                                <i class="fas fa-paper-plane me-1"></i> Paylaş
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BİLDİRİM MODALI -->
+<div class="modal fade notice-modal" id="noticeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="notice-icon success d-none" id="noticeIconSuccess"><i class="fas fa-check"></i></div>
+            <div class="notice-icon error d-none" id="noticeIconError"><i class="fas fa-exclamation"></i></div>
+            <div class="notice-text" id="noticeText"></div>
+            <div>
+                <button type="button" class="notice-ok-btn" data-bs-dismiss="modal">Tamam</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SİLME ONAY MODALI -->
+<div class="modal fade notice-modal" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="notice-icon error"><i class="fas fa-trash"></i></div>
+            <div class="notice-text">Bu kesit kalıcı olarak silinsin mi?</div>
+            <div class="d-flex justify-content-center gap-2">
+                <button type="button" class="notice-cancel-btn" data-bs-dismiss="modal">Vazgeç</button>
+                <button type="button" class="notice-danger-btn" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-1"></i> Sil
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ŞİKAYET MODALI -->
+<div class="modal fade notice-modal" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="notice-icon flag"><i class="fas fa-flag"></i></div>
+            <div class="notice-text">Bu kesiti şikayet etmek istiyor musun?</div>
+            <form asp-action="Report" method="post" id="reportForm">
+                <input type="hidden" name="id" id="reportExcerptId" />
+                <textarea name="reason" class="share-input" rows="2" maxlength="200"
+                          placeholder="Sebep (isteğe bağlı)" style="resize:none"></textarea>
+                <div class="d-flex justify-content-center gap-2 mt-3">
+                    <button type="button" class="notice-cancel-btn" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="notice-danger-btn">
+                        <i class="fas fa-flag me-1"></i> Şikayet Et
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="excerpt-lightbox" id="excerptLightbox">
+    <img src="" alt="Kesit" id="lightboxImg" />
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
+          integrity="sha512-UtLOu9C7NuThQhuXXrGwx9Jb/z9zPQJctuAgNUBK3Z6kkSYT9wJ+2+dh6klS+TDBCV9kNPBbAxbVD+vCcfGPaA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"
+            integrity="sha512-JyCZjCOZoyeQZSd5+YEAcFgz2fowJ1F1hyJOXgtKu4llIa0KneLcidn5bwfutiehUTiOuK87A986BZJMko0eWQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            // TempData mesajlarını bildirim modalı olarak göster
+            var noticeSuccess = '@Html.Raw(Json.Serialize(TempData["Success"]))';
+            var noticeError = '@Html.Raw(Json.Serialize(TempData["Error"]))';
+            function showNotice(text, isError) {
+                document.getElementById('noticeText').textContent = text;
+                document.getElementById('noticeIconSuccess').classList.toggle('d-none', isError);
+                document.getElementById('noticeIconError').classList.toggle('d-none', !isError);
+                var modal = new bootstrap.Modal(document.getElementById('noticeModal'));
+                modal.show();
+                if (!isError) setTimeout(function () { modal.hide(); }, 2500);
+            }
+            try {
+                var s = JSON.parse(noticeSuccess), e = JSON.parse(noticeError);
+                if (e) showNotice(e, true);
+                else if (s) showNotice(s, false);
+            } catch (err) { }
+
+            // Not alanı karakter sayacı
+            var captionInput = document.getElementById('captionInput');
+            captionInput.addEventListener('input', function () {
+                document.getElementById('captionCount').textContent = captionInput.value.length;
+            });
+
+            // --- FOTOĞRAF SEÇİMİ + KIRPMA (Cropper.js) ---
+            var fileInput = document.getElementById('imageFileInput');
+            var uploadZone = document.getElementById('uploadZone');
+            var cropStage = document.getElementById('cropStage');
+            var cropImage = document.getElementById('cropImage');
+            var cropper = null;
+
+            fileInput.addEventListener('change', function () {
+                if (!fileInput.files || !fileInput.files[0]) return;
+                cropImage.src = URL.createObjectURL(fileInput.files[0]);
+                uploadZone.classList.add('d-none');
+                cropStage.classList.remove('d-none');
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(cropImage, {
+                    viewMode: 1,
+                    autoCropArea: 1,
+                    background: false,
+                    responsive: true
+                });
+            });
+
+            function resetCropStage() {
+                if (cropper) { cropper.destroy(); cropper = null; }
+                fileInput.value = '';
+                cropStage.classList.add('d-none');
+                uploadZone.classList.remove('d-none');
+            }
+
+            document.getElementById('cropRotateLeft').addEventListener('click', function () { if (cropper) cropper.rotate(-90); });
+            document.getElementById('cropRotateRight').addEventListener('click', function () { if (cropper) cropper.rotate(90); });
+            document.getElementById('cropReset').addEventListener('click', function () { if (cropper) cropper.reset(); });
+            document.getElementById('cropChangePhoto').addEventListener('click', function () {
+                resetCropStage();
+                fileInput.click();
+            });
+
+            // Modal kapanınca kırpma alanını ve formu sıfırla
+            document.getElementById('shareModal').addEventListener('hidden.bs.modal', function () {
+                resetCropStage();
+                document.getElementById('excerptForm').reset();
+                document.getElementById('captionCount').textContent = '0';
+                var btn = document.getElementById('shareBtn');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Paylaş';
+            });
+
+            // Gönderim: kırpılmış görseli dosya olarak forma koyup öyle gönder
+            var excerptForm = document.getElementById('excerptForm');
+            var submittingCropped = false;
+            excerptForm.addEventListener('submit', function (e) {
+                var btn = document.getElementById('shareBtn');
+
+                if (submittingCropped || !cropper) {
+                    // Kırpma yoksa (çok eski tarayıcı) veya kırpılmış dosya hazırsa normal gönder
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Yükleniyor...';
+                    return;
+                }
+
+                e.preventDefault();
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Hazırlanıyor...';
+
+                cropper.getCroppedCanvas({ maxWidth: 1600, maxHeight: 1600 }).toBlob(function (blob) {
+                    var dt = new DataTransfer();
+                    dt.items.add(new File([blob], 'kesit.jpg', { type: 'image/jpeg' }));
+                    fileInput.files = dt.files;
+                    submittingCropped = true;
+                    excerptForm.requestSubmit();
+                }, 'image/jpeg', 0.9);
+            });
+
+            // NOT: Sonsuz kaydırmayla eklenen kartlarda da çalışsın diye tüm kart
+            // etkileşimleri event delegation ile document üzerinden dinleniyor.
+
+            // Görsel büyütme (lightbox)
+            var lightbox = document.getElementById('excerptLightbox');
+            lightbox.addEventListener('click', function () { lightbox.classList.remove('show'); });
+            document.addEventListener('keyup', function (e) {
+                if (e.key === 'Escape') lightbox.classList.remove('show');
+            });
+
+            var pendingDeleteForm = null;
+            var confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            var reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+
+            document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
+                confirmDeleteModal.hide();
+                if (pendingDeleteForm) pendingDeleteForm.submit();
+            });
+
+            document.addEventListener('click', function (ev) {
+                // Lightbox
+                var imgWrap = ev.target.closest('.excerpt-img-wrap');
+                if (imgWrap) {
+                    document.getElementById('lightboxImg').src = imgWrap.querySelector('img').src;
+                    lightbox.classList.add('show');
+                    return;
+                }
+
+                // Emoji tepkisi
+                var btn = ev.target.closest('.reaction-btn');
+                if (btn) {
+                    var wrap = btn.closest('[data-excerpt-id]');
+                    var excerptId = wrap.getAttribute('data-excerpt-id');
+                    var emoji = btn.getAttribute('data-emoji');
+
+                    fetch('@Url.Action("React")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token
+                        },
+                        body: 'id=' + encodeURIComponent(excerptId) + '&emoji=' + encodeURIComponent(emoji)
+                    })
+                    .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+                    .then(function (data) { updateReactions(wrap, data.counts, data.myEmoji); })
+                    .catch(function () { });
+                    return;
+                }
+
+                // Şikayet (tarayıcı prompt'u yerine temalı modal)
+                var reportBtn = ev.target.closest('.report-btn');
+                if (reportBtn) {
+                    document.getElementById('reportForm').reset();
+                    document.getElementById('reportExcerptId').value = reportBtn.getAttribute('data-excerpt-id');
+                    reportModal.show();
+                }
+            });
+
+            // Silme onayı (tarayıcı confirm'i yerine temalı modal)
+            document.addEventListener('submit', function (ev) {
+                var form = ev.target.closest('.delete-form');
+                if (!form) return;
+                ev.preventDefault();
+                pendingDeleteForm = form;
+                confirmDeleteModal.show();
+            });
+
+            function updateReactions(wrap, counts, myEmoji) {
+                wrap.querySelectorAll('.reaction-btn').forEach(function (b) {
+                    var e = b.getAttribute('data-emoji');
+                    var n = counts && counts[e] ? counts[e] : 0;
+                    b.querySelector('.reaction-count').textContent = n > 0 ? n : '';
+                    b.classList.toggle('selected', myEmoji === e);
+                });
+            }
+
+            // Sonsuz kaydırma: sentinel görünür olunca sıradaki sayfayı yükle
+            var sentinel = document.getElementById('feedSentinel');
+            var feedGrid = document.getElementById('feedGrid');
+            var hasMore = @(hasMore ? "true" : "false");
+            var loading = false;
+
+            if (sentinel && 'IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function (entries) {
+                    if (entries[0].isIntersecting) loadMore();
+                }, { rootMargin: '400px' });
+                observer.observe(sentinel);
+            }
+
+            function loadMore() {
+                if (!hasMore || loading) return;
+                loading = true;
+
+                var skip = feedGrid.querySelectorAll('.excerpt-card').length;
+                fetch('@Url.Action("LoadMore")?skip=' + skip)
+                    .then(function (r) {
+                        if (!r.ok) throw new Error();
+                        hasMore = r.headers.get('X-Has-More') === '1';
+                        return r.text();
+                    })
+                    .then(function (html) {
+                        feedGrid.insertAdjacentHTML('beforeend', html);
+                        if (!hasMore) sentinel.classList.add('d-none');
+                    })
+                    .catch(function () { hasMore = false; sentinel.classList.add('d-none'); })
+                    .finally(function () { loading = false; });
+            }
+
+            // SignalR canlı güncellemeler (layout'taki global bağlantıyı kullanır)
+            $(document).ready(function () {
+                if (!window.globalConnection) return;
+
+                window.globalConnection.on('ReceiveExcerpt', function () {
+                    document.getElementById('newExcerptAlert').classList.remove('d-none');
+                });
+
+                window.globalConnection.on('ReceiveExcerptReaction', function (excerptId, counts) {
+                    var wrap = document.querySelector('[data-excerpt-id="' + excerptId + '"]');
+                    if (!wrap) return;
+                    // Başkasının tepkisi kendi seçimimizi değiştirmez; sadece sayıları güncelle
+                    wrap.querySelectorAll('.reaction-btn').forEach(function (b) {
+                        var e = b.getAttribute('data-emoji');
+                        var n = counts && counts[e] ? counts[e] : 0;
+                        b.querySelector('.reaction-count').textContent = n > 0 ? n : '';
+                    });
+                });
+            });
+        })();
+    </script>
+}

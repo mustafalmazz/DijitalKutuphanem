@@ -53,7 +53,7 @@ namespace BookManagementApp.Controllers
                 if (request.IsCompleted && !string.IsNullOrEmpty(request.SessionType) && !request.SessionType.Contains("Break", StringComparison.OrdinalIgnoreCase))
                 {
                     earnedStones = request.DurationInMinutes; // Dakika başı 1 taş
-                    currentUser.WisdomStones += earnedStones;
+                    currentUser.EarnStones(earnedStones);
                 }
                 
                 await _context.SaveChangesAsync();

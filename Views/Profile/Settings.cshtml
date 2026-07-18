@@ -1,0 +1,421 @@
+@model BookManagementApp.Areas.Admin.Models.User
+@{
+    ViewData["Title"] = "Hesap Ayarları";
+    var hasPassword = (bool)(ViewBag.HasPassword ?? false);
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    .st-wrap {
+        font-family: 'Georgia', serif;
+        max-width: 640px;
+        margin: 0 auto;
+    }
+
+    .st-header {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+        .st-header h2 {
+            color: #5c4b3d;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .st-header .sub {
+            color: #9c8468;
+            font-size: 0.88rem;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+    .st-card {
+        background: linear-gradient(160deg, #fffdf9 0%, #f7f1e6 100%);
+        border: 1px solid #e6dac8;
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(107, 85, 65, 0.08);
+        padding: 20px 22px;
+        margin-bottom: 20px;
+    }
+
+    .st-card-title {
+        color: #6b5541;
+        font-weight: 700;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 4px;
+    }
+
+        .st-card-title i {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f1e6d2, #e6d5b8);
+            color: #8b6f47;
+            font-size: 0.95rem;
+        }
+
+    .st-card-desc {
+        color: #9c8468;
+        font-size: 0.82rem;
+        margin-bottom: 14px;
+    }
+
+    .st-input {
+        border: 1px solid #dccbb2;
+        border-radius: 10px;
+        background: #fffefb;
+        color: #5c4b3d;
+        font-family: 'Georgia', serif;
+        font-size: 0.92rem;
+        padding: 10px 12px;
+        width: 100%;
+        transition: all 0.25s ease;
+    }
+
+        .st-input:focus {
+            outline: none;
+            border-color: #c89666;
+            box-shadow: 0 0 0 3px rgba(200, 150, 102, 0.15);
+        }
+
+    .st-label {
+        color: #7a6a58;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .st-save-btn {
+        background: linear-gradient(135deg, #a0785a 0%, #8b6f47 100%);
+        border: none;
+        color: #f5f0e8;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 9px 26px;
+        border-radius: 22px;
+        transition: all 0.25s ease;
+        box-shadow: 0 3px 10px rgba(139, 111, 71, 0.3);
+    }
+
+        .st-save-btn:hover {
+            background: linear-gradient(135deg, #c89666 0%, #a0785a 100%);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+    /* Şifre göster/gizle */
+    .st-pw-wrap {
+        position: relative;
+    }
+
+        .st-pw-wrap .st-input {
+            padding-right: 42px;
+        }
+
+    .st-pw-toggle {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #b9a88f;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+        .st-pw-toggle:hover {
+            color: #8b6f47;
+            background: #f5efe3;
+        }
+
+    /* Gizlilik anahtarı */
+    .st-privacy-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+    }
+
+    .st-switch {
+        position: relative;
+        width: 54px;
+        height: 30px;
+        flex-shrink: 0;
+    }
+
+        .st-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+    .st-slider {
+        position: absolute;
+        inset: 0;
+        background: #d9cbb4;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: background 0.25s ease;
+    }
+
+        .st-slider::before {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            left: 3px;
+            top: 3px;
+            background: #fffdf9;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.25s ease;
+        }
+
+    .st-switch input:checked + .st-slider {
+        background: linear-gradient(135deg, #a0785a, #8b6f47);
+    }
+
+        .st-switch input:checked + .st-slider::before {
+            transform: translateX(24px);
+        }
+
+    .st-privacy-state {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #8b6f47;
+    }
+
+    /* Bildirim modalı */
+    .notice-modal .modal-content {
+        background: linear-gradient(160deg, #fffdf9 0%, #f7f1e6 100%);
+        border: 1px solid #e6dac8;
+        border-radius: 18px;
+        font-family: 'Georgia', serif;
+        text-align: center;
+        padding: 26px 22px 20px;
+    }
+
+    .notice-icon {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 14px;
+        font-size: 1.7rem;
+    }
+
+        .notice-icon.success {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+            box-shadow: 0 4px 14px rgba(46, 125, 50, 0.25);
+        }
+
+        .notice-icon.error {
+            background: linear-gradient(135deg, #fdecea, #f9d0cb);
+            color: #c0392b;
+            box-shadow: 0 4px 14px rgba(192, 57, 43, 0.25);
+        }
+
+    .notice-text {
+        color: #5c4b3d;
+        font-size: 0.98rem;
+        font-weight: 600;
+        margin-bottom: 18px;
+    }
+
+    .notice-ok-btn {
+        background: linear-gradient(135deg, #a0785a 0%, #8b6f47 100%);
+        border: none;
+        color: #f5f0e8;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        padding: 8px 34px;
+        border-radius: 22px;
+    }
+
+        .notice-ok-btn:hover {
+            background: linear-gradient(135deg, #c89666 0%, #a0785a 100%);
+            color: #fff;
+        }
+
+    @@media (max-width: 991.98px) {
+        .st-wrap {
+            padding-bottom: 70px;
+        }
+    }
+</style>
+
+<div class="st-wrap">
+
+    <div class="st-header">
+        <h2><i class="fa-solid fa-user-gear" style="color:#8b6f47"></i> Hesap Ayarları</h2>
+        <div class="sub">Hesabınızı buradan yönetin.</div>
+    </div>
+
+    <!-- KULLANICI ADI -->
+    <div class="st-card">
+        <div class="st-card-title"><i class="fa-solid fa-at"></i> Kullanıcı Adı</div>
+        <div class="st-card-desc">Profilinizde ve akışta görünen adınız. 3-30 karakter olmalı.</div>
+        <form asp-action="UpdateUsername" method="post" class="d-flex flex-column gap-3">
+            <div>
+                <label class="st-label" for="newUserName">Yeni kullanıcı adı</label>
+                <input type="text" class="st-input" id="newUserName" name="newUserName"
+                       value="@Model.UserName" minlength="3" maxlength="30" required autocomplete="username" />
+            </div>
+            <div class="text-end">
+                <button type="submit" class="st-save-btn"><i class="fas fa-check me-1"></i> Kaydet</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ŞİFRE -->
+    <div class="st-card">
+        <div class="st-card-title"><i class="fa-solid fa-key"></i> Şifre Yenile</div>
+        <div class="st-card-desc">
+            @(hasPassword
+                ? "Güvenliğiniz için önce mevcut şifrenizi doğrulamanız gerekir."
+                : "Google ile giriş yapıyorsunuz; hesabınıza bir şifre belirleyerek kullanıcı adıyla da giriş yapabilirsiniz.")
+        </div>
+        <form asp-action="UpdatePassword" method="post" class="d-flex flex-column gap-3">
+            @if (hasPassword)
+            {
+                <div>
+                    <label class="st-label" for="currentPassword">Mevcut şifre</label>
+                    <div class="st-pw-wrap">
+                        <input type="password" class="st-input" id="currentPassword" name="currentPassword"
+                               required autocomplete="current-password" />
+                        <button type="button" class="st-pw-toggle" data-target="currentPassword" tabindex="-1">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            <div>
+                <label class="st-label" for="newPassword">Yeni şifre (en az 6 karakter)</label>
+                <div class="st-pw-wrap">
+                    <input type="password" class="st-input" id="newPassword" name="newPassword"
+                           minlength="6" required autocomplete="new-password" />
+                    <button type="button" class="st-pw-toggle" data-target="newPassword" tabindex="-1">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <label class="st-label" for="confirmPassword">Yeni şifre (tekrar)</label>
+                <div class="st-pw-wrap">
+                    <input type="password" class="st-input" id="confirmPassword" name="confirmPassword"
+                           minlength="6" required autocomplete="new-password" />
+                    <button type="button" class="st-pw-toggle" data-target="confirmPassword" tabindex="-1">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="text-end">
+                <button type="submit" class="st-save-btn"><i class="fas fa-shield-halved me-1"></i> Şifreyi Güncelle</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- GİZLİLİK -->
+    <div class="st-card">
+        <div class="st-card-title"><i class="fa-solid fa-lock"></i> Hesap Gizliliği</div>
+        <div class="st-card-desc">
+            Gizli hesapta kitaplığınızı ve istatistiklerinizi sadece takipçileriniz görebilir;
+            yeni takip istekleri onayınıza düşer.
+        </div>
+        <form asp-action="UpdatePrivacy" method="post" id="privacyForm">
+            <div class="st-privacy-row">
+                <span class="st-privacy-state" id="privacyState">
+                    @(Model.IsPrivate ? "Gizli Hesap" : "Herkese Açık")
+                </span>
+                <label class="st-switch mb-0">
+                    <input type="checkbox" name="isPrivate" value="true" id="privacyToggle"
+                           @(Model.IsPrivate ? "checked" : "") />
+                    <span class="st-slider"></span>
+                </label>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- BİLDİRİM MODALI -->
+<div class="modal fade notice-modal" id="noticeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="notice-icon success d-none" id="noticeIconSuccess"><i class="fas fa-check"></i></div>
+            <div class="notice-icon error d-none" id="noticeIconError"><i class="fas fa-exclamation"></i></div>
+            <div class="notice-text" id="noticeText"></div>
+            <div>
+                <button type="button" class="notice-ok-btn" data-bs-dismiss="modal">Tamam</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // TempData mesajlarını bildirim modalı olarak göster
+            var noticeSuccess = '@Html.Raw(Json.Serialize(TempData["SettingsSuccess"]))';
+            var noticeError = '@Html.Raw(Json.Serialize(TempData["SettingsError"]))';
+            function showNotice(text, isError) {
+                document.getElementById('noticeText').textContent = text;
+                document.getElementById('noticeIconSuccess').classList.toggle('d-none', isError);
+                document.getElementById('noticeIconError').classList.toggle('d-none', !isError);
+                var modal = new bootstrap.Modal(document.getElementById('noticeModal'));
+                modal.show();
+                if (!isError) setTimeout(function () { modal.hide(); }, 2500);
+            }
+            try {
+                var s = JSON.parse(noticeSuccess), e = JSON.parse(noticeError);
+                if (e) showNotice(e, true);
+                else if (s) showNotice(s, false);
+            } catch (err) { }
+
+            // Şifre göster/gizle
+            document.querySelectorAll('.st-pw-toggle').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var input = document.getElementById(btn.getAttribute('data-target'));
+                    var isPw = input.type === 'password';
+                    input.type = isPw ? 'text' : 'password';
+                    btn.querySelector('i').className = isPw ? 'fas fa-eye-slash' : 'fas fa-eye';
+                });
+            });
+
+            // Gizlilik anahtarı: değiştirilince otomatik kaydet
+            var privacyToggle = document.getElementById('privacyToggle');
+            privacyToggle.addEventListener('change', function () {
+                document.getElementById('privacyState').textContent =
+                    privacyToggle.checked ? 'Gizli Hesap' : 'Herkese Açık';
+                document.getElementById('privacyForm').submit();
+            });
+
+            // Anti-forgery token'ı gizlilik ve diğer formlara ekle (sayfa başındaki token kullanılır)
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            document.querySelectorAll('form').forEach(function (f) {
+                if (!f.querySelector('input[name="__RequestVerificationToken"]')) {
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = '__RequestVerificationToken';
+                    hidden.value = token;
+                    f.appendChild(hidden);
+                }
+            });
+        })();
+    </script>
+}

@@ -395,6 +395,12 @@
                         </a>
                     </li>
 
+                    <li class="nav-item">
+                        <a class="nav-link" asp-area="" asp-controller="Excerpt" asp-action="Index">
+                            <i class="fa-solid fa-camera-retro" style="color: #ffd782;"></i> Akış
+                        </a>
+                    </li>
+
                     @if(Model.User != null)
                     {
                         <li class="nav-item">
@@ -411,7 +417,7 @@
                             Kategoriler
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="categoryDropdown">
-                            @if (Model != null && Model.Categories.Any())
+                            @if (Model?.Categories?.Any() == true)
                             {
                                 foreach (var cat in Model.Categories)
                                 {
@@ -459,51 +465,60 @@
                             }
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="userDropdown">
-                            <li>
-                                <a class="dropdown-item logout-item" asp-area="" asp-controller="Profile" asp-action="PublicProfile" asp-route-id="@Model.User.Id">
-                                    Profilim
-                                </a>
-                                <a class="dropdown-item logout-item" asp-area="" asp-controller="Profile" asp-action="Index">
-                                    Özetim
-                                </a>
-                                @if (Model.User != null && Model.User.Role == "SuperAdmin")
-                                {
-                                    <a class="dropdown-item logout-item" asp-area="SuperAdmin" asp-controller="Dashboard" asp-action="Index">
-                                        Sistemi Yönet
+                            @if (Model.User != null)
+                            {
+                                <li>
+                                    <a class="dropdown-item logout-item" asp-area="" asp-controller="Profile" asp-action="PublicProfile" asp-route-id="@Model.User.Id">
+                                        Profilim
                                     </a>
-                                }
-                            </li>
-                            <li>
-                                <a class="dropdown-item logout-item text-danger" asp-area="" asp-controller="Account" asp-action="Logout">
-                                    <i class="fa-solid fa-right-from-bracket text-danger"></i> Çıkış Yap
-                                </a>
-                            </li>
+                                    <a class="dropdown-item logout-item" asp-area="" asp-controller="Profile" asp-action="Index">
+                                        Özetim
+                                    </a>
+                                    <a class="dropdown-item logout-item" asp-area="" asp-controller="Profile" asp-action="Settings">
+                                        Hesap Ayarları
+                                    </a>
+                                    @if (Model.User.Role == "SuperAdmin")
+                                    {
+                                        <a class="dropdown-item logout-item" asp-area="SuperAdmin" asp-controller="Dashboard" asp-action="Index">
+                                            Sistemi Yönet
+                                        </a>
+                                    }
+                                </li>
+                                <li>
+                                    <a class="dropdown-item logout-item text-danger" asp-area="" asp-controller="Account" asp-action="Logout">
+                                        <i class="fa-solid fa-right-from-bracket text-danger"></i> Çıkış Yap
+                                    </a>
+                                </li>
+                            }
+                            else
+                            {
+                                <li>
+                                    <a class="dropdown-item logout-item" asp-area="" asp-controller="Account" asp-action="Login">
+                                        <i class="fa-solid fa-right-to-bracket"></i> Giriş Yap
+                                    </a>
+                                    <a class="dropdown-item logout-item" asp-area="" asp-controller="Account" asp-action="Register">
+                                        <i class="fa-solid fa-user-plus"></i> Kayıt Ol
+                                    </a>
+                                </li>
+                            }
                         </ul>
                     </li>
 
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="manageLibraryDropdown" role="button"
-                           data-bs-toggle="dropdown" aria-expanded="false" style="white-space: nowrap;">
-                            Kitap İşlemleri
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="manageLibraryDropdown">
-                            <li>
-                                <a class="dropdown-item" asp-area="" asp-action="GoogleBooks" asp-controller="Home">
-                                    Hızlı Kitap Ekle
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" asp-area="Admin" asp-action="List" asp-controller="Books">
-                                    Kitapları Yönet
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" asp-area="Admin" asp-action="List" asp-controller="Category">
-                                    Kategorileri Yönet
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
+                    @* Kitaplık işlemleri yalnızca üyelere gösterilir *@
+                    @if (Model.User != null)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-action="GoogleBooks" asp-controller="Home" style="white-space: nowrap;">
+                                Hızlı Kitap Ekle
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="Admin" asp-controller="Books" asp-action="List" style="white-space: nowrap;">
+                                Rafları Yönet
+                            </a>
+                        </li>
+                    }
 
                     <li>
                         <a class="nav-link" asp-area="" asp-action="Community" asp-controller="Profile" role="button">

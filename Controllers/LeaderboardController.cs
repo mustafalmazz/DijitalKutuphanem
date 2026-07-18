@@ -168,7 +168,53 @@ namespace BookManagementApp.Controllers
                 }
             }
 
+            // Takılı başarım etiketlerini TEK sorguda doldur (kullanıcı başına sorgu açmamak için)
+            await AttachTitlesAsync(viewModel);
+
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// Listelerdeki tüm kullanıcıların takılı başarım etiketini tek seferde çekip atar.
+        /// </summary>
+        private async Task AttachTitlesAsync(LeaderboardViewModel viewModel)
+        {
+            var items = viewModel.TopBookworms
+                .Concat(viewModel.TopStudiers)
+                .Concat(viewModel.LongestStreaks)
+                .ToList();
+
+            if (viewModel.CurrentUserBookworm != null) items.Add(viewModel.CurrentUserBookworm);
+            if (viewModel.CurrentUserStudier != null) items.Add(viewModel.CurrentUserStudier);
+            if (viewModel.CurrentUserStreak != null) items.Add(viewModel.CurrentUserStreak);
+
+            if (items.Count == 0) return;
+
+            var userIds = items.Select(i => i.UserId).Distinct().ToList();
+
+            var titles = await _context.Users
+                .Where(u => userIds.Contains(u.Id) && u.ActiveTitleAchievementId != null)
+                .Select(u => new
+                {
+                    u.Id,
+                    Name = u.ActiveTitleAchievement!.Name,
+                    Icon = u.ActiveTitleAchievement.IconClass,
+                    Color = u.ActiveTitleAchievement.ColorHex,
+                    Tier = u.ActiveTitleAchievement.Tier,
+                    Description = u.ActiveTitleAchievement.Description
+                })
+                .ToDictionaryAsync(x => x.Id);
+
+            foreach (var item in items)
+            {
+                if (!titles.TryGetValue(item.UserId, out var t)) continue;
+
+                item.TitleName = t.Name;
+                item.TitleIcon = t.Icon;
+                item.TitleColor = t.Color;
+                item.TitleTier = t.Tier;
+                item.TitleDescription = t.Description;
+            }
         }
     }
 }

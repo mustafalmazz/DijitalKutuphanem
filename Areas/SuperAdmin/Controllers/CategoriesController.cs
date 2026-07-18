@@ -1,4 +1,5 @@
 ﻿using BookManagementApp.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Linq;
 namespace BookManagementApp.Areas.SuperAdmin.Controllers
 {
     [Area("SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     public class CategoriesController : Controller
     {
         private readonly MyDbContext _context;
@@ -15,7 +17,7 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
         }
         public IActionResult List()
         {
-            var list = _context.Categories.Include(c=>c.User).OrderByDescending(c => c.Id).ToList();
+            var list = _context.Categories.Include(c => c.Books).OrderBy(c => c.CategoryName).ToList();
             return View(list);
         }
         public IActionResult DeleteConfirm(int id)
@@ -42,6 +44,35 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
             return RedirectToAction("List");
 
         }
+        public IActionResult Add()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Add(Category category)
+        {
+            if (string.IsNullOrWhiteSpace(category.CategoryName))
+            {
+                ModelState.AddModelError("CategoryName", "Kategori adı boş olamaz.");
+                return View(category);
+            }
+
+            category.CategoryName = category.CategoryName.Trim();
+
+            // Kategoriler global olduğu için aynı isim iki kez bulunmamalı
+            if (_context.Categories.Any(c => c.CategoryName == category.CategoryName))
+            {
+                ModelState.AddModelError("CategoryName", "Bu isimde bir kategori zaten var.");
+                return View(category);
+            }
+
+            _context.Categories.Add(category);
+            _context.SaveChanges();
+            return RedirectToAction("List");
+        }
+
         public IActionResult Edit(int id)
         {
             var cat = _context.Categories.FirstOrDefault(c => c.Id == id);
@@ -60,7 +91,20 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
             {
                 return NotFound();
             }
-            existingCategory.CategoryName = category.CategoryName;
+            if (string.IsNullOrWhiteSpace(category.CategoryName))
+            {
+                ModelState.AddModelError("CategoryName", "Kategori adı boş olamaz.");
+                return View(category);
+            }
+
+            var trimmed = category.CategoryName.Trim();
+            if (_context.Categories.Any(c => c.CategoryName == trimmed && c.Id != category.Id))
+            {
+                ModelState.AddModelError("CategoryName", "Bu isimde bir kategori zaten var.");
+                return View(category);
+            }
+
+            existingCategory.CategoryName = trimmed;
             _context.SaveChanges();
             return RedirectToAction("List");
         }

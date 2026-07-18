@@ -1,4 +1,4 @@
-@model BookManagementApp.Areas.Admin.Models.User
+﻿@model BookManagementApp.Areas.Admin.Models.User
 @{
     ViewData["Title"] = Model.UserName + " - Profil";
 
@@ -10,25 +10,10 @@
     int memberDays = (int)(DateTime.Now - Model.CreateDate).TotalDays;
     if (memberDays < 1) { memberDays = 1; }
 
-    // Bilgelik Taşı'na göre seviye sistemi
-    int stones = Model.WisdomStones;
-    string levelName;
-    string levelIcon;
-    int levelMin;
-    int levelMax;
-
-    if (stones < 250) { levelName = "Çırak Okur"; levelIcon = "fa-seedling"; levelMin = 0; levelMax = 250; }
-    else if (stones < 750) { levelName = "Meraklı Okur"; levelIcon = "fa-book-open"; levelMin = 250; levelMax = 750; }
-    else if (stones < 2000) { levelName = "Kitap Dostu"; levelIcon = "fa-feather-pointed"; levelMin = 750; levelMax = 2000; }
-    else if (stones < 5000) { levelName = "Bilge Okur"; levelIcon = "fa-graduation-cap"; levelMin = 2000; levelMax = 5000; }
-    else if (stones < 12000) { levelName = "Üstat"; levelIcon = "fa-crown"; levelMin = 5000; levelMax = 12000; }
-    else { levelName = "Efsane"; levelIcon = "fa-star"; levelMin = 12000; levelMax = stones; }
-
-    int levelProgress = levelMax > levelMin
-        ? Math.Min(100, (int)((double)(stones - levelMin) / (levelMax - levelMin) * 100))
-        : 100;
-
-    int stonesToNext = Math.Max(0, levelMax - stones);
+    // Profilde gösterilen etiket: kullanıcının kendi seçtiği başarım.
+    // (Eski taş bazlı seviye sistemi kaldırıldı; taş harcanabilir olduğu için seviye geri düşüyordu.)
+    var activeTitle = Model.UserAchievements?
+        .FirstOrDefault(ua => ua.AchievementId == Model.ActiveTitleAchievementId)?.Achievement;
 
     // Seri durumuna göre rozet
     string streakLabel = Model.CurrentStreak >= 30 ? "Demir Disiplin"
@@ -263,28 +248,38 @@
         color: #4a3f35;
         margin-bottom: 8px;
         letter-spacing: 0.5px;
+        /* Uzun kullanıcı adı sağa taşmasın, alta insin */
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        max-width: 100%;
     }
 
-    .pp-level-badge {
+    .pp-title-badge {
         display: inline-flex;
         align-items: center;
         gap: 7px;
-        background: linear-gradient(135deg, #8b6f47, #6b5541);
-        color: #ffe9b8;
+        /* Kahverengiye geçiş etiketi söndürüyordu; artık rozet kendi renginin
+           açık ve koyu tonu arasında kalıyor, böylece canlılığını koruyor. */
+        background: linear-gradient(135deg,
+            color-mix(in srgb, var(--title-color) 82%, #fff) 0%,
+            var(--title-color) 45%,
+            color-mix(in srgb, var(--title-color) 62%, #1d1712) 100%);
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
         padding: 6px 18px;
         border-radius: 50px;
         font-size: 0.82rem;
         font-weight: 700;
         letter-spacing: 1px;
         text-transform: uppercase;
-        box-shadow: 0 5px 15px rgba(107, 85, 65, 0.3);
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--title-color) 45%, transparent);
         margin-bottom: 12px;
         position: relative;
         overflow: hidden;
     }
 
         /* Rozet üzerinde kayan parlama */
-        .pp-level-badge::after {
+        .pp-title-badge::after {
             content: '';
             position: absolute;
             inset: 0;
@@ -339,6 +334,33 @@
         align-items: baseline;
         gap: 6px;
     }
+
+    /* Tıklanabilir sayaç (takipçi / takip edilen) */
+    .pp-counter-btn {
+        background: none;
+        border: none;
+        font-family: inherit;
+        color: inherit;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 12px;
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+        .pp-counter-btn:hover {
+            background: rgba(139, 111, 71, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .pp-counter-btn.pp-counter-locked {
+            cursor: default;
+            opacity: 0.75;
+        }
+
+            .pp-counter-btn.pp-counter-locked:hover {
+                background: none;
+                transform: none;
+            }
 
     .pp-counter-value {
         font-size: 1.2rem;
@@ -741,7 +763,7 @@
             font-size: 1.55rem;
         }
 
-        .pp-level-badge {
+        .pp-title-badge {
             font-size: 0.72rem;
             padding: 5px 14px;
         }
@@ -899,6 +921,262 @@
             flex: 0 0 40px;
         }
     }
+
+    /* Basarimlar (pp-ach-*) stilleri _ProfileAchievements.cshtml partial'ina tasindi. */
+
+    /* ============================================================
+                   TAKİPÇİ / TAKİP LİSTESİ MODALI
+                   ============================================================ */
+    .pp-fl-modal .modal-content {
+        background: #fff9f0;
+        border: none;
+        border-radius: 22px;
+        box-shadow: 0 20px 60px rgba(74, 63, 53, 0.3);
+        overflow: hidden;
+    }
+
+    .pp-fl-header {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 14px 0;
+        border-bottom: 1px solid rgba(139, 111, 71, 0.12);
+        position: relative;
+    }
+
+    .pp-fl-tab {
+        flex: 1;
+        background: none;
+        border: none;
+        font-family: 'Georgia', serif;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #a08b6d;
+        padding: 14px 8px;
+        cursor: pointer;
+        position: relative;
+        transition: color 0.2s ease;
+    }
+
+        .pp-fl-tab:hover {
+            color: #6b5541;
+        }
+
+        .pp-fl-tab.active {
+            color: #4a3f35;
+        }
+
+            .pp-fl-tab.active::after {
+                content: '';
+                position: absolute;
+                left: 18%;
+                right: 18%;
+                bottom: -1px;
+                height: 3px;
+                border-radius: 3px;
+                background: linear-gradient(90deg, #cda45e, #8b6f47);
+            }
+
+    .pp-fl-tab b {
+        color: #8b6f47;
+    }
+
+    .pp-fl-close {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        background: none;
+        border: none;
+        color: #a08b6d;
+        font-size: 1.1rem;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        transition: background 0.2s ease;
+        z-index: 2;
+    }
+
+        .pp-fl-close:hover {
+            background: rgba(139, 111, 71, 0.12);
+            color: #4a3f35;
+        }
+
+    .pp-fl-body {
+        max-height: 60vh;
+        overflow-y: auto;
+        padding: 8px 10px 14px;
+    }
+
+    /* Kaydırma çubuğu — zarif */
+    .pp-fl-body::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .pp-fl-body::-webkit-scrollbar-thumb {
+        background: rgba(139, 111, 71, 0.3);
+        border-radius: 6px;
+    }
+
+    /* Kullanıcı satırı */
+    .pp-fl-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 9px 12px;
+        border-radius: 15px;
+        text-decoration: none;
+        color: inherit;
+        transition: background 0.18s ease;
+    }
+
+        .pp-fl-row:hover {
+            background: rgba(139, 111, 71, 0.07);
+        }
+
+    .pp-fl-avatar-zone {
+        position: relative;
+        width: 52px;
+        height: 52px;
+        flex-shrink: 0;
+    }
+
+    .pp-fl-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #fff9f0 0%, #e6dac8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #5c4b3d;
+        overflow: hidden;
+        box-shadow: 0 3px 10px rgba(74, 63, 53, 0.18);
+    }
+
+        .pp-fl-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .pp-fl-frame {
+        position: absolute;
+        top: -16%;
+        left: -16%;
+        width: 132%;
+        height: 132%;
+        pointer-events: none;
+        object-fit: contain;
+        z-index: 2;
+    }
+
+    .pp-fl-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .pp-fl-name {
+        font-weight: 700;
+        color: #4a3f35;
+        font-size: 0.92rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pp-fl-bio {
+        font-size: 0.76rem;
+        color: #a08b6d;
+        font-style: italic;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pp-fl-badge {
+        flex-shrink: 0;
+        font-family: 'Georgia', serif;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 50px;
+        border: 1.5px solid #8b6f47;
+        color: #8b6f47;
+        background: transparent;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease;
+    }
+
+        button.pp-fl-badge:hover {
+            background: #8b6f47;
+            color: #fff9f0;
+        }
+
+        .pp-fl-badge.following {
+            background: rgba(139, 111, 71, 0.1);
+            border-style: solid;
+        }
+
+        .pp-fl-badge.self {
+            border: none;
+            color: #a08b6d;
+            background: transparent;
+            cursor: default;
+        }
+
+    /* Durum ekranları (yükleniyor / boş / hata) */
+    .pp-fl-state {
+        text-align: center;
+        padding: 46px 20px;
+        color: #a08b6d;
+    }
+
+        .pp-fl-state i {
+            font-size: 2.4rem;
+            color: #d4c5b0;
+            margin-bottom: 12px;
+        }
+
+        .pp-fl-state p {
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+    .pp-fl-spinner {
+        width: 34px;
+        height: 34px;
+        border: 3px solid rgba(139, 111, 71, 0.2);
+        border-top-color: #8b6f47;
+        border-radius: 50%;
+        margin: 0 auto 14px;
+        animation: ppFlSpin 0.8s linear infinite;
+    }
+
+    @@keyframes ppFlSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .pp-fl-modal .modal-content {
+            border-radius: 18px;
+        }
+
+        .pp-fl-body {
+            max-height: 65vh;
+        }
+
+        .pp-fl-avatar-zone,
+        .pp-fl-avatar {
+            width: 46px;
+            height: 46px;
+        }
+    }
 </style>
 
 <div class="pp-page">
@@ -942,8 +1220,26 @@
                     }
                 </div>
 
-                <!-- İSİM & SEVİYE -->
+                <!-- İSİM & ETİKET -->
                 <h1 class="pp-name">@Model.UserName</h1>
+
+                @if (activeTitle != null)
+                {
+                    string[] tierNames = { "", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Efsane" };
+                    var tierLabel = tierNames[Math.Clamp(activeTitle.Tier, 1, 6)];
+
+                    <div class="pp-title-badge js-title-badge"
+                         style="--title-color: @(activeTitle.ColorHex ?? "#8b6f47");"
+                         role="button" tabindex="0"
+                         data-title-name="@activeTitle.Name"
+                         data-title-desc="@activeTitle.Description"
+                         data-title-icon="@activeTitle.IconClass"
+                         data-title-color="@(activeTitle.ColorHex ?? "#8b6f47")"
+                         data-title-tier="@tierLabel">
+                        <i class="fa-solid @activeTitle.IconClass"></i>
+                        <span>@activeTitle.Name</span>
+                    </div>
+                }
 
                 @if (!string.IsNullOrEmpty(Model.Bio))
                 {
@@ -953,16 +1249,22 @@
                 }
 
                 <!-- SAYACLAR (kompakt, tek satır) -->
+                @{
+                    // Takipçi/takip listesi yalnızca liste görülebilir olduğunda tıklanabilir olur
+                    bool ppCanSeeLists = ViewBag.LoggedInUserId == Model.Id || ViewBag.IsPrivate != true || ViewBag.IsFollowing == true;
+                }
                 <div class="pp-counters">
-                    <span class="pp-counter">
+                    <button type="button" class="pp-counter pp-counter-btn @(ppCanSeeLists ? "" : "pp-counter-locked")"
+                            @(ppCanSeeLists ? Html.Raw($"onclick=\"openFollowList('followers')\"") : Html.Raw("disabled"))>
                         <span class="pp-counter-value pp-countup" id="followersCount" data-target="@ViewBag.FollowersCount">0</span>
                         <span class="pp-counter-label">Takipçi</span>
-                    </span>
+                    </button>
                     <span class="pp-counter-sep"></span>
-                    <span class="pp-counter">
-                        <span class="pp-counter-value pp-countup" data-target="@ViewBag.FollowingCount">0</span>
+                    <button type="button" class="pp-counter pp-counter-btn @(ppCanSeeLists ? "" : "pp-counter-locked")"
+                            @(ppCanSeeLists ? Html.Raw($"onclick=\"openFollowList('following')\"") : Html.Raw("disabled"))>
+                        <span class="pp-counter-value pp-countup" id="followingCount" data-target="@ViewBag.FollowingCount">0</span>
                         <span class="pp-counter-label">Takip Edilen</span>
-                    </span>
+                    </button>
                     <span class="pp-counter-sep"></span>
                     <span class="pp-counter">
                         <span class="pp-counter-value pp-countup" data-target="@ViewBag.BookCount">0</span>
@@ -1121,10 +1423,57 @@
                             grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
                             gap: 15px;
                             padding-top: 10px;
-                            max-height: 400px;
+                            /* En az 3 satır kitap rahat görünsün (kaydırma devam eder) */
+                            max-height: 1000px;
                             overflow-y: auto;
                             padding-right: 5px;
                         }
+
+                        /* Kart + kalp butonunu bir arada tutan hücre (kalp, link'in içine gömülmez) */
+                        .pp-book-cell {
+                            position: relative;
+                            display: flex;
+                        }
+
+                        /* Kapak üzerindeki kompakt hızlı beğeni butonu */
+                        .pp-book-like {
+                            position: absolute;
+                            top: 8px;
+                            right: 8px;
+                            z-index: 3;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 5px;
+                            padding: 6px 12px;
+                            border: none;
+                            border-radius: 22px;
+                            background: rgba(30, 20, 12, 0.5);
+                            color: #fff;
+                            font-family: 'Georgia', serif;
+                            font-size: 0.92rem;
+                            font-weight: 700;
+                            line-height: 1;
+                            cursor: pointer;
+                            transition: background 0.2s ease, transform 0.12s ease;
+                        }
+
+                            .pp-book-like i {
+                                font-size: 1.05rem;
+                                color: #fff;
+                                transition: color 0.2s ease;
+                            }
+
+                            .pp-book-like.liked i {
+                                color: #ff5a7a;
+                            }
+
+                            .pp-book-like:hover {
+                                background: rgba(30, 20, 12, 0.68);
+                            }
+
+                            .pp-book-like:active {
+                                transform: scale(0.88);
+                            }
 
                         .pp-book-card {
                             background: #fff9f0;
@@ -1137,6 +1486,8 @@
                             color: inherit;
                             display: flex;
                             flex-direction: column;
+                            flex: 1;
+                            min-width: 0;
                         }
 
                             .pp-book-card:hover {
@@ -1234,8 +1585,26 @@
                             @if (Model.Books != null && Model.Books.Any())
                             {
                                 <div class="pp-book-grid">
-                                    @foreach (var book in Model.Books)
+                                    @{
+                                        var ppLikeCounts = ViewBag.BookLikeCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+                                        var ppMyLikes = ViewBag.MyLikedBookIds as HashSet<int> ?? new HashSet<int>();
+
+                                        // Kitaplar beğeni sayısına göre azalan sıralanır; eşitlikte son eklenen kitap önce
+                                        var ppSortedBooks = Model.Books
+                                            .OrderByDescending(b => ppLikeCounts.TryGetValue(b.Id, out int c) ? c : 0)
+                                            .ThenByDescending(b => b.CreateDate)
+                                            .ThenByDescending(b => b.Id)
+                                            .ToList();
+                                    }
+                                    @foreach (var book in ppSortedBooks)
                                     {
+                                        int ppLikeCount = ppLikeCounts.TryGetValue(book.Id, out int lc) ? lc : 0;
+                                        bool ppLiked = ppMyLikes.Contains(book.Id);
+                                        <div class="pp-book-cell">
+                                        <button type="button" class="pp-book-like @(ppLiked ? "liked" : "")" onclick="toggleBookLike(event, @book.Id, this)" title="Beğen" aria-label="Beğen">
+                                            <i class="@(ppLiked ? "fas" : "far") fa-heart"></i>
+                                            <span class="pp-book-like-count">@ppLikeCount</span>
+                                        </button>
                                         <a href="/Profile/BookDetails/@book.Id" class="pp-book-card">
                                             @if (!string.IsNullOrEmpty(book.Image))
                                             {
@@ -1271,6 +1640,7 @@
                                                 </div>
                                             </div>
                                         </a>
+                                        </div>
                                     }
                                 </div>
                             }
@@ -1286,11 +1656,7 @@
 
                         <!-- BAŞARIMLAR TAB -->
                         <div class="tab-pane fade" id="achievements-pane" role="tabpanel">
-                            <div class="text-center py-4">
-                                <i class="fas fa-award" style="font-size: 3rem; color: #d4c5b0; margin-bottom: 15px;"></i>
-                                <h5 style="color: #6b5541; font-weight: 700; font-family: 'Georgia', serif;">Yakında!</h5>
-                                <p class="text-muted" style="font-size: 0.9rem;">Kullanıcının başarımları buraya eklenecek.</p>
-                            </div>
+                            <partial name="_ProfileAchievements" model="Model" />
                         </div>
                     </div>
                 </div>
@@ -1303,6 +1669,30 @@
 <!-- Bildirim Toast'u -->
 <div class="pp-toast" id="ppToast">
     <i class="fas fa-check-circle"></i> <span id="ppToastText">Profil bağlantısı kopyalandı!</span>
+</div>
+
+<!-- ============================================================
+     TAKİPÇİ / TAKİP EDİLEN LİSTESİ MODALI
+     ============================================================ -->
+<div class="modal fade pp-fl-modal" id="followListModal" tabindex="-1" aria-labelledby="followListModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="pp-fl-header">
+                <button type="button" class="pp-fl-tab active" id="flTabFollowers" onclick="switchFollowTab('followers')">
+                    Takipçiler <b>(@ViewBag.FollowersCount)</b>
+                </button>
+                <button type="button" class="pp-fl-tab" id="flTabFollowing" onclick="switchFollowTab('following')">
+                    Takip Edilen <b>(@ViewBag.FollowingCount)</b>
+                </button>
+                <button type="button" class="pp-fl-close" data-bs-dismiss="modal" aria-label="Kapat">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div class="pp-fl-body" id="flBody">
+                <!-- İçerik JS ile doldurulur -->
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ============================================================
@@ -1323,7 +1713,7 @@
 
                     <div class="mb-3">
                         <label class="form-label" style="color: #8b6f47; font-weight: 600;">Kullanıcı Adı</label>
-                        <input type="text" class="form-control" asp-for="UserName" required style="border-radius: 12px; border: 1px solid #d4c5b0; padding: 10px 15px; background: rgba(255,255,255,0.7);" />
+                        <input type="text" class="form-control" asp-for="UserName" required minlength="3" maxlength="30" style="border-radius: 12px; border: 1px solid #d4c5b0; padding: 10px 15px; background: rgba(255,255,255,0.7);" />
                     </div>
 
                     <div class="mb-3">
@@ -1404,23 +1794,38 @@
 
                     <div class="tab-content" id="avatarTabsContent">
                         <div class="tab-pane fade show active" id="select-pane" role="tabpanel">
-                            <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
-                            <div class="text-center mt-2 mb-3">
-                                <form asp-action="RemoveAvatar" asp-controller="Profile" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="returnUrl" value="/Profile/PublicProfile/@Model.Id" />
-                                    <button type="submit" class="btn btn-sm" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Avatarı Kaldır</button>
-                                </form>
-                            </div>
-                            <div style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
-                                @if (ViewBag.Avatars != null)
+                            @{
+                                int ppAvatarCount = 0;
+                                if (ViewBag.Avatars != null)
                                 {
-                                    foreach (var avatar in ViewBag.Avatars)
+                                    foreach (var a in ViewBag.Avatars) { ppAvatarCount++; }
+                                }
+                            }
+                            @if (ppAvatarCount > 0)
+                            {
+                                <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
+                                <div class="text-center mt-2 mb-3">
+                                    <form asp-action="RemoveAvatar" asp-controller="Profile" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="returnUrl" value="/Profile/PublicProfile/@Model.Id" />
+                                        <button type="submit" class="btn btn-sm" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Avatarı Kaldır</button>
+                                    </form>
+                                </div>
+                                <div style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
+                                    @foreach (var avatar in ViewBag.Avatars)
                                     {
                                         <img src="@avatar.ImageUrl" class="avatar-option" onclick="selectAvatar(this)" title="@avatar.Name">
                                     }
-                                }
-                            </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4">
+                                    <i class="fa-solid fa-store" style="font-size: 2.5rem; color: #e8dcc8; margin-bottom: 10px;"></i>
+                                    <p style="color: #8b6f47; font-size: 0.9rem;">Henüz avatarın yok!</p>
+                                    <a asp-controller="Store" asp-action="Index" asp-area="" class="btn btn-sm" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 20px; padding: 8px 20px; font-weight: 600;">Mağazaya Git</a>
+                                </div>
+                            }
                         </div>
 
                         <div class="tab-pane fade" id="upload-pane" role="tabpanel">
@@ -1547,12 +1952,268 @@
             // Sayaçları canlandır
             document.querySelectorAll('.pp-countup').forEach(animateCounter);
 
-            // Seviye çubuğunu doldur
-            setTimeout(function () {
-                var bar = document.getElementById('levelProgressBar');
-                if (bar) bar.style.width = bar.getAttribute('data-width') + '%';
-            }, 350);
+            // Ödül topladıktan sonra sayfa yenilenince Başarımlar sekmesini tekrar aç
+            try {
+                if (sessionStorage.getItem('ppReopenAch') === '1') {
+                    sessionStorage.removeItem('ppReopenAch');
+                    var achTab = document.getElementById('achievements-tab');
+                    if (achTab) {
+                        new bootstrap.Tab(achTab).show();
+                        ppAnimateAchievements();
+                    }
+                }
+            } catch (e) { }
         });
+
+        // ============================================================
+        //  BAŞARIMLAR SEKMESİ ANİMASYONLARI
+        //  (sekme ilk kez görünür olduğunda halka ve çubuklar dolar)
+        // ============================================================
+        var ppAchAnimated = false;
+        function ppAnimateAchievements() {
+            if (ppAchAnimated) return;
+            ppAchAnimated = true;
+
+            document.querySelectorAll('#achievements-pane .pp-ach-fill').forEach(function (el) {
+                el.style.width = el.getAttribute('data-width') + '%';
+            });
+
+            var ring = document.getElementById('ppAchRing');
+            if (ring) {
+                var percent = parseFloat(ring.getAttribute('data-percent')) || 0;
+                var circumference = 2 * Math.PI * 52;
+                ring.style.strokeDashoffset = circumference * (1 - percent / 100);
+            }
+        }
+
+        var ppAchTabBtn = document.getElementById('achievements-tab');
+        if (ppAchTabBtn) {
+            ppAchTabBtn.addEventListener('shown.bs.tab', ppAnimateAchievements);
+        }
+
+        // Kitaplık kartındaki hızlı beğeni (kalp)
+        function toggleBookLike(evt, bookId, btn) {
+            evt.preventDefault();
+            evt.stopPropagation();
+            if (btn.dataset.busy === '1') return;
+            btn.dataset.busy = '1';
+
+            var icon = btn.querySelector('i');
+            var countEl = btn.querySelector('.pp-book-like-count');
+
+            $.post('/Profile/ToggleLikeBook', { bookId: bookId }, function (res) {
+                btn.dataset.busy = '';
+                if (!res.success) { alert(res.message || 'İşlem gerçekleştirilemedi.'); return; }
+
+                if (res.isLiked) {
+                    btn.classList.add('liked');
+                    icon.classList.remove('far'); icon.classList.add('fas');
+                } else {
+                    btn.classList.remove('liked');
+                    icon.classList.remove('fas'); icon.classList.add('far');
+                }
+                if (res.likeCount != null) { countEl.textContent = res.likeCount; }
+            }).fail(function () {
+                btn.dataset.busy = '';
+                alert('Bir hata oluştu, tekrar deneyin.');
+            });
+        }
+
+        // Başarım kategorisini aç/kapat (akordeon)
+        function toggleAchCat(headBtn) {
+            var cat = headBtn.closest('.pp-ach-cat');
+            if (!cat) return;
+            var collapsed = cat.classList.toggle('collapsed');
+            headBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        }
+
+        // Tamamlanan başarımın ödülünü manuel topla
+
+        // --- PROFİLDE GÖSTERİLECEK ETİKETİ SEÇ / KALDIR ---
+        function toggleProfileTitle(achId, btn) {
+            var wasEquipped = btn.classList.contains('equipped');
+            // Takılıysa tekrar tıklamak etiketi kaldırır (0 = kaldır)
+            var targetId = wasEquipped ? 0 : achId;
+
+            btn.disabled = true;
+            var original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Kaydediliyor...</span>';
+
+            fetch('/Profile/EquipTitle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'achievementId=' + targetId
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (!res.success) {
+                    btn.innerHTML = original;
+                    btn.disabled = false;
+                    alert(res.message);
+                    return;
+                }
+
+                // Aynı anda yalnızca tek etiket takılı olabilir: diğer düğmeleri sıfırla
+                document.querySelectorAll('.pp-ach-title-btn.equipped').forEach(function (other) {
+                    other.classList.remove('equipped');
+                    other.innerHTML = '<i class="fa-regular fa-id-badge"></i> <span>Profilde göster</span>';
+                });
+
+                if (targetId === 0) {
+                    btn.innerHTML = '<i class="fa-regular fa-id-badge"></i> <span>Profilde göster</span>';
+                } else {
+                    btn.classList.add('equipped');
+                    btn.innerHTML = '<i class="fa-solid fa-id-badge"></i> <span>Profilde görünüyor</span>';
+                }
+
+                btn.disabled = false;
+            })
+            .catch(function (err) {
+                console.error(err);
+                btn.innerHTML = original;
+                btn.disabled = false;
+                alert('Etiket kaydedilirken bir hata oluştu.');
+            });
+        }
+
+        function claimAchievement(achId, btn) {
+            btn.disabled = true;
+            var original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Toplanıyor...';
+
+            $.post('/Profile/ClaimAchievement', { achievementId: achId }, function (res) {
+                if (res.success) {
+                    try { sessionStorage.setItem('ppReopenAch', '1'); } catch (e) { }
+                    var msg = res.reward > 0 ? ('Ödül toplandı! +' + res.reward + ' 💎') : 'Başarım toplandı!';
+                    showToast(msg);
+                    setTimeout(function () { location.reload(); }, 750);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                    alert(res.message || 'İşlem gerçekleştirilemedi.');
+                }
+            }).fail(function () {
+                btn.disabled = false;
+                btn.innerHTML = original;
+                alert('Bir hata oluştu, tekrar deneyin.');
+            });
+        }
+
+        // ============================================================
+        //  TAKİPÇİ / TAKİP EDİLEN LİSTESİ MODALI
+        // ============================================================
+        var ppProfileId = @Model.Id;
+        var ppLoggedInId = @(ViewBag.LoggedInUserId ?? 0);
+        var ppFlModal = null;
+
+        function ppEscapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function openFollowList(type) {
+            if (!ppFlModal) {
+                ppFlModal = new bootstrap.Modal(document.getElementById('followListModal'));
+            }
+            switchFollowTab(type);
+            ppFlModal.show();
+        }
+
+        function switchFollowTab(type) {
+            document.getElementById('flTabFollowers').classList.toggle('active', type === 'followers');
+            document.getElementById('flTabFollowing').classList.toggle('active', type === 'following');
+            loadFollowList(type);
+        }
+
+        function loadFollowList(type) {
+            var body = document.getElementById('flBody');
+            body.innerHTML = '<div class="pp-fl-state"><div class="pp-fl-spinner"></div><p>Yükleniyor...</p></div>';
+
+            fetch('/Profile/FollowList?id=' + ppProfileId + '&type=' + encodeURIComponent(type))
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (!data.success) {
+                        body.innerHTML = '<div class="pp-fl-state"><i class="fas fa-lock"></i><p>' + ppEscapeHtml(data.message || 'Liste görüntülenemiyor.') + '</p></div>';
+                        return;
+                    }
+                    // Başlıktaki sayıyı gerçek liste uzunluğuyla senkronla
+                    var countEl = document.querySelector('#flTab' + (type === 'following' ? 'Following' : 'Followers') + ' b');
+                    if (countEl) { countEl.textContent = '(' + (data.count != null ? data.count : data.users.length) + ')'; }
+
+                    if (!data.users || data.users.length === 0) {
+                        var emptyMsg = type === 'followers' ? 'Henüz takipçi yok.' : 'Henüz kimseyi takip etmiyor.';
+                        body.innerHTML = '<div class="pp-fl-state"><i class="fas fa-user-group"></i><p>' + emptyMsg + '</p></div>';
+                        return;
+                    }
+                    body.innerHTML = data.users.map(renderFollowRow).join('');
+                })
+                .catch(function () {
+                    body.innerHTML = '<div class="pp-fl-state"><i class="fas fa-triangle-exclamation"></i><p>Bir hata oluştu, tekrar deneyin.</p></div>';
+                });
+        }
+
+        function renderFollowRow(u) {
+            var avatarInner = u.profileImageUrl
+                ? '<img src="' + ppEscapeHtml(u.profileImageUrl) + '" alt="">'
+                : ppEscapeHtml(u.initial);
+
+            var frame = u.frameImageUrl
+                ? '<img src="' + ppEscapeHtml(u.frameImageUrl) + '" class="pp-fl-frame" alt="">'
+                : '';
+
+            var badge;
+            if (u.isSelf) {
+                badge = '<span class="pp-fl-badge self">Sen</span>';
+            } else if (u.isFollowing) {
+                badge = '<button type="button" class="pp-fl-badge following" onclick="toggleFollowFromModal(event, ' + u.id + ', this)">Takiptesin</button>';
+            } else if (u.isPending) {
+                badge = '<button type="button" class="pp-fl-badge" onclick="toggleFollowFromModal(event, ' + u.id + ', this)">İstek Gönderildi</button>';
+            } else {
+                badge = '<button type="button" class="pp-fl-badge" onclick="toggleFollowFromModal(event, ' + u.id + ', this)">Takip Et</button>';
+            }
+
+            var bio = u.bio ? '<div class="pp-fl-bio">' + ppEscapeHtml(u.bio) + '</div>' : '';
+
+            return '<a href="/Profile/PublicProfile/' + u.id + '" class="pp-fl-row">' +
+                       '<div class="pp-fl-avatar-zone">' +
+                           '<div class="pp-fl-avatar">' + avatarInner + '</div>' +
+                           frame +
+                       '</div>' +
+                       '<div class="pp-fl-info">' +
+                           '<div class="pp-fl-name">' + ppEscapeHtml(u.userName) + '</div>' +
+                           bio +
+                       '</div>' +
+                       badge +
+                   '</a>';
+        }
+
+        // Modal içindeki rozetten takip et / bırak (satır navigasyonunu engelle)
+        function toggleFollowFromModal(evt, targetId, btn) {
+            evt.preventDefault();
+            evt.stopPropagation();
+
+            btn.disabled = true;
+            $.post('/Profile/ToggleFollow', { targetId: targetId }, function (res) {
+                btn.disabled = false;
+                if (!res.success) { alert(res.message); return; }
+
+                if (res.isFollowing) {
+                    btn.textContent = 'Takiptesin';
+                    btn.classList.add('following');
+                } else if (res.isPending) {
+                    btn.textContent = 'İstek Gönderildi';
+                    btn.classList.remove('following');
+                } else {
+                    btn.textContent = 'Takip Et';
+                    btn.classList.remove('following');
+                }
+            }).fail(function () {
+                btn.disabled = false;
+                alert('İşlem sırasında bir hata oluştu.');
+            });
+        }
 
         // ============================================================
         //  TAKİP ET / BIRAK (canlı sayaç güncellemeli)
@@ -1785,9 +2446,11 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="button" class="btn btn-danger" onclick="submitReport()">Şikayet Et</button>
+                    <button type="button" class="btn btn-da--+-nger" onclick="submitReport()">Şikayet Et</button>
                 </div>
             </div>
         </div>
     </div>
 }
+
+@await Html.PartialAsync("_TitlePopover")

@@ -1,0 +1,103 @@
+@using BookManagementApp.Models
+@using BookManagementApp.Areas.Admin.Models
+@model StoreViewModel
+@{
+    ViewData["Title"] = "Özel Eşyalar";
+    ViewData["HeroTitle"] = "Özel Eşyalar";
+    ViewData["HeroSubtitle"] = "Okuma serini koruyan yardımcı eşyalar";
+    ViewData["HeroIcon"] = "fa-solid fa-wand-magic-sparkles";
+    ViewData["HeroBack"] = true;
+
+    var user = ViewBag.User as User;
+}
+
+@await Html.PartialAsync("_StoreStyles")
+
+<div class="store-page">
+    @await Html.PartialAsync("_StoreHero")
+    @await Html.PartialAsync("_StoreNotify")
+
+    <div class="store-container">
+        <div class="store-grid">
+            <div class="frame-card" style="border-color: #00bcd4; box-shadow: 0 0 15px rgba(0, 188, 212, 0.2);">
+                <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 150px; background: linear-gradient(135deg, #e0f7fa, #b2ebf2);">
+                    <span style="font-size: 5rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">🧊</span>
+                </div>
+                <div class="frame-info text-center" style="padding: 15px;">
+                    <div style="font-size: 1.2rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">Seri Dondurma</div>
+                    <div style="font-size: 0.85rem; color: #8b6f47; margin-bottom: 15px;">Giriş yapmayı unutsan bile serin (streak) bozulmasın!</div>
+
+                    <div style="font-size: 0.8rem; color: #6b5541; margin-bottom: 12px;">
+                        Elinde: <b id="specialsFreezeCount">@(user?.StreakFreezes ?? 0)</b> / 2
+                    </div>
+
+                    <div style="font-size: 1rem; font-weight: bold; color: #4a3f35; margin-bottom: 15px;">
+                        <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> 100 Taş
+                    </div>
+
+                    <form id="buyFreezeForm">
+                        @Html.AntiForgeryToken()
+                        <button type="button" onclick="buyStreakFreeze(this)" class="btn-buy btn-buy-available w-100" style="padding: 12px; font-size: 1rem; background: linear-gradient(135deg, #00acc1, #00838f);">
+                            <i class="fa-solid fa-cart-shopping"></i> Satın Al
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function buyStreakFreeze(btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
+
+        var token = document.querySelector('#buyFreezeForm input[name="__RequestVerificationToken"]').value;
+
+        fetch('/Store/BuyStreakFreeze', {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                // Bakiyeyi güncelle
+                document.querySelectorAll('.navbar .fa-gem').forEach(function(gemIcon) {
+                    var textNode = gemIcon.nextSibling;
+                    if(textNode && textNode.nodeType === 3 && textNode.nodeValue.trim().length > 0) {
+                        var valStr = textNode.nodeValue.replace('+', '').trim();
+                        if(!isNaN(parseInt(valStr))) {
+                            textNode.nodeValue = ' ' + data.newBalance;
+                        }
+                    }
+                });
+
+                // Header'daki dondurma sayısını güncelle (Varsa)
+                var freezeCountEl = document.getElementById('headerFreezeCount');
+                if(freezeCountEl) {
+                    freezeCountEl.innerText = data.newFreezes + '/2';
+                }
+
+                // Karttaki sayacı da güncelle
+                var cardCountEl = document.getElementById('specialsFreezeCount');
+                if(cardCountEl) {
+                    cardCountEl.innerText = data.newFreezes;
+                }
+
+                storeNotify('success', data.message, 'Satın alındı');
+            } else {
+                storeNotify('error', data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            storeNotify('error', 'Satın alma işlemi sırasında bir hata oluştu. Lütfen tekrar dene.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> Satın Al';
+        });
+    }
+</script>

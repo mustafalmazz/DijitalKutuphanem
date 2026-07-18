@@ -1,0 +1,214 @@
+﻿@*
+    BAŞARIM ETİKETİ DETAY BALONCUĞU
+    -------------------------------
+    Profillerde / topluluk listesinde takılı başarım etiketine tıklanınca
+    başarımın detayını gösteren küçük yüzen kutu.
+
+    Kullanımı: etiket elemanına şu attribute'ları ekle:
+        class="... js-title-badge"
+        data-title-name="..."      (zorunlu)
+        data-title-desc="..."
+        data-title-icon="fa-medal"
+        data-title-color="#cd7f32"
+        data-title-tier="Altın"
+*@
+
+<style>
+    .title-pop {
+        position: absolute;
+        z-index: 4000;
+        max-width: min(280px, calc(100vw - 24px));
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: #fffdf9;
+        border: 1px solid rgba(139, 111, 71, 0.22);
+        box-shadow: 0 18px 44px rgba(74, 63, 53, 0.28);
+        font-family: 'Georgia', serif;
+        opacity: 0;
+        transform: translateY(6px) scale(0.97);
+        transition: opacity 0.16s ease, transform 0.16s ease;
+        pointer-events: none;
+    }
+
+        .title-pop.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+    .title-pop-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 9px;
+    }
+
+    .title-pop-icon {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg,
+            color-mix(in srgb, var(--pop-color, #8b6f47) 80%, #fff) 0%,
+            var(--pop-color, #8b6f47) 50%,
+            color-mix(in srgb, var(--pop-color, #8b6f47) 60%, #1d1712) 100%);
+        color: #fff;
+        font-size: 1rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 5px 14px color-mix(in srgb, var(--pop-color, #8b6f47) 45%, transparent);
+    }
+
+    .title-pop-name {
+        margin: 0;
+        color: #4a3f35;
+        font-size: 0.98rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    .title-pop-tier {
+        display: block;
+        margin-top: 2px;
+        color: var(--pop-color, #8b6f47);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+    }
+
+    .title-pop-desc {
+        margin: 0;
+        color: #8b6f47;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        font-style: italic;
+    }
+
+    /* Etiketin tıklanabilir olduğu belli olsun */
+    .js-title-badge {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    @@media (max-width: 480px) {
+        .title-pop {
+            padding: 12px 14px;
+        }
+
+        .title-pop-desc {
+            font-size: 0.78rem;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        var pop = null;
+
+        function build() {
+            if (pop) return pop;
+            pop = document.createElement('div');
+            pop.className = 'title-pop';
+            pop.setAttribute('role', 'dialog');
+            document.body.appendChild(pop);
+            return pop;
+        }
+
+        function hide() {
+            if (pop) pop.classList.remove('show');
+        }
+
+        function esc(v) {
+            return (v || '').replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function show(badge) {
+            var el = build();
+            var color = badge.getAttribute('data-title-color') || '#8b6f47';
+            var tier = badge.getAttribute('data-title-tier');
+            var desc = badge.getAttribute('data-title-desc');
+
+            el.style.setProperty('--pop-color', color);
+            el.innerHTML =
+                '<div class="title-pop-head">' +
+                    '<span class="title-pop-icon"><i class="fa-solid ' + esc(badge.getAttribute('data-title-icon') || 'fa-medal') + '"></i></span>' +
+                    '<div>' +
+                        '<h4 class="title-pop-name">' + esc(badge.getAttribute('data-title-name')) + '</h4>' +
+                        (tier ? '<span class="title-pop-tier">' + esc(tier) + '</span>' : '') +
+                    '</div>' +
+                '</div>' +
+                (desc ? '<p class="title-pop-desc">' + esc(desc) + '</p>' : '');
+
+            // Önce görünür yap ki ölçüleri okunabilsin
+            el.classList.add('show');
+
+            var r = badge.getBoundingClientRect();
+            var pw = el.offsetWidth;
+            var ph = el.offsetHeight;
+
+            // Yatayda etiketin ortasına hizala, ekran dışına taşarsa içeri çek
+            var left = r.left + (r.width / 2) - (pw / 2);
+            left = Math.max(10, Math.min(left, window.innerWidth - pw - 10));
+
+            // Normalde altta; alta sığmıyorsa üste al
+            var top = r.bottom + 10;
+            if (top + ph > window.innerHeight - 10 && r.top - ph - 10 > 10) {
+                top = r.top - ph - 10;
+            }
+
+            el.style.left = (left + window.scrollX) + 'px';
+            el.style.top = (top + window.scrollY) + 'px';
+        }
+
+        function openFor(badge) {
+            // Aynı etikete tekrar basmak kapatır
+            if (pop && pop.classList.contains('show') && pop.dataset.forId === badge.dataset.popId) {
+                hide();
+                return;
+            }
+            if (!badge.dataset.popId) badge.dataset.popId = 'tb' + Math.random().toString(36).slice(2);
+            show(badge);
+            pop.dataset.forId = badge.dataset.popId;
+        }
+
+        // YAKALAMA fazı: etiketi saran kartların kendi onclick'leri (örn. topluluk
+        // listesinde profile gitme) tetiklenmeden önce olayı durdurmamız gerekiyor.
+        document.addEventListener('click', function (e) {
+            var badge = e.target.closest('.js-title-badge');
+
+            if (badge) {
+                e.preventDefault();
+                e.stopPropagation();
+                openFor(badge);
+                return;
+            }
+
+            // Dışarı tıklayınca kapan (baloncuğun kendi içi hariç)
+            if (!e.target.closest('.title-pop')) hide();
+        }, true);
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                hide();
+                return;
+            }
+
+            // Klavye erişilebilirliği: etiket odaktayken Enter/Space
+            if (e.key === 'Enter' || e.key === ' ') {
+                var badge = e.target.closest && e.target.closest('.js-title-badge');
+                if (badge) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openFor(badge);
+                }
+            }
+        }, true);
+
+        window.addEventListener('scroll', hide, { passive: true });
+        window.addEventListener('resize', hide);
+    })();
+</script>

@@ -1,4 +1,4 @@
-﻿namespace BookManagementApp.Areas.Admin.Models
+namespace BookManagementApp.Areas.Admin.Models
 {
     public class UserProfileViewModel
     {
@@ -25,5 +25,6 @@
         public int ThisMonthStudyMinutes { get; set; }
         public int TotalPomodoroCompleted { get; set; }
         public User? User { get; set; }
+        public ICollection<BookManagementApp.Models.UserAchievement>? UserAchievements { get; set; }
     }
 }

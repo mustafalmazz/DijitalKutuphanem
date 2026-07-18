@@ -1,0 +1,74 @@
+@model ExcerptFeedPageViewModel
+@using BookManagementApp.Controllers
+
+@foreach (var excerpt in Model.Excerpts)
+{
+    var counts = Model.ReactionCounts.TryGetValue(excerpt.Id, out var c) ? c : new Dictionary<string, int>();
+    var myEmoji = Model.MyReactions.TryGetValue(excerpt.Id, out var m) ? m : null;
+    var remaining = excerpt.CreatedAt.AddHours(24) - DateTime.Now;
+    var remainingText = remaining.TotalHours >= 1
+        ? $"{(int)remaining.TotalHours} sa kaldı"
+        : $"{Math.Max(1, (int)remaining.TotalMinutes)} dk kaldı";
+
+    <div class="col">
+        <div class="excerpt-card">
+            <div class="excerpt-top">
+                <a class="excerpt-user text-decoration-none" href="/Profile/PublicProfile/@excerpt.UserId">
+                    <img src="@(string.IsNullOrEmpty(excerpt.User?.ProfileImageUrl) ? "https://cdn-icons-png.flaticon.com/512/3906/3906607.png" : excerpt.User.ProfileImageUrl)" alt="" />
+                    <span class="uname">@excerpt.User?.UserName</span>
+                </a>
+                <span class="time-badge" title="Akıştan kalkmasına kalan süre">
+                    <i class="fas fa-hourglass-half"></i>@remainingText
+                </span>
+            </div>
+
+            <div class="excerpt-img-wrap" title="Büyütmek için tıkla">
+                <img src="@excerpt.ImageUrl" alt="Kitap kesiti" loading="lazy" class="excerpt-img" />
+            </div>
+
+            <div class="excerpt-book">
+                <i class="fa-solid fa-book-open"></i>
+                <span class="btitle">@excerpt.BookTitle</span>
+                @if (!string.IsNullOrEmpty(excerpt.BookAuthor))
+                {
+                    <span class="bauthor">— @excerpt.BookAuthor</span>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(excerpt.Caption))
+            {
+                <div class="excerpt-caption">“@excerpt.Caption”</div>
+            }
+
+            <div class="excerpt-actions">
+                <div class="reaction-bar" data-excerpt-id="@excerpt.Id">
+                    @foreach (var emoji in ExcerptController.AllowedEmojis)
+                    {
+                        var count = counts.TryGetValue(emoji, out var n) ? n : 0;
+                        <button type="button"
+                                class="reaction-btn @(myEmoji == emoji ? "selected" : "")"
+                                data-emoji="@emoji">
+                            @emoji <span class="reaction-count">@(count > 0 ? count.ToString() : "")</span>
+                        </button>
+                    }
+                </div>
+                <div class="d-flex">
+                    @if (excerpt.UserId == Model.CurrentUserId || Model.IsAdmin)
+                    {
+                        <form asp-action="Delete" asp-route-id="@excerpt.Id" method="post" class="delete-form">
+                            <button type="submit" class="tool-btn danger" title="Sil">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    }
+                    @if (excerpt.UserId != Model.CurrentUserId)
+                    {
+                        <button type="button" class="tool-btn flag report-btn"
+                                data-excerpt-id="@excerpt.Id" title="Şikayet et">
+                            <i class="fas fa-flag"></i>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}

@@ -288,6 +288,33 @@
         font-style: italic;
     }
 
+    /* Profilde gösterilen başarım etiketi */
+    .own-title-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: linear-gradient(135deg,
+            color-mix(in srgb, var(--title-color, #8b6f47) 82%, #fff) 0%,
+            var(--title-color, #8b6f47) 45%,
+            color-mix(in srgb, var(--title-color, #8b6f47) 62%, #1d1712) 100%);
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+        padding: 5px 16px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--title-color, #8b6f47) 45%, transparent);
+    }
+
+    @@media (max-width: 768px) {
+        .own-title-badge {
+            font-size: 0.72rem;
+            padding: 4px 13px;
+        }
+    }
+
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -1028,6 +1055,29 @@
 
         <div class="profile-info">
             <h1>Merhaba, @Model.UserName</h1>
+
+            @{
+                // Profilde göstermeyi seçtiğin etiket
+                var ownTitle = Model.User?.UserAchievements?
+                    .FirstOrDefault(ua => ua.AchievementId == Model.User.ActiveTitleAchievementId)?.Achievement;
+            }
+            @if (ownTitle != null)
+            {
+                string[] ownTierNames = { "", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Efsane" };
+
+                <div class="own-title-badge js-title-badge"
+                     style="--title-color: @(ownTitle.ColorHex ?? "#8b6f47");"
+                     role="button" tabindex="0"
+                     data-title-name="@ownTitle.Name"
+                     data-title-desc="@ownTitle.Description"
+                     data-title-icon="@ownTitle.IconClass"
+                     data-title-color="@(ownTitle.ColorHex ?? "#8b6f47")"
+                     data-title-tier="@ownTierNames[Math.Clamp(ownTitle.Tier, 1, 6)]">
+                    <i class="fa-solid @ownTitle.IconClass"></i>
+                    <span>@ownTitle.Name</span>
+                </div>
+            }
+
             @if (Model.User != null && !string.IsNullOrEmpty(Model.User.Bio))
             {
                 <p style="color: #4a3f35; font-size: 1rem; margin-bottom: 10px; font-weight: 500;">
@@ -1040,8 +1090,8 @@
             </p>
         </div>
 
-        <a href="/Profile/Edit" class="btn-edit-profile">
-            <i class="fa-solid fa-user-pen"></i> Profili Düzenle
+        <a href="/Profile/PublicProfile/@Context.Session.GetInt32("UserId")" class="btn-edit-profile">
+            <i class="fa-solid fa-user"></i> Profile Git
         </a>
     </div>
 
@@ -1245,6 +1295,11 @@
             </div>
         </div>
     </div>
+
+    <!-- BAŞARIMLAR BÖLÜMÜ (PublicProfile ile birebir aynı partial) -->
+    <div class="mt-5 mb-4">
+        <partial name="_ProfileAchievements" model="Model.User" />
+    </div>
 </div>
 
 <div class="modal fade" id="avatarModal" tabindex="-1" aria-labelledby="avatarModalLabel" aria-hidden="true">
@@ -1269,16 +1324,31 @@
 
                 <div class="tab-content" id="avatarTabsContent">
                     <div class="tab-pane fade show active" id="select-pane" role="tabpanel">
-                        <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
-                        <div class="avatar-grid" style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
-                            @if (ViewBag.Avatars != null)
+                        @{
+                            int idxAvatarCount = 0;
+                            if (ViewBag.Avatars != null)
                             {
-                                foreach (var avatar in ViewBag.Avatars)
+                                foreach (var a in ViewBag.Avatars) { idxAvatarCount++; }
+                            }
+                        }
+                        @if (idxAvatarCount > 0)
+                        {
+                            <div class="text-center mb-2 text-muted small">Koleksiyonundaki avatarlardan birini seç:</div>
+                            <div class="avatar-grid" style="max-height: 250px; overflow-y: auto; padding-right: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; justify-items: center;">
+                                @foreach (var avatar in ViewBag.Avatars)
                                 {
                                     <img src="@avatar.ImageUrl" class="avatar-option" onclick="selectAvatar(this)" title="@avatar.Name">
                                 }
-                            }
-                        </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fa-solid fa-store" style="font-size: 2.5rem; color: #e8dcc8; margin-bottom: 10px;"></i>
+                                <p style="color: #8b6f47; font-size: 0.9rem;">Henüz avatarın yok!</p>
+                                <a asp-controller="Store" asp-action="Index" asp-area="" class="btn btn-sm" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 20px; padding: 8px 20px; font-weight: 600;">Mağazaya Git</a>
+                            </div>
+                        }
                     </div>
 
                     <div class="tab-pane fade" id="upload-pane" role="tabpanel">
@@ -1500,6 +1570,130 @@
         }
     });
 
+    // ============================================================
+    //  BAŞARIMLAR PARTIAL — akordeon, ilerleme animasyonu, manuel toplama
+    //  (PublicProfile'daki davranışın Index sürümü; jQuery yerine fetch)
+    // ============================================================
+    function toggleAchCat(headBtn) {
+        var cat = headBtn.closest('.pp-ach-cat');
+        if (!cat) return;
+        var collapsed = cat.classList.toggle('collapsed');
+        headBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+
+    var ppAchAnimated = false;
+    function ppAnimateAchievements() {
+        if (ppAchAnimated) return;
+        ppAchAnimated = true;
+
+        document.querySelectorAll('.pp-ach-fill').forEach(function (el) {
+            el.style.width = el.getAttribute('data-width') + '%';
+        });
+
+        var ring = document.getElementById('ppAchRing');
+        if (ring) {
+            var percent = parseFloat(ring.getAttribute('data-percent')) || 0;
+            var circumference = 2 * Math.PI * 52;
+            ring.style.strokeDashoffset = circumference * (1 - percent / 100);
+        }
+    }
+
+    // Basit toplama bildirimi (Index'te ppToast yok, dinamik oluşturulur)
+    function ppShowAchToast(message) {
+        var t = document.createElement('div');
+        t.textContent = message;
+        t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#6b5541,#4a3f35);color:#f5f0e8;padding:12px 26px;border-radius:50px;font-family:Georgia,serif;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:9999;';
+        document.body.appendChild(t);
+        setTimeout(function () { t.remove(); }, 2400);
+    }
+
+
+    // --- PROFİLDE GÖSTERİLECEK ETİKETİ SEÇ / KALDIR ---
+    function toggleProfileTitle(achId, btn) {
+        var wasEquipped = btn.classList.contains('equipped');
+        // Takılıysa tekrar tıklamak etiketi kaldırır (0 = kaldır)
+        var targetId = wasEquipped ? 0 : achId;
+
+        btn.disabled = true;
+        var original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Kaydediliyor...</span>';
+
+        fetch('/Profile/EquipTitle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'achievementId=' + targetId
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (!res.success) {
+                btn.innerHTML = original;
+                btn.disabled = false;
+                alert(res.message);
+                return;
+            }
+
+            // Aynı anda yalnızca tek etiket takılı olabilir: diğer düğmeleri sıfırla
+            document.querySelectorAll('.pp-ach-title-btn.equipped').forEach(function (other) {
+                other.classList.remove('equipped');
+                other.innerHTML = '<i class="fa-regular fa-id-badge"></i> <span>Profilde göster</span>';
+            });
+
+            if (targetId === 0) {
+                btn.innerHTML = '<i class="fa-regular fa-id-badge"></i> <span>Profilde göster</span>';
+            } else {
+                btn.classList.add('equipped');
+                btn.innerHTML = '<i class="fa-solid fa-id-badge"></i> <span>Profilde görünüyor</span>';
+            }
+
+            btn.disabled = false;
+        })
+        .catch(function (err) {
+            console.error(err);
+            btn.innerHTML = original;
+            btn.disabled = false;
+            alert('Etiket kaydedilirken bir hata oluştu.');
+        });
+    }
+
+    function claimAchievement(achId, btn) {
+        btn.disabled = true;
+        var original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Toplanıyor...';
+
+        fetch('/Profile/ClaimAchievement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ achievementId: achId })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                try { sessionStorage.setItem('ppAchToast', data.reward > 0 ? ('Ödül toplandı! +' + data.reward + ' 💎') : 'Başarım toplandı!'); } catch (e) { }
+                location.reload();
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = original;
+                alert(data.message || 'İşlem gerçekleştirilemedi.');
+            }
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.innerHTML = original;
+            alert('Bir hata oluştu, tekrar deneyin.');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Bölüm her zaman görünür olduğundan animasyonu hemen tetikle
+        setTimeout(ppAnimateAchievements, 200);
+
+        // Toplama sonrası yenilenince bildirim göster
+        try {
+            var msg = sessionStorage.getItem('ppAchToast');
+            if (msg) { sessionStorage.removeItem('ppAchToast'); ppShowAchToast(msg); }
+        } catch (e) { }
+    });
+
     // --- TAB GEÇİŞ İŞLEMİ ---
     function switchGoal(type) {
         const yearlySec = document.getElementById('yearlyGoalSection');
@@ -1682,3 +1876,5 @@
             });
     }
 </script>
+
+@await Html.PartialAsync("_TitlePopover")

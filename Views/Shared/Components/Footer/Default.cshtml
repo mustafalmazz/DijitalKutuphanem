@@ -371,14 +371,16 @@
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
         z-index: 1040;
-        backdrop-filter: blur(3px);
+        /* NOT: backdrop-filter: blur(...) kaldırıldı. Mobilde blur, panel kayarken
+           sürekli yeniden çizim (repaint) yaptırıp telefonu kastırıyordu.
+           Koyu yarı saydam katman aynı karartma etkisini ucuza verir. */
         opacity: 0;
         transition: opacity 0.3s ease;
     }
 
     .mobile-action-sheet {
         position: fixed;
-        bottom: -100%; /* Başlangıçta ekranın altında gizli */
+        bottom: 0;
         left: 0;
         right: 0;
         background: #f5f0e8;
@@ -386,12 +388,17 @@
         z-index: 1045; /* Overlay üstünde, bottom nav altında */
         padding: 20px 0 85px 0; /* Alt boşluk bottom nav için */
         box-shadow: 0 -5px 25px rgba(0,0,0,0.2);
-        transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* PERFORMANS: 'bottom' yerine GPU-dostu 'transform' ile kaydırılır.
+           'bottom' animasyonu her karede layout reflow tetikleyip kastırıyordu;
+           'transform' compositor'da çalışır ve akıcıdır. */
+        transform: translateY(100%); /* Başlangıçta ekranın altında gizli */
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform;
     }
 
         /* Menü açıkken devreye giren sınıflar */
         .mobile-action-sheet.show {
-            bottom: 0;
+            transform: translateY(0);
         }
 
     .mobile-action-sheet-overlay.show {
@@ -565,25 +572,40 @@
         <div class="action-sheet-handle"></div>
     </div>
     <ul class="action-sheet-list">
+        @{
+            var fUserId = Context.Session.GetInt32("UserId");
+            var fIsMember = fUserId != null;
+            var fIsSuperAdmin = ViewBag.IsSuperAdmin == true;
+        }
+
+        @* Ziyaretçiye üyeye özel bağlantılar gösterilmez *@
+        @if (fIsMember)
+        {
+            <li>
+                <a href="/Profile/PublicProfile/@fUserId" class="action-sheet-item">
+                  <i class="fa-solid fa-user"></i>  Profilim
+                </a>
+            </li>
+        <li>
+            <a href="/Profile/Index" class="action-sheet-item d-flex align-items-center">
+            <i class="fa-solid fa-chart-column"></i> Özetim
+                <span id="ozetimBadge" class="badge bg-danger rounded-pill ms-auto @(ViewBag.ClaimableAchievementCount != null && ViewBag.ClaimableAchievementCount > 0 ? "" : "d-none")" style="font-size: 0.8rem; margin-right: 0;" title="Toplanmayı bekleyen başarım">
+                    @(ViewBag.ClaimableAchievementCount ?? 0)
+                </span>
+            </a>
+        </li>
+        
+        <li>
+            <a href="/Excerpt/Index" class="action-sheet-item">
+                <i class="fa-solid fa-camera-retro"></i> Akış
+            </a>
+        </li>
         <li>
             <a href="/Profile/Community" class="action-sheet-item d-flex align-items-center">
                 <i class="fa-solid fa-users"></i> Topluluk
                 <span id="toplulukBadge" class="badge bg-danger rounded-pill ms-auto @(ViewBag.FollowRequestCount != null && ViewBag.FollowRequestCount > 0 ? "" : "d-none")" style="font-size: 0.8rem; margin-right: 0;">
                     @(ViewBag.FollowRequestCount ?? 0)
                 </span>
-            </a>
-        </li>
-        @if (Context.Session.GetInt32("UserId") != null)
-        {
-            <li>
-                <a href="/Profile/PublicProfile/@Context.Session.GetInt32("UserId")" class="action-sheet-item">
-                    <i class="fa-solid fa-id-badge"></i> Profilim
-                </a>
-            </li>
-        }
-        <li>
-            <a href="/Profile/Index" class="action-sheet-item">
-                <i class="fa-solid fa-user"></i> Özetim
             </a>
         </li>
         <li>
@@ -597,26 +619,49 @@
                 <span id="mobileUnreadBadge" class="badge bg-danger rounded-pill ms-auto d-none" style="font-size: 0.8rem; margin-right: 0;">0</span>
             </a>
         </li>
+            <li>
+                <a href="/Admin/Books/List" class="action-sheet-item">
+                    <i class="fa-solid fa-book-bookmark"></i> Rafları Yönet
+                </a>
+            </li>
+        
         <li>
-            <a href="/Admin/Books/List" class="action-sheet-item">
-                <i class="fa-solid fa-book"></i> Kitapları Yönet
+            <a href="/Profile/Settings" class="action-sheet-item">
+                <i class="fa-solid fa-user-gear"></i> Hesap Ayarları
             </a>
         </li>
-        <li>
-            <a href="/Admin/Category/List" class="action-sheet-item">
-                <i class="fa-solid fa-layer-group"></i> Kategorileri Yönet
-            </a>
-        </li>
-        <li>
-            <a href="/SuperAdmin/Dashboard/Index" class="action-sheet-item">
-                <i class="fa-solid fa-gear"></i> Sistemi Yönet
-            </a>
-        </li>
-        <li>
-            <a href="/Account/Logout" class="action-sheet-item danger">
-                <i class="fa-solid fa-right-from-bracket"></i> Çıkış Yap
-            </a>
-        </li>
+            @if (fIsSuperAdmin)
+            {
+                <li>
+                    <a href="/SuperAdmin/Dashboard/Index" class="action-sheet-item">
+                        <i class="fa-solid fa-gear"></i> Sistemi Yönet
+                    </a>
+                </li>
+            }
+            <li>
+                <a href="/Account/Logout" class="action-sheet-item danger">
+                    <i class="fa-solid fa-right-from-bracket"></i> Çıkış Yap
+                </a>
+            </li>
+        }
+        else
+        {
+            <li>
+                <a href="/Account/Login" class="action-sheet-item">
+                    <i class="fa-solid fa-right-to-bracket"></i> Giriş Yap
+                </a>
+            </li>
+            <li>
+                <a href="/Account/Register" class="action-sheet-item">
+                    <i class="fa-solid fa-user-plus"></i> Kayıt Ol
+                </a>
+            </li>
+            <li>
+                <a href="/Leaderboard/Index" class="action-sheet-item">
+                    <i class="fa-solid fa-trophy"></i> Sıralama
+                </a>
+            </li>
+        }
     </ul>
 </div>
 
@@ -645,18 +690,16 @@
     <button type="button" class="bottom-nav-item position-relative" id="nav-menu-btn">
         <i class="fa-solid fa-bars"></i>
         <span>Menü</span>
-        @if (ViewBag.FollowRequestCount != null && ViewBag.FollowRequestCount > 0)
-        {
-            <span id="mobileMenuDot" data-follow-requests="true" class="position-absolute top-0 start-50 translate-middle p-1 bg-danger border border-light rounded-circle" style="margin-top: 5px; margin-left: 10px;">
-                <span class="visually-hidden">Yeni bildirim</span>
-            </span>
+        @{
+            bool ftHasFollowReq = ViewBag.FollowRequestCount != null && ViewBag.FollowRequestCount > 0;
+            bool ftHasAch = ViewBag.ClaimableAchievementCount != null && ViewBag.ClaimableAchievementCount > 0;
         }
-        else
-        {
-            <span id="mobileMenuDot" data-follow-requests="false" class="position-absolute top-0 start-50 translate-middle p-1 bg-danger border border-light rounded-circle d-none" style="margin-top: 5px; margin-left: 10px;">
-                <span class="visually-hidden">Yeni bildirim</span>
-            </span>
-        }
+        <span id="mobileMenuDot"
+              data-follow-requests="@(ftHasFollowReq ? "true" : "false")"
+              data-achievements="@(ftHasAch ? "true" : "false")"
+              class="position-absolute top-0 start-50 translate-middle p-1 bg-danger border border-light rounded-circle @(ftHasFollowReq || ftHasAch ? "" : "d-none")" style="margin-top: 5px; margin-left: 10px;">
+            <span class="visually-hidden">Yeni bildirim</span>
+        </span>
     </button>
 </nav>
 
@@ -691,5 +734,6 @@
 
         // Boşluğa (overlay'e) tıklanınca menüyü kapat
         menuOverlay.addEventListener('click', toggleMenu);
+
     });
 </script>

@@ -64,23 +64,18 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 model.Description = model.Description.Substring(0, maxDescLength - 3) + "...";
             }
 
-            // Kategori Kontrolü
-            var firstCategory = _context.Categories.FirstOrDefault(c => c.UserId == userId);
-
-            if (firstCategory != null)
+            // Kategoriler global; kullanıcı adına kategori ÜRETİLMEZ.
+            // Google'dan gelen kitap için kategori seçilmemişse "Diğer"e düşer.
+            if (model.CategoryId == 0)
             {
-                model.CategoryId = firstCategory.Id;
-            }
-            else
-            {
-                var newCategory = new Category
+                var fallback = _context.Categories.FirstOrDefault(c => c.CategoryName == "Diğer")
+                               ?? _context.Categories.OrderBy(c => c.Id).FirstOrDefault();
+                if (fallback == null)
                 {
-                    CategoryName = "Google Kitaplar",
-                    UserId = userId.Value
-                };
-                _context.Categories.Add(newCategory);
-                await _context.SaveChangesAsync();
-                model.CategoryId = newCategory.Id;
+                    TempData["ErrorMessage"] = "Sistemde tanımlı kategori yok. Lütfen yöneticiyle iletişime geçin.";
+                    return RedirectToAction("List");
+                }
+                model.CategoryId = fallback.Id;
             }
 
             // Resim Kontrolü
@@ -101,7 +96,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
                 if (currentUser != null)
                 {
-                    currentUser.WisdomStones += 10;
+                    currentUser.EarnStones(10);
                     TempData["EarnedStones"] = 10;
                     await _context.SaveChangesAsync();
                 }
@@ -273,12 +268,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            ViewBag.Categories = new SelectList(
-                _context.Categories.Where(c => c.UserId == userId),
-                "Id",
-                "CategoryName",
-                book.CategoryId
-            );
+            ViewBag.Categories = _context.Categories.OrderBy(c => c.CategoryName).ToList();
 
             return View(book);
         }
@@ -295,7 +285,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Categories = new SelectList(_context.Categories.Where(c => c.UserId == userId), "Id", "CategoryName");
+                ViewBag.Categories = _context.Categories.OrderBy(c => c.CategoryName).ToList();
                 return View(model);
             }
 
@@ -325,7 +315,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 catch (Exception)
                 {
                     ModelState.AddModelError("Image", "Resim güncellenirken hata oluştu (Cloudinary).");
-                    ViewBag.Categories = new SelectList(_context.Categories.Where(c => c.UserId == userId), "Id", "CategoryName");
+                    ViewBag.Categories = _context.Categories.OrderBy(c => c.CategoryName).ToList();
                     return View(model);
                 }
             }
@@ -352,11 +342,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 return RedirectToAction("Login", "Account", new { area = "" });
             }
 
-            ViewBag.Categories = new SelectList(
-                _context.Categories.Where(c => c.UserId == userId),
-                "Id",
-                "CategoryName"
-            );
+            ViewBag.Categories = _context.Categories.OrderBy(c => c.CategoryName).ToList();
 
             return View();
         }
@@ -376,7 +362,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Categories = new SelectList(_context.Categories.Where(c => c.UserId == userId), "Id", "CategoryName");
+                ViewBag.Categories = _context.Categories.OrderBy(c => c.CategoryName).ToList();
                 return View(model);
             }
 
@@ -403,7 +389,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 catch (Exception)
                 {
                     ModelState.AddModelError("Image", "Resim yüklenirken bir hata oluştu (Cloudinary).");
-                    ViewBag.Categories = new SelectList(_context.Categories.Where(c => c.UserId == userId), "Id", "CategoryName");
+                    ViewBag.Categories = _context.Categories.OrderBy(c => c.CategoryName).ToList();
                     return View(model);
                 }
             }
@@ -425,7 +411,7 @@ namespace BookManagementApp.Areas.Admin.Controllers
                 var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
                 if (currentUser != null)
                 {
-                    currentUser.WisdomStones += 10;
+                    currentUser.EarnStones(10);
                     TempData["EarnedStones"] = 10;
                     await _context.SaveChangesAsync();
                 }

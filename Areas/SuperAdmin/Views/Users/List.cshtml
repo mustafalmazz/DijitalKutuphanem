@@ -279,6 +279,215 @@
             padding: 12px;
         }
     }
+
+    /* --- BİLGELİK TAŞI HÜCRESİ --- */
+    .stone-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+    }
+
+    .stone-balance {
+        color: #ffd782;
+        font-weight: 700;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+        .stone-balance i {
+            color: #00e5ff;
+        }
+
+    .stone-earned {
+        color: #777;
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
+    .stone-btn {
+        margin-top: 3px;
+        background: transparent;
+        border: 1px solid rgba(255, 215, 130, 0.35);
+        color: #ffd782;
+        border-radius: 6px;
+        padding: 3px 9px;
+        font-size: 0.72rem;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+        .stone-btn:hover {
+            background: rgba(255, 215, 130, 0.12);
+            border-color: #ffd782;
+        }
+
+    /* --- TAŞ MODALI --- */
+    .stone-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.72);
+        backdrop-filter: blur(4px);
+        z-index: 5000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+        .stone-modal-backdrop.show {
+            display: flex;
+        }
+
+    .stone-modal {
+        width: 100%;
+        max-width: 420px;
+        background: #17171c;
+        border: 1px solid rgba(255, 215, 130, 0.22);
+        border-radius: 14px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+    }
+
+    .stone-modal-head {
+        padding: 18px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .stone-modal-title {
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        margin: 0;
+    }
+
+    .stone-modal-sub {
+        color: #888;
+        font-size: 0.8rem;
+        margin: 4px 0 0;
+    }
+
+    .stone-modal-body {
+        padding: 20px;
+    }
+
+    .stone-modal-label {
+        display: block;
+        color: #aaa;
+        font-size: 0.78rem;
+        margin-bottom: 6px;
+    }
+
+    .stone-amount-input {
+        width: 100%;
+        background: #0f0f13;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: #fff;
+        padding: 11px 13px;
+        font-size: 1rem;
+    }
+
+        .stone-amount-input:focus {
+            outline: none;
+            border-color: #ffd782;
+        }
+
+    .stone-quick {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .stone-quick-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #bbb;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 0.76rem;
+        cursor: pointer;
+    }
+
+        .stone-quick-btn:hover {
+            background: rgba(255, 215, 130, 0.14);
+            color: #ffd782;
+        }
+
+    .stone-modal-foot {
+        display: flex;
+        gap: 10px;
+        padding: 0 20px 20px;
+    }
+
+    .stone-submit {
+        flex: 1;
+        border: none;
+        border-radius: 8px;
+        padding: 11px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        cursor: pointer;
+        color: #17171c;
+    }
+
+    .stone-submit-add {
+        background: linear-gradient(135deg, #6ee7a8, #34d399);
+    }
+
+    .stone-submit-sub {
+        background: linear-gradient(135deg, #ff9b9b, #f87171);
+    }
+
+    .stone-cancel {
+        width: 100%;
+        margin: 0 20px 18px;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        color: #999;
+        border-radius: 8px;
+        padding: 9px;
+        font-size: 0.82rem;
+        cursor: pointer;
+    }
+
+    .stone-note {
+        margin: 14px 0 0;
+        padding: 10px 12px;
+        background: rgba(255, 215, 130, 0.07);
+        border-left: 2px solid rgba(255, 215, 130, 0.4);
+        border-radius: 4px;
+        color: #9a9a9a;
+        font-size: 0.72rem;
+        line-height: 1.5;
+    }
+
+    /* --- İŞLEM SONUCU BİLDİRİMİ --- */
+    .stone-alert {
+        margin-bottom: 18px;
+        padding: 13px 16px;
+        border-radius: 9px;
+        font-size: 0.88rem;
+    }
+
+    .stone-alert-ok {
+        background: rgba(52, 211, 153, 0.1);
+        border-left: 3px solid #34d399;
+        color: #6ee7a8;
+    }
+
+    .stone-alert-err {
+        background: rgba(248, 113, 113, 0.1);
+        border-left: 3px solid #f87171;
+        color: #ff9b9b;
+    }
+
+    @@media (max-width: 640px) {
+        .stone-modal-foot {
+            flex-direction: column;
+        }
+    }
 </style>
 
 <div class="page-container">
@@ -304,6 +513,19 @@
         </div>
     </div>
 
+    @if (TempData["StoneMessage"] != null)
+    {
+        <div class="stone-alert stone-alert-ok">
+            <i class="bi bi-check-circle"></i> @TempData["StoneMessage"]
+        </div>
+    }
+    @if (TempData["StoneError"] != null)
+    {
+        <div class="stone-alert stone-alert-err">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["StoneError"]
+        </div>
+    }
+
     <div class="table-card">
         <div class="table-responsive">
             <table class="custom-table" id="usersTable">
@@ -313,6 +535,7 @@
                         <th>Email</th>
                         <th>Rol</th>
                         <th>İlişkili Veriler</th>
+                        <th>Bilgelik Taşı</th>
                         <th style="text-align:right;">İşlemler</th>
                     </tr>
                 </thead>
@@ -333,7 +556,6 @@
                             var roleDisplayName = (role == "SuperAdmin") ? "Süper Yönetici" : "Kullanıcı";
 
                             var bookCount = user.Books?.Count ?? 0;
-                            var categoryCount = user.Categories?.Count ?? 0;
 
                             <tr>
                                 <td>
@@ -351,8 +573,22 @@
                                 </td>
                                 <td>
                                     <span style="color:#aaa; font-size:0.85rem;">
-                                        @bookCount Kitap , @categoryCount Kategori
+                                        @bookCount Kitap
                                     </span>
+                                </td>
+                                <td>
+                                    <div class="stone-cell">
+                                        <span class="stone-balance" title="Harcanabilir bakiye">
+                                            <i class="bi bi-gem"></i> @user.WisdomStones.ToString("N0")
+                                        </span>
+                                        <span class="stone-earned" title="Bugüne kadar kazanılan toplam (başarımlar bunu kullanır)">
+                                            toplam kazanç: @user.TotalStonesEarned.ToString("N0")
+                                        </span>
+                                        <button type="button" class="stone-btn"
+                                                onclick="openStoneModal(@user.Id, '@userName', @user.WisdomStones, @user.TotalStonesEarned)">
+                                            <i class="bi bi-sliders"></i> Düzenle
+                                        </button>
+                                    </div>
                                 </td>
                                 <td style="text-align:right;">
                                     <a asp-action="Edit" asp-route-id="@user.Id" class="action-btn btn-edit" title="Düzenle">
@@ -372,7 +608,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="5" class="text-center p-4 text-muted">
+                            <td colspan="6" class="text-center p-4 text-muted">
                                 <i class="bi bi-inbox" style="font-size: 2rem; display:block; margin-bottom:10px;"></i>
                                 Sistemde kayıtlı kullanıcı bulunamadı.
                             </td>
@@ -394,5 +630,78 @@
             var text = row.textContent.toLowerCase();
             row.style.display = text.indexOf(value) > -1 ? '' : 'none';
         });
+    });
+</script>
+
+<!-- BİLGELİK TAŞI DÜZENLEME MODALI -->
+<div class="stone-modal-backdrop" id="stoneModal">
+    <div class="stone-modal">
+        <form method="post" asp-action="AdjustStones" asp-controller="Users" id="stoneForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="stoneUserId" />
+            <input type="hidden" name="operation" id="stoneOperation" />
+
+            <div class="stone-modal-head">
+                <p class="stone-modal-title" id="stoneModalTitle">Bilgelik Taşı</p>
+                <p class="stone-modal-sub" id="stoneModalSub"></p>
+            </div>
+
+            <div class="stone-modal-body">
+                <label class="stone-modal-label" for="stoneAmount">Miktar</label>
+                <input type="number" name="amount" id="stoneAmount" class="stone-amount-input"
+                       min="1" step="1" value="100" required />
+
+                <div class="stone-quick">
+                    <button type="button" class="stone-quick-btn" onclick="setStoneAmount(50)">50</button>
+                    <button type="button" class="stone-quick-btn" onclick="setStoneAmount(100)">100</button>
+                    <button type="button" class="stone-quick-btn" onclick="setStoneAmount(500)">500</button>
+                    <button type="button" class="stone-quick-btn" onclick="setStoneAmount(1000)">1.000</button>
+                    <button type="button" class="stone-quick-btn" onclick="setStoneAmount(5000)">5.000</button>
+                </div>
+
+                <p class="stone-note">
+                    <b>Ekleme</b> hem bakiyeyi hem toplam kazancı artırır, yani Bilgelik başarımlarını da ilerletir.<br />
+                    <b>Çıkarma</b> yalnızca bakiyeyi düşürür; kazanılmış ilerleme geri alınmaz. Bakiye eksiye düşmez.
+                </p>
+            </div>
+
+            <div class="stone-modal-foot">
+                <button type="submit" class="stone-submit stone-submit-add" onclick="document.getElementById('stoneOperation').value='add'">
+                    <i class="bi bi-plus-lg"></i> Ekle
+                </button>
+                <button type="submit" class="stone-submit stone-submit-sub" onclick="document.getElementById('stoneOperation').value='subtract'">
+                    <i class="bi bi-dash-lg"></i> Çıkar
+                </button>
+            </div>
+            <button type="button" class="stone-cancel" onclick="closeStoneModal()">Vazgeç</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openStoneModal(userId, userName, balance, earned) {
+        document.getElementById('stoneUserId').value = userId;
+        document.getElementById('stoneModalTitle').textContent = userName + ' - Bilgelik Taşı';
+        document.getElementById('stoneModalSub').textContent =
+            'Bakiye: ' + balance.toLocaleString('tr-TR') + '  |  Toplam kazanç: ' + earned.toLocaleString('tr-TR');
+        document.getElementById('stoneAmount').value = 100;
+        document.getElementById('stoneModal').classList.add('show');
+    }
+
+    function setStoneAmount(v) {
+        document.getElementById('stoneAmount').value = v;
+    }
+
+    function closeStoneModal() {
+        document.getElementById('stoneModal').classList.remove('show');
+    }
+
+    // Arka plana tiklayinca kapat
+    document.getElementById('stoneModal')?.addEventListener('click', function (e) {
+        if (e.target === this) closeStoneModal();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeStoneModal();
     });
 </script>

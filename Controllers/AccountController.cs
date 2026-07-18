@@ -437,7 +437,7 @@ namespace BookManagementApp.Controllers
             int reward = 10 + ((user.CurrentStreak - 1) * 5);
             if (reward > 50) reward = 50;
 
-            user.WisdomStones += reward;
+            user.EarnStones(reward);
             user.LastRewardClaimDate = DateTime.Now;
 
             _context.Users.Update(user);

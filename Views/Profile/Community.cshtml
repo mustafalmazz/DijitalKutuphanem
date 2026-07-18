@@ -1,4 +1,4 @@
-@model IEnumerable<BookManagementApp.Areas.Admin.Models.User>
+﻿@model IEnumerable<BookManagementApp.Areas.Admin.Models.User>
 @{
     ViewData["Title"] = "Topluluk";
     var acceptedFollowings = ViewBag.AcceptedFollowings as List<int> ?? new List<int>();
@@ -198,8 +198,8 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        background: rgba(139, 111, 71, 0.1);
-        color: #8b6f47;
+        background: color-mix(in srgb, var(--title-color, #8b6f47) 14%, transparent);
+        color: var(--title-color, #8b6f47);
         padding: 3px 10px;
         border-radius: 20px;
         font-size: 0.75rem;
@@ -368,15 +368,8 @@
         <div class="community-list">
             @foreach (var user in Model)
             {
-                int stones = user.WisdomStones;
-                string levelName;
-                string levelIcon;
-                if (stones < 250) { levelName = "Çırak Okur"; levelIcon = "fa-seedling"; }
-                else if (stones < 750) { levelName = "Meraklı Okur"; levelIcon = "fa-book-open"; }
-                else if (stones < 2000) { levelName = "Kitap Dostu"; levelIcon = "fa-feather-pointed"; }
-                else if (stones < 5000) { levelName = "Bilge Okur"; levelIcon = "fa-graduation-cap"; }
-                else if (stones < 12000) { levelName = "Üstat"; levelIcon = "fa-crown"; }
-                else { levelName = "Efsane"; levelIcon = "fa-star"; }
+                // Kullanıcının profilinde göstermeyi seçtiği etiket (yoksa hiçbir şey gösterilmez)
+                var listTitle = user.ActiveTitleAchievement;
 
                 bool isFollowing = acceptedFollowings.Contains(user.Id);
                 bool isRequested = requestedFollowings.Contains(user.Id);
@@ -400,9 +393,21 @@
 
                     <div class="user-info">
                         <div class="user-name">@user.UserName</div>
-                        <div class="user-level">
-                            <i class="fa-solid @levelIcon"></i> @levelName
-                        </div>
+                        @if (listTitle != null)
+                        {
+                            string[] tierNames = { "", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Efsane" };
+
+                            <div class="user-level js-title-badge"
+                                 style="--title-color: @(listTitle.ColorHex ?? "#8b6f47");"
+                                 role="button" tabindex="0"
+                                 data-title-name="@listTitle.Name"
+                                 data-title-desc="@listTitle.Description"
+                                 data-title-icon="@listTitle.IconClass"
+                                 data-title-color="@(listTitle.ColorHex ?? "#8b6f47")"
+                                 data-title-tier="@tierNames[Math.Clamp(listTitle.Tier, 1, 6)]">
+                                <i class="fa-solid @listTitle.IconClass"></i> @listTitle.Name
+                            </div>
+                        }
                         <span class="user-books" title="Kitap Sayısı"><i class="fa-solid fa-book" style="color:#cda45e;"></i> @(user.Books?.Count ?? 0)</span>
                     </div>
 
@@ -578,3 +583,5 @@
         }
     </script>
 }
+
+@await Html.PartialAsync("_TitlePopover")

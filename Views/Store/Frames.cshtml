@@ -1,0 +1,148 @@
+@using BookManagementApp.Models
+@using BookManagementApp.Areas.Admin.Models
+@model StoreViewModel
+@{
+    ViewData["Title"] = "Çerçeve Dükkanı";
+    ViewData["HeroTitle"] = "Çerçeve Dükkanı";
+    ViewData["HeroSubtitle"] = "Profil fotoğrafını süsleyen çerçeveler";
+    ViewData["HeroIcon"] = "fa-solid fa-crown";
+    ViewData["HeroBack"] = true;
+
+    var user = ViewBag.User as User;
+    var ownedFrameIds = ViewBag.OwnedFrameIds as List<int> ?? new List<int>();
+    int userBookCount = ViewBag.UserBookCount;
+}
+
+@await Html.PartialAsync("_StoreStyles")
+
+<div class="store-page">
+    @await Html.PartialAsync("_StoreHero")
+    @await Html.PartialAsync("_StoreNotify")
+
+    <div class="store-container">
+        @if (Model.Frames == null || !Model.Frames.Any())
+        {
+            <div class="text-center" style="padding: 50px; color: #8b6f47;">
+                <i class="fa-solid fa-crown" style="font-size: 4rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h4>Şu an hiç çerçeve bulunmuyor.</h4>
+            </div>
+        }
+        else
+        {
+            <div class="store-grid">
+                @foreach (var frame in Model.Frames)
+                {
+                    bool isOwned = ownedFrameIds.Contains(frame.Id);
+                    bool isEquipped = user?.ActiveFrameImageUrl == frame.ImageUrl;
+                    bool hasEnoughStones = user != null && user.WisdomStones >= frame.PriceInStones;
+                    bool meetsBookReq = frame.RequiredBookCount == 0 || userBookCount >= frame.RequiredBookCount;
+                    bool canBuy = !isOwned && hasEnoughStones && meetsBookReq;
+
+                    <div class="frame-card @(isEquipped ? "equipped" : isOwned ? "owned" : "")">
+
+                        @if (isEquipped)
+                        {
+                            <span class="owned-badge equipped-badge">✨ Aktif</span>
+                        }
+                        else if (isOwned)
+                        {
+                            <span class="owned-badge">✓ Sahip</span>
+                        }
+
+                        <div class="frame-preview">
+                            <div class="preview-avatar-wrapper" style="position: relative; border-radius: 15px;">
+                                <div style="width: 100%; height: 100%; border-radius: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                    @if (!string.IsNullOrEmpty(user?.ProfileImageUrl))
+                                    {
+                                        <img src="@user.ProfileImageUrl" alt="Profil" style="width: 100%; height: 100%; object-fit: cover;" />
+                                    }
+                                    else
+                                    {
+                                        @(user?.UserName?.Substring(0, 1).ToUpper())
+                                    }
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(frame.ImageUrl))
+                                {
+                                    <img src="@frame.ImageUrl" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;" />
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Bilgi Kısmı -->
+                        <div class="frame-info">
+                            <div class="frame-name">
+                                <span>@frame.IconEmoji</span>
+                                @frame.Name
+                            </div>
+                            <p class="frame-desc">@frame.Description</p>
+
+                            @if (frame.RequiredBookCount > 0)
+                            {
+                                if (meetsBookReq)
+                                {
+                                    <div class="frame-requirement frame-requirement-met">
+                                        ✓ @frame.RequiredBookCount kitap gereksinimi karşılandı
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="frame-requirement">
+                                        <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i>
+                                        En az @frame.RequiredBookCount kitap gerekli (@userBookCount / @frame.RequiredBookCount)
+                                    </div>
+                                }
+                            }
+
+                            <div class="frame-price">
+                                <i class="fa-solid fa-gem"></i>
+                                @frame.PriceInStones Bilgelik Taşı
+                            </div>
+
+                            @if (isOwned)
+                            {
+                                <form asp-action="EquipFrame" asp-controller="Store" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@frame.Id" />
+                                    <button type="submit" class="btn-buy @(isEquipped ? "btn-buy-equipped" : "btn-buy-equip")">
+                                        @if (isEquipped)
+                                        {
+                                            <text><i class="fa-solid fa-star"></i> Takılı - Çıkarmak İçin Tıkla</text>
+                                        }
+                                        else
+                                        {
+                                            <text><i class="fa-solid fa-wand-magic-sparkles"></i> Kullan</text>
+                                        }
+                                    </button>
+                                </form>
+                            }
+                            else if (canBuy)
+                            {
+                                <form asp-action="BuyFrame" asp-controller="Store" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@frame.Id" />
+                                    <button type="submit" class="btn-buy btn-buy-available">
+                                        <i class="fa-solid fa-cart-shopping"></i> Satın Al
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button class="btn-buy btn-buy-locked" disabled>
+                                    @if (!meetsBookReq)
+                                    {
+                                        <text><i class="fa-solid fa-lock"></i> Kitap Gereksinimi Karşılanmadı</text>
+                                    }
+                                    else
+                                    {
+                                        <text><i class="fa-solid fa-lock"></i> Yetersiz Bilgelik Taşı</text>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

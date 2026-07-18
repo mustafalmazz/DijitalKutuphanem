@@ -16,13 +16,17 @@ namespace BookManagementApp.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        /// <summary>
+        /// Mağazanın dört sayfası da (Index, Avatars, Frames, Packs, Specials) aynı veriyi
+        /// gösterdiği için yükleme tek yerde toplandı. Oturum yoksa null döner.
+        /// </summary>
+        private async Task<StoreViewModel?> LoadStoreAsync()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null) return RedirectToAction("Login", "Account");
+            if (userId == null) return null;
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user == null) return RedirectToAction("Login", "Account");
+            if (user == null) return null;
 
             var viewModel = new StoreViewModel
             {
@@ -61,6 +65,42 @@ namespace BookManagementApp.Controllers
             ViewBag.OwnedAvatarIds = ownedAvatarIds;
             ViewBag.UserBookCount = userBookCount;
 
+            return viewModel;
+        }
+
+        // Mağaza girişi: dört dükkana yönlendiren kartlar.
+        public async Task<IActionResult> Index()
+        {
+            var viewModel = await LoadStoreAsync();
+            if (viewModel == null) return RedirectToAction("Login", "Account");
+            return View(viewModel);
+        }
+
+        public async Task<IActionResult> Avatars()
+        {
+            var viewModel = await LoadStoreAsync();
+            if (viewModel == null) return RedirectToAction("Login", "Account");
+            return View(viewModel);
+        }
+
+        public async Task<IActionResult> Frames()
+        {
+            var viewModel = await LoadStoreAsync();
+            if (viewModel == null) return RedirectToAction("Login", "Account");
+            return View(viewModel);
+        }
+
+        public async Task<IActionResult> Packs()
+        {
+            var viewModel = await LoadStoreAsync();
+            if (viewModel == null) return RedirectToAction("Login", "Account");
+            return View(viewModel);
+        }
+
+        public async Task<IActionResult> Specials()
+        {
+            var viewModel = await LoadStoreAsync();
+            if (viewModel == null) return RedirectToAction("Login", "Account");
             return View(viewModel);
         }
 
@@ -128,13 +168,13 @@ namespace BookManagementApp.Controllers
             if (user == null) return RedirectToAction("Login", "Account");
 
             var frame = await _context.ProfileFrames.FindAsync(id);
-            if (frame == null) return RedirectToAction("Index");
+            if (frame == null) return RedirectToAction("Frames");
 
             bool alreadyOwned = await _context.UserFrames.AnyAsync(uf => uf.UserId == userId && uf.ProfileFrameId == id);
             if (alreadyOwned)
             {
                 TempData["ErrorMessage"] = "Bu çerçeveye zaten sahipsiniz!";
-                return RedirectToAction("Index");
+                return RedirectToAction("Frames");
             }
 
             if (frame.RequiredBookCount > 0)
@@ -143,14 +183,14 @@ namespace BookManagementApp.Controllers
                 if (userBookCount < frame.RequiredBookCount)
                 {
                     TempData["ErrorMessage"] = $"Bu çerçeve için en az {frame.RequiredBookCount} kitap eklemiş olmalısınız!";
-                    return RedirectToAction("Index");
+                    return RedirectToAction("Frames");
                 }
             }
 
             if (user.WisdomStones < frame.PriceInStones)
             {
                 TempData["ErrorMessage"] = "Yeterli Bilgelik Taşınız yok!";
-                return RedirectToAction("Index");
+                return RedirectToAction("Frames");
             }
 
             user.WisdomStones -= frame.PriceInStones;
@@ -158,7 +198,7 @@ namespace BookManagementApp.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"\"{frame.Name}\" başarıyla satın alındı!";
-            return RedirectToAction("Index");
+            return RedirectToAction("Frames");
         }
 
         [HttpPost]
@@ -172,13 +212,13 @@ namespace BookManagementApp.Controllers
             if (user == null) return RedirectToAction("Login", "Account");
 
             var avatar = await _context.ProfileAvatars.FindAsync(id);
-            if (avatar == null) return RedirectToAction("Index");
+            if (avatar == null) return RedirectToAction("Avatars");
 
             bool alreadyOwned = await _context.UserAvatars.AnyAsync(ua => ua.UserId == userId && ua.ProfileAvatarId == id);
             if (alreadyOwned)
             {
                 TempData["ErrorMessage"] = "Bu avatara zaten sahipsiniz!";
-                return RedirectToAction("Index");
+                return RedirectToAction("Avatars");
             }
 
             if (avatar.RequiredBookCount > 0)
@@ -187,14 +227,14 @@ namespace BookManagementApp.Controllers
                 if (userBookCount < avatar.RequiredBookCount)
                 {
                     TempData["ErrorMessage"] = $"Bu avatar için en az {avatar.RequiredBookCount} kitap eklemiş olmalısınız!";
-                    return RedirectToAction("Index");
+                    return RedirectToAction("Avatars");
                 }
             }
 
             if (user.WisdomStones < avatar.PriceInStones)
             {
                 TempData["ErrorMessage"] = "Yeterli Bilgelik Taşınız yok!";
-                return RedirectToAction("Index");
+                return RedirectToAction("Avatars");
             }
 
             user.WisdomStones -= avatar.PriceInStones;
@@ -202,8 +242,7 @@ namespace BookManagementApp.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"\"{avatar.Name}\" başarıyla satın alındı!";
-            TempData["ActiveTab"] = "avatars";
-            return RedirectToAction("Index");
+            return RedirectToAction("Avatars");
         }
 
         [HttpPost]
@@ -220,19 +259,18 @@ namespace BookManagementApp.Controllers
                 user.ActiveFrameImageUrl = null;
                 TempData["SuccessMessage"] = "Çerçeve kaldırıldı.";
                 await _context.SaveChangesAsync();
-                return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Index") : Redirect(returnUrl);
+                return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Frames") : Redirect(returnUrl);
             }
 
             var frame = await _context.ProfileFrames.FindAsync(id);
             bool owned = await _context.UserFrames.AnyAsync(uf => uf.UserId == userId && uf.ProfileFrameId == id);
-            if (frame == null || !owned) return RedirectToAction("Index");
+            if (frame == null || !owned) return RedirectToAction("Frames");
 
             if (user.ActiveFrameImageUrl == frame.ImageUrl) user.ActiveFrameImageUrl = null;
             else user.ActiveFrameImageUrl = frame.ImageUrl;
 
             await _context.SaveChangesAsync();
-            if(string.IsNullOrEmpty(returnUrl)) TempData["ActiveTab"] = "frames";
-            return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Index") : Redirect(returnUrl);
+            return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Frames") : Redirect(returnUrl);
         }
 
         [HttpPost]
@@ -246,14 +284,13 @@ namespace BookManagementApp.Controllers
 
             var avatar = await _context.ProfileAvatars.FindAsync(id);
             bool owned = await _context.UserAvatars.AnyAsync(ua => ua.UserId == userId && ua.ProfileAvatarId == id);
-            if (avatar == null || !owned) return RedirectToAction("Index");
+            if (avatar == null || !owned) return RedirectToAction("Avatars");
 
             user.ProfileImageUrl = avatar.ImageUrl; // Equip directly
             TempData["SuccessMessage"] = "Avatar değiştirildi!";
             await _context.SaveChangesAsync();
 
-            if(string.IsNullOrEmpty(returnUrl)) TempData["ActiveTab"] = "avatars";
-            return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Index") : Redirect(returnUrl);
+            return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Avatars") : Redirect(returnUrl);
         }
 
         [HttpPost]

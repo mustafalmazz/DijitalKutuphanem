@@ -1,5 +1,6 @@
 ﻿using BookManagementApp.Areas.Admin.Models;
 using BookManagementApp.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BookManagementApp.Areas.SuperAdmin.Controllers
 {
     [Area("SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     public class UsersController : Controller
     {
         private readonly MyDbContext _context;
@@ -53,7 +55,7 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
         }
         public IActionResult List()
         {
-            var userList = _context.Users.Include(u => u.Books).Include(c => c.Categories).ToList();
+            var userList = _context.Users.Include(u => u.Books).ToList();
 
 
             return View(userList);
@@ -111,8 +113,51 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
             return View(user);
         }
 
+        // --- BİLGELİK TAŞI EKLE / ÇIKAR ---
+        // operation: "add" | "subtract"
         [HttpPost]
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdjustStones(int id, int amount, string operation)
+        {
+            if (amount <= 0)
+            {
+                TempData["StoneError"] = "Miktar 0'dan büyük olmalı.";
+                return RedirectToAction(nameof(List));
+            }
+
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            if (operation == "add")
+            {
+                // EarnStones hem bakiyeyi hem toplam kazancı artırır; taş kazandırmanın
+                // tek doğru yolu budur (bkz. User.EarnStones).
+                user.EarnStones(amount);
+                TempData["StoneMessage"] = $"{user.UserName} kullanıcısına {amount} taş eklendi. Yeni bakiye: {user.WisdomStones}";
+            }
+            else if (operation == "subtract")
+            {
+                int actual = Math.Min(amount, user.WisdomStones); // bakiye eksiye düşmesin
+                user.WisdomStones -= actual;
+
+                // TotalStonesEarned bilerek düşürülmüyor: kazanılmış ilerleme geri alınmaz.
+                // Aksi halde kullanıcı hak ettiği Bilgelik başarımlarını kaybederdi.
+                TempData["StoneMessage"] = actual < amount
+                    ? $"{user.UserName} kullanıcısının bakiyesi {actual} taş düşürüldü (bakiyesi yetersizdi). Yeni bakiye: {user.WisdomStones}"
+                    : $"{user.UserName} kullanıcısından {actual} taş çıkarıldı. Yeni bakiye: {user.WisdomStones}";
+            }
+            else
+            {
+                TempData["StoneError"] = "Geçersiz işlem.";
+                return RedirectToAction(nameof(List));
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(List));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var existingUser = await _context.Users.FindAsync(id);
