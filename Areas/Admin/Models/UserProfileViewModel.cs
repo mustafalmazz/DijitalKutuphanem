@@ -26,5 +26,6 @@ namespace BookManagementApp.Areas.Admin.Models
         public int TotalPomodoroCompleted { get; set; }
         public User? User { get; set; }
         public ICollection<BookManagementApp.Models.UserAchievement>? UserAchievements { get; set; }
+        public int? ActiveBannerId { get; set; }
     }
 }

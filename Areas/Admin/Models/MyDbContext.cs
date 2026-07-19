@@ -20,6 +20,8 @@ namespace BookManagementApp.Models
         public DbSet<ProfileAvatar> ProfileAvatars { get; set; }
         public DbSet<StorePackage> StorePackages { get; set; }
         public DbSet<UserAvatar> UserAvatars { get; set; }
+        public DbSet<ProfileBanner> ProfileBanners { get; set; }
+        public DbSet<UserBanner> UserBanners { get; set; }
         public DbSet<Follow> Follows { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<BookLike> BookLikes { get; set; }

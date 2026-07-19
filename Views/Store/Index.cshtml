@@ -1,4 +1,4 @@
-@using BookManagementApp.Models
+﻿@using BookManagementApp.Models
 @using BookManagementApp.Areas.Admin.Models
 @model StoreViewModel
 @{
@@ -18,6 +18,11 @@
     var avatarPreviews = Model.Avatars?.Take(4).Select(a => a.ImageUrl).ToList() ?? new List<string>();
     var framePreviews = Model.Frames?.Where(f => !string.IsNullOrEmpty(f.ImageUrl)).Take(4).Select(f => f.ImageUrl).ToList() ?? new List<string>();
     var packPreviews = Model.PackAvatars?.Take(4).Select(a => a.ImageUrl).ToList() ?? new List<string>();
+
+    var ownedBannerIds = ViewBag.OwnedBannerIds as List<int> ?? new List<int>();
+    var bannerCount = Model.Banners?.Count() ?? 0;
+    var ownedBannerCount = Model.Banners?.Count(b => ownedBannerIds.Contains(b.Id)) ?? 0;
+    var bannerPreviews = Model.Banners?.Take(3).Select(b => b.ImageUrl).ToList() ?? new List<string>();
 }
 
 @await Html.PartialAsync("_StoreStyles")
@@ -245,6 +250,26 @@
                         @foreach (var img in packPreviews)
                         {
                             <img src="@img" alt="" class="shop-thumb" loading="lazy" />
+                        }
+                    </div>
+                    <span class="shop-go">Dükkana Git <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+            </a>
+
+            <a asp-controller="Store" asp-action="Banners" class="shop-card" style="--shop-accent: #7b5cd6; --shop-glow: rgba(123,92,214,0.22);">
+                <div class="shop-card-top">
+                    <span class="shop-icon"><i class="fa-solid fa-panorama"></i></span>
+                    <span class="shop-badge">@ownedBannerCount / @bannerCount sende</span>
+                </div>
+                <div class="shop-card-body">
+                    <h2 class="shop-name">Banner Dükkanı</h2>
+                    <p class="shop-desc">Profil kapağını kişiselleştir, animasyonlular dahil.</p>
+                </div>
+                <div class="shop-card-foot">
+                    <div class="shop-thumbs">
+                        @foreach (var img in bannerPreviews)
+                        {
+                            <img src="@img" alt="" class="shop-thumb" loading="lazy" style="object-fit: cover;" />
                         }
                     </div>
                     <span class="shop-go">Dükkana Git <i class="fa-solid fa-arrow-right"></i></span>

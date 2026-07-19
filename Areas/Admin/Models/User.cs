@@ -49,6 +49,32 @@ namespace BookManagementApp.Areas.Admin.Models
             TotalStonesEarned += amount;
         }
 
+        // ---- SERİ (STREAK) ----
+        // Seri MUTLAK sayaçtır, asla döngüye girmez: kullanıcının gördüğü sayı budur.
+        // Ödül ise haftalık döngüde ilerler; böylece uzun seride sınırsız büyümez.
+        // Uzun serinin karşılığı "İstikrar" başarımlarından tek seferlik olarak verilir.
+
+        /// <summary>
+        /// Serinin haftalık ödül döngüsündeki sırası (1-7).
+        /// 1.gün→1 ... 7.gün→7, 8.gün→1, 10.gün→3
+        /// </summary>
+        public int DayInStreakWeek => CurrentStreak <= 0 ? 1 : ((CurrentStreak - 1) % 7) + 1;
+
+        /// <summary>
+        /// Bugün toplanabilecek günlük giriş ödülü.
+        /// Ekran ve sunucu AYNI kaynağı kullanmalı; ayrı formüller yazılırsa
+        /// kullanıcıya gösterilen ile verilen tutar birbirinden ayrışır.
+        /// </summary>
+        public int DailyRewardStones => DailyRewardForWeekDay(DayInStreakWeek);
+
+        /// <summary>Haftanın belirli bir günü için ödül (modaldaki tabloyu da bu besler).</summary>
+        public static int DailyRewardForWeekDay(int weekDay)
+        {
+            if (weekDay < 1) weekDay = 1;
+            if (weekDay > 7) weekDay = 7;
+            return 10 + ((weekDay - 1) * 5);
+        }
+
         public DateTime? LastLoginDate { get; set; }
         public int CurrentStreak { get; set; } = 0;
         public int LongestStreak { get; set; } = 0;
@@ -63,6 +89,12 @@ namespace BookManagementApp.Areas.Admin.Models
         public int? ActiveTitleAchievementId { get; set; }
         [ForeignKey("ActiveTitleAchievementId")]
         public Achievement? ActiveTitleAchievement { get; set; }
+
+        // Profil üst şeridinde gösterilen banner. null ise varsayılan gradyan kullanılır.
+        // Yalnızca satın alınmış bir banner takılabilir (doğrulama StoreController.EquipBanner'da).
+        public int? ActiveBannerId { get; set; }
+        [ForeignKey("ActiveBannerId")]
+        public ProfileBanner? ActiveBanner { get; set; }
 
         [StringLength(160, ErrorMessage = "Biyografi en fazla 160 karakter olabilir.")]
         public string? Bio { get; set; }

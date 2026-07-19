@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
@@ -235,6 +235,12 @@
                 <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "StoreManagement" && ViewContext.RouteData.Values["action"]?.ToString() == "PackagesIndex" ? "active" : "")"
                    asp-area="SuperAdmin" asp-controller="StoreManagement" asp-action="PackagesIndex">
                     <i class="bi bi-box-seam"></i> Paketler
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "StoreManagement" && ViewContext.RouteData.Values["action"]?.ToString() == "BannersIndex" ? "active" : "")"
+                   asp-area="SuperAdmin" asp-controller="StoreManagement" asp-action="BannersIndex">
+                    <i class="fa-solid fa-panorama"></i> <span>Banner Yönetimi</span>
                 </a>
             </li>
         </ul>

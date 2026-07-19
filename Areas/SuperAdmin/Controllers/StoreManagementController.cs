@@ -8,7 +8,7 @@ using System.IO;
 namespace BookManagementApp.Areas.SuperAdmin.Controllers
 {
     [Area("SuperAdmin")]
-    [Authorize] // Eğer Role bazlı yetkilendirme varsa [Authorize(Roles = "SuperAdmin")] yapılabilir. Şu anlık varsayılan Authorize koyduk.
+    [Authorize(Roles = "SuperAdmin")]
     public class StoreManagementController : Controller
     {
         private readonly MyDbContext _context;
@@ -18,6 +18,104 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
         {
             _context = context;
             _env = env;
+        }
+
+        // --- BANNER YÖNETİMİ ---
+
+        public async Task<IActionResult> BannersIndex()
+        {
+            var banners = await _context.ProfileBanners.OrderBy(b => b.PriceInStones).ToListAsync();
+            return View(banners);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateBanner(ProfileBanner banner, IFormFile ImageFile)
+        {
+            if (ImageFile != null && ImageFile.Length > 0)
+            {
+                // GIF/WebP kabul edilir; tarayıcı animasyonu kendiliğinden oynatır
+                var allowed = new[] { ".png", ".jpg", ".jpeg", ".gif", ".webp" };
+                var ext = Path.GetExtension(ImageFile.FileName).ToLowerInvariant();
+                if (!allowed.Contains(ext))
+                {
+                    TempData["ErrorMessage"] = "Yalnızca PNG, JPG, GIF veya WebP yükleyebilirsiniz.";
+                    return RedirectToAction(nameof(BannersIndex));
+                }
+
+                if (ImageFile.Length > 8 * 1024 * 1024)
+                {
+                    TempData["ErrorMessage"] = "Dosya 8 MB'den büyük olamaz.";
+                    return RedirectToAction(nameof(BannersIndex));
+                }
+
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "images", "banners");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = Guid.NewGuid().ToString() + ext;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await ImageFile.CopyToAsync(fileStream);
+                }
+
+                banner.ImageUrl = "/images/banners/" + uniqueFileName;
+            }
+
+            ModelState.Remove("ImageUrl");
+            ModelState.Remove("ImageFile");
+
+            if (ModelState.IsValid && !string.IsNullOrEmpty(banner.ImageUrl))
+            {
+                _context.ProfileBanners.Add(banner);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Banner başarıyla eklendi.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Lütfen bir görsel seçin.";
+            }
+
+            return RedirectToAction(nameof(BannersIndex));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditBanner(ProfileBanner banner)
+        {
+            var existing = await _context.ProfileBanners.FindAsync(banner.Id);
+            if (existing == null) return NotFound();
+
+            existing.Name = banner.Name;
+            existing.Description = banner.Description;
+            existing.PriceInStones = banner.PriceInStones;
+            existing.RequiredBookCount = banner.RequiredBookCount;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Banner güncellendi.";
+            return RedirectToAction(nameof(BannersIndex));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteBanner(int id)
+        {
+            var banner = await _context.ProfileBanners.FindAsync(id);
+            if (banner == null) return NotFound();
+
+            // Takılı olduğu profillerde varsayılana dönülür; sahiplik kayıtları temizlenir
+            var wearers = await _context.Users.Where(u => u.ActiveBannerId == id).ToListAsync();
+            foreach (var w in wearers) w.ActiveBannerId = null;
+
+            var ownerships = await _context.UserBanners.Where(ub => ub.ProfileBannerId == id).ToListAsync();
+            _context.UserBanners.RemoveRange(ownerships);
+
+            _context.ProfileBanners.Remove(banner);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Banner silindi.";
+            return RedirectToAction(nameof(BannersIndex));
         }
 
         // --- ÇERÇEVE YÖNETİMİ ---

@@ -1,0 +1,270 @@
+@using BookManagementApp.Models
+@using BookManagementApp.Areas.Admin.Models
+@model StoreViewModel
+@{
+    ViewData["Title"] = "Banner Dükkanı";
+    ViewData["HeroTitle"] = "Banner Dükkanı";
+    ViewData["HeroSubtitle"] = "Profil kapağını kişiselleştir";
+    ViewData["HeroIcon"] = "fa-solid fa-panorama";
+    ViewData["HeroBack"] = true;
+
+    var user = ViewBag.User as User;
+    var ownedBannerIds = ViewBag.OwnedBannerIds as List<int> ?? new List<int>();
+    int userBookCount = ViewBag.UserBookCount;
+}
+
+@await Html.PartialAsync("_StoreStyles")
+
+<style>
+    /* Banner geniş formatlı olduğu için kare ürün ızgarası yerine geniş kartlar */
+    .banner-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+        gap: clamp(14px, 2vw, 24px);
+    }
+
+    .banner-card {
+        background: #fff;
+        border: 2px solid rgba(139, 111, 71, 0.08);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(107, 85, 65, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+        .banner-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 36px rgba(107, 85, 65, 0.2);
+            border-color: rgba(139, 111, 71, 0.2);
+        }
+
+        .banner-card.equipped { border-color: #ffd782; box-shadow: 0 8px 30px rgba(255, 215, 130, 0.25); }
+        .banner-card.owned { border-color: rgba(72, 187, 120, 0.4); }
+
+    /* Önizleme: gerçek profil kapağıyla aynı oran ve köşe yuvarlaması hissi */
+    .banner-preview {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 4 / 1;
+        background: linear-gradient(135deg, #3d3329, #8b6f47);
+        overflow: hidden;
+    }
+
+        .banner-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+    /* Önizlemede küçük sahte avatar: kullanıcı bannerin profde nasıl duracağını görsün */
+    .banner-preview-avatar {
+        position: absolute;
+        left: 50%;
+        bottom: -1px;
+        transform: translateX(-50%);
+        width: clamp(34px, 8%, 48px);
+        aspect-ratio: 1;
+        border-radius: 10px;
+        border: 2px solid #fff;
+        background: #f5f0e8;
+        overflow: hidden;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    }
+
+        .banner-preview-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .banner-animated-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #7fe6d0;
+        backdrop-filter: blur(4px);
+        border-radius: 50px;
+        padding: 3px 10px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+    }
+
+    .banner-info {
+        padding: 14px 16px 16px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .banner-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #4a3f35;
+        margin-bottom: 3px;
+    }
+
+    .banner-desc {
+        font-size: 0.8rem;
+        color: #8b6f47;
+        font-style: italic;
+        margin-bottom: 10px;
+        min-height: 20px;
+    }
+
+    .banner-foot {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .banner-price {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+        color: #4a3f35;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+        .banner-price i { color: #00ffff; text-shadow: 0 0 8px rgba(0, 255, 255, 0.5); }
+
+    .banner-foot .btn-buy { width: auto; padding: 9px 18px; }
+
+    @@media (max-width: 480px) {
+        .banner-foot { flex-direction: column; align-items: stretch; }
+        .banner-foot .btn-buy { width: 100%; }
+        .banner-price { justify-content: center; }
+    }
+</style>
+
+<div class="store-page">
+    @await Html.PartialAsync("_StoreHero")
+    @await Html.PartialAsync("_StoreNotify")
+
+    <div class="store-container">
+        @if (Model.Banners == null || !Model.Banners.Any())
+        {
+            <div class="text-center" style="padding: 50px; color: #8b6f47;">
+                <i class="fa-solid fa-panorama" style="font-size: 4rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h4>Şu an hiç banner bulunmuyor.</h4>
+            </div>
+        }
+        else
+        {
+            @if (user?.ActiveBannerId != null)
+            {
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <form asp-action="EquipBanner" asp-controller="Store" method="post" style="display: inline;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="0" />
+                        <button type="submit" class="btn-buy btn-buy-equipped" style="width: auto; padding: 9px 22px;">
+                            <i class="fa-solid fa-rotate-left"></i> Varsayılan Kapağa Dön
+                        </button>
+                    </form>
+                </div>
+            }
+
+            <div class="banner-grid">
+                @foreach (var banner in Model.Banners)
+                {
+                    bool isOwned = ownedBannerIds.Contains(banner.Id);
+                    bool isEquipped = user?.ActiveBannerId == banner.Id;
+                    bool hasEnoughStones = user != null && user.WisdomStones >= banner.PriceInStones;
+                    bool meetsBookReq = banner.RequiredBookCount == 0 || userBookCount >= banner.RequiredBookCount;
+                    bool canBuy = !isOwned && hasEnoughStones && meetsBookReq;
+
+                    <div class="banner-card @(isEquipped ? "equipped" : isOwned ? "owned" : "")">
+                        @if (isEquipped)
+                        {
+                            <span class="owned-badge equipped-badge">✨ Aktif</span>
+                        }
+                        else if (isOwned)
+                        {
+                            <span class="owned-badge">✓ Sahip</span>
+                        }
+
+                        <div class="banner-preview">
+                            <img src="@banner.ImageUrl" alt="@banner.Name" loading="lazy" />
+                            @if (banner.IsAnimated)
+                            {
+                                <span class="banner-animated-badge"><i class="fa-solid fa-film"></i> Animasyonlu</span>
+                            }
+                            <span class="banner-preview-avatar">
+                                @if (!string.IsNullOrEmpty(user?.ProfileImageUrl))
+                                {
+                                    <img src="@user.ProfileImageUrl" alt="" />
+                                }
+                            </span>
+                        </div>
+
+                        <div class="banner-info">
+                            <div class="banner-name">@banner.Name</div>
+                            <p class="banner-desc">@banner.Description</p>
+
+                            @if (banner.RequiredBookCount > 0 && !meetsBookReq)
+                            {
+                                <div class="frame-requirement">
+                                    <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i>
+                                    En az @banner.RequiredBookCount kitap gerekli (@userBookCount / @banner.RequiredBookCount)
+                                </div>
+                            }
+
+                            <div class="banner-foot">
+                                <span class="banner-price">
+                                    <i class="fa-solid fa-gem"></i> @banner.PriceInStones.ToString("N0") Taş
+                                </span>
+
+                                @if (isOwned)
+                                {
+                                    <form asp-action="EquipBanner" asp-controller="Store" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@banner.Id" />
+                                        <button type="submit" class="btn-buy @(isEquipped ? "btn-buy-equipped" : "btn-buy-equip")">
+                                            @if (isEquipped)
+                                            {
+                                                <text><i class="fa-solid fa-star"></i> Takılı</text>
+                                            }
+                                            else
+                                            {
+                                                <text><i class="fa-solid fa-wand-magic-sparkles"></i> Kullan</text>
+                                            }
+                                        </button>
+                                    </form>
+                                }
+                                else if (canBuy)
+                                {
+                                    <form asp-action="BuyBanner" asp-controller="Store" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@banner.Id" />
+                                        <button type="submit" class="btn-buy btn-buy-available">
+                                            <i class="fa-solid fa-cart-shopping"></i> Satın Al
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button class="btn-buy btn-buy-locked" disabled>
+                                        <i class="fa-solid fa-lock"></i>
+                                        @(meetsBookReq ? "Yetersiz Taş" : "Kilitli")
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

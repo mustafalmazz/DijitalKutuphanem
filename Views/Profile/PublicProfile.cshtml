@@ -1,4 +1,4 @@
-﻿@model BookManagementApp.Areas.Admin.Models.User
+@model BookManagementApp.Areas.Admin.Models.User
 @{
     ViewData["Title"] = Model.UserName + " - Profil";
 
@@ -94,12 +94,21 @@
                    ============================================================ */
     .pp-hero {
         background: linear-gradient(135deg, #3d3329 0%, #5c4936 35%, #8b6f47 75%, #a0785a 100%);
+        background-size: cover;
+        background-position: center;
         height: 190px;
         border-radius: 28px 28px 0 0;
         position: relative;
         overflow: hidden;
         box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
+
+        /* Banner takılıyken süsleme katmanları kapatılır, görsel temiz görünür */
+        .pp-hero.has-banner::before,
+        .pp-hero.has-banner::after,
+        .pp-hero.has-banner .pp-hero-dust {
+            display: none;
+        }
 
         /* Altın ışık huzmeleri */
         .pp-hero::before {
@@ -1183,7 +1192,13 @@
     <div class="pp-wrap">
 
         <!-- ============ HERO (KAPAK) ============ -->
-        <div class="pp-hero pp-anim-1">
+        @{
+            // Takılı banner varsa kapak onunla değişir; ışık huzmesi/toz animasyonları
+            // görseli gölgelememek için yalnızca varsayılan gradyanda gösterilir.
+            var heroBannerUrl = Model.ActiveBanner?.ImageUrl;
+        }
+        <div class="pp-hero pp-anim-1 @(heroBannerUrl != null ? "has-banner" : "")"
+             style="@(heroBannerUrl != null ? $"background-image: url('{heroBannerUrl}');" : "")">
             <span class="pp-hero-dust"></span>
             <span class="pp-hero-dust"></span>
             <span class="pp-hero-dust"></span>
@@ -1223,6 +1238,30 @@
                 <!-- İSİM & ETİKET -->
                 <h1 class="pp-name">@Model.UserName</h1>
 
+                <!-- SAYACLAR (kompakt, tek satır) -->
+                @{
+                    // Takipçi/takip listesi yalnızca liste görülebilir olduğunda tıklanabilir olur
+                    bool ppCanSeeLists = ViewBag.LoggedInUserId == Model.Id || ViewBag.IsPrivate != true || ViewBag.IsFollowing == true;
+                }
+                <div class="pp-counters">
+                    <button type="button" class="pp-counter pp-counter-btn @(ppCanSeeLists ? "" : "pp-counter-locked")"
+                    @(ppCanSeeLists ? Html.Raw($"onclick=\"openFollowList('followers')\"") : Html.Raw("disabled"))>
+                        <span class="pp-counter-value pp-countup" id="followersCount" data-target="@ViewBag.FollowersCount">0</span>
+                        <span class="pp-counter-label">Takipçi</span>
+                    </button>
+                    <span class="pp-counter-sep"></span>
+                    <button type="button" class="pp-counter pp-counter-btn @(ppCanSeeLists ? "" : "pp-counter-locked")"
+                    @(ppCanSeeLists ? Html.Raw($"onclick=\"openFollowList('following')\"") : Html.Raw("disabled"))>
+                        <span class="pp-counter-value pp-countup" id="followingCount" data-target="@ViewBag.FollowingCount">0</span>
+                        <span class="pp-counter-label">Takip Edilen</span>
+                    </button>
+                    <span class="pp-counter-sep"></span>
+                    <span class="pp-counter">
+                        <span class="pp-counter-value pp-countup" data-target="@ViewBag.BookCount">0</span>
+                        <span class="pp-counter-label">Kitap</span>
+                    </span>
+                </div>
+
                 @if (activeTitle != null)
                 {
                     string[] tierNames = { "", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Efsane" };
@@ -1248,29 +1287,7 @@
                     </p>
                 }
 
-                <!-- SAYACLAR (kompakt, tek satır) -->
-                @{
-                    // Takipçi/takip listesi yalnızca liste görülebilir olduğunda tıklanabilir olur
-                    bool ppCanSeeLists = ViewBag.LoggedInUserId == Model.Id || ViewBag.IsPrivate != true || ViewBag.IsFollowing == true;
-                }
-                <div class="pp-counters">
-                    <button type="button" class="pp-counter pp-counter-btn @(ppCanSeeLists ? "" : "pp-counter-locked")"
-                            @(ppCanSeeLists ? Html.Raw($"onclick=\"openFollowList('followers')\"") : Html.Raw("disabled"))>
-                        <span class="pp-counter-value pp-countup" id="followersCount" data-target="@ViewBag.FollowersCount">0</span>
-                        <span class="pp-counter-label">Takipçi</span>
-                    </button>
-                    <span class="pp-counter-sep"></span>
-                    <button type="button" class="pp-counter pp-counter-btn @(ppCanSeeLists ? "" : "pp-counter-locked")"
-                            @(ppCanSeeLists ? Html.Raw($"onclick=\"openFollowList('following')\"") : Html.Raw("disabled"))>
-                        <span class="pp-counter-value pp-countup" id="followingCount" data-target="@ViewBag.FollowingCount">0</span>
-                        <span class="pp-counter-label">Takip Edilen</span>
-                    </button>
-                    <span class="pp-counter-sep"></span>
-                    <span class="pp-counter">
-                        <span class="pp-counter-value pp-countup" data-target="@ViewBag.BookCount">0</span>
-                        <span class="pp-counter-label">Kitap</span>
-                    </span>
-                </div>
+               
 
                 <!-- AKSİYONLAR -->
                 <div class="pp-actions">
@@ -1782,13 +1799,16 @@
                     </style>
                     <ul class="nav nav-tabs mb-3" id="avatarTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="select-tab" data-bs-toggle="tab" data-bs-target="#select-pane" type="button" role="tab">Hazır Avatar</button>
+                            <button class="nav-link active" id="select-tab" data-bs-toggle="tab" data-bs-target="#select-pane" type="button" role="tab">Avatarlar</button>
                         </li>
                         <li class="nav-item" role="presentation" style="display: none;">
                             <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button" role="tab">Fotoğraf Yükle</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="frame-tab" data-bs-toggle="tab" data-bs-target="#frame-pane" type="button" role="tab"><i class="fa-solid fa-gem" style="color: #00ffff; text-shadow: 0 0 5px rgba(0,255,255,0.4);"></i> Çerçeveler</button>
+                            <button class="nav-link" id="frame-tab" data-bs-toggle="tab" data-bs-target="#frame-pane" type="button" role="tab">Çerçeveler</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="banner-tab" data-bs-toggle="tab" data-bs-target="#banner-pane" type="button" role="tab"> Arka Planlar</button>
                         </li>
                     </ul>
 
@@ -1900,6 +1920,45 @@
                                 </div>
                             }
                         </div>
+
+                        <div class="tab-pane fade" id="banner-pane" role="tabpanel">
+                            @{
+                                var ppOwnedBanners = ViewBag.Banners as List<BookManagementApp.Models.ProfileBanner>;
+                                var ppActiveBannerId = Model.ActiveBannerId;
+                            }
+                            @if (ppOwnedBanners != null && ppOwnedBanners.Any())
+                            {
+                                <div class="text-center mb-2 text-muted small">Sahip olduğun arka planlardan birini seç:</div>
+                                <div class="text-center mt-2 mb-3">
+                                    <button type="button" class="btn btn-sm" onclick="equipBannerPP(0, this)" style="background: #e8dcc8; color: #6b5541; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">Arka Planı Kaldır</button>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 10px 0; max-height: 250px; overflow-y: auto; overflow-x: hidden;">
+                                    @foreach (var ppBanner in ppOwnedBanners)
+                                    {
+                                        bool ppIsEquipped = ppActiveBannerId == ppBanner.Id;
+                                        <div style="border: 2px solid @(ppIsEquipped ? "#a0785a" : "#e8dcc8"); border-radius: 8px; overflow: hidden;">
+                                            <img src="@ppBanner.ImageUrl" alt="@ppBanner.Name" style="width: 100%; height: 60px; object-fit: cover; display: block;" />
+                                            <div style="padding: 5px; background: #fff8f0; text-align: center;">
+                                                <div style="font-weight: 600; font-size: 0.78rem; color: #4a3f35;">@ppBanner.Name</div>
+                                                <button type="button" class="btn btn-sm mt-1"
+                                                        style="width: 100%; border-radius: 15px; font-size: 0.72rem; font-weight: 600; @(ppIsEquipped ? "background: #a0785a; color: white;" : "background: #e8dcc8; color: #6b5541;")"
+                                                        onclick="equipBannerPP(@ppBanner.Id, this)">
+                                                    @(ppIsEquipped ? "✓ Takılı" : "Kullan")
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4">
+                                    <i class="fa-solid fa-image" style="font-size: 2.5rem; color: #e8dcc8; margin-bottom: 10px;"></i>
+                                    <p style="color: #8b6f47; font-size: 0.9rem;">Henüz bir arka planın yok!</p>
+                                    <a asp-controller="Store" asp-action="Index" asp-area="" class="btn btn-sm" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; border-radius: 20px; padding: 8px 20px; font-weight: 600;">Mağazaya Git</a>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer" style="border-top: none;">
@@ -1928,6 +1987,37 @@
 
 @section Scripts {
     <script>
+        // ============================================================
+        //  BANNER TAKMA / KALDIRMA (PublicProfile)
+        // ============================================================
+        function equipBannerPP(id, btn) {
+            btn.disabled = true;
+            var original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            fetch('/Profile/EquipBannerProfile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ bannerId: id })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Bir hata oluştu.');
+                    btn.innerHTML = original;
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Bağlantı hatası.');
+                btn.innerHTML = original;
+                btn.disabled = false;
+            });
+        }
+
         // ============================================================
         //  SAYAÇ COUNT-UP ANİMASYONU
         // ============================================================
@@ -2454,3 +2544,7 @@
 }
 
 @await Html.PartialAsync("_TitlePopover")
+
+
+
+

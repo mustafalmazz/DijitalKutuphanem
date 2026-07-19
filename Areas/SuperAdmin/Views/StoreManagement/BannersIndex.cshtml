@@ -1,0 +1,194 @@
+@model IEnumerable<BookManagementApp.Models.ProfileBanner>
+@{
+    ViewData["Title"] = "Banner Yönetimi";
+    Layout = "~/Areas/SuperAdmin/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-warning mb-0"><i class="fa-solid fa-panorama"></i> Banner Yönetimi</h2>
+        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#createBannerModal">
+            <i class="fa-solid fa-plus"></i> Yeni Banner Yükle
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card shadow-sm border-0 bg-dark text-light">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-dark align-middle">
+                    <thead class="table-secondary text-dark">
+                        <tr>
+                            <th>Önizleme</th>
+                            <th>Ad &amp; Açıklama</th>
+                            <th>Tür</th>
+                            <th>Fiyat (Taş)</th>
+                            <th>Kitap Şartı</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    Henüz banner eklenmemiş. "Yeni Banner Yükle" ile başlayın.
+                                    <br /><small>Önerilen boyut: 1200×300 (4:1). GIF/WebP yüklerseniz animasyonlu olur.</small>
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var banner in Model)
+                        {
+                            <tr>
+                                <td>
+                                    @* Banner geniş formatlı: önizleme de mağazadaki gibi 4:1 gösterilir *@
+                                    <div class="border border-secondary rounded overflow-hidden" style="width: 180px; aspect-ratio: 4 / 1; background: #222;">
+                                        <img src="@banner.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>@(string.IsNullOrEmpty(banner.Name) ? "İsimsiz Banner" : banner.Name)</strong>
+                                    <br />
+                                    <small class="text-muted">@banner.Description</small>
+                                </td>
+                                <td>
+                                    @if (banner.IsAnimated)
+                                    {
+                                        <span class="badge bg-info text-dark"><i class="fa-solid fa-film"></i> Animasyonlu</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Sabit</span>
+                                    }
+                                </td>
+                                <td><i class="fa-solid fa-gem text-info"></i> @banner.PriceInStones</td>
+                                <td><i class="fa-solid fa-book text-info"></i> @banner.RequiredBookCount</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editBannerModal-@banner.Id">
+                                        <i class="fa-solid fa-pen"></i> Düzenle
+                                    </button>
+                                    <form asp-action="DeleteBanner" asp-route-id="@banner.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bu banner silinecek; takan kullanıcılar varsayılana döner ve sahiplikler silinir. Emin misiniz?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i> Sil</button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editBannerModal-@banner.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content bg-dark text-light border-warning">
+                                        <form asp-action="EditBanner" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="Id" value="@banner.Id" />
+                                            <div class="modal-header border-secondary">
+                                                <h5 class="modal-title text-warning">Banner Düzenle</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3 rounded overflow-hidden" style="aspect-ratio: 4 / 1; background: #222;">
+                                                    <img src="@banner.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Banner Adı</label>
+                                                    <input type="text" class="form-control bg-secondary text-light border-0" name="Name" value="@banner.Name" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Açıklama</label>
+                                                    <input type="text" class="form-control bg-secondary text-light border-0" name="Description" value="@banner.Description" />
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label">Fiyat (Taş)</label>
+                                                        <input type="number" min="0" class="form-control bg-secondary text-light border-0" name="PriceInStones" value="@banner.PriceInStones" required />
+                                                    </div>
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label">Kitap Şartı</label>
+                                                        <input type="number" min="0" class="form-control bg-secondary text-light border-0" name="RequiredBookCount" value="@banner.RequiredBookCount" required />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-secondary">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                                                <button type="submit" class="btn btn-warning">Kaydet</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createBannerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light border-warning">
+            <form asp-action="CreateBanner" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning"><i class="fa-solid fa-panorama"></i> Yeni Banner</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Görsel (PNG / JPG / GIF / WebP, en fazla 8 MB)</label>
+                        <input type="file" class="form-control bg-secondary text-light border-0" name="ImageFile"
+                               accept=".png,.jpg,.jpeg,.gif,.webp" required onchange="previewBanner(this)" />
+                        <small class="text-muted">Önerilen boyut: 1200×300 (4:1). GIF/WebP animasyonlu görüntülenir.</small>
+                    </div>
+                    <div class="mb-3 rounded overflow-hidden d-none" id="bannerPreviewWrap" style="aspect-ratio: 4 / 1; background: #222;">
+                        <img id="bannerPreviewImg" style="width: 100%; height: 100%; object-fit: cover;" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Banner Adı</label>
+                        <input type="text" class="form-control bg-secondary text-light border-0" name="Name" placeholder="Örn: Gün Batımı Kütüphanesi" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <input type="text" class="form-control bg-secondary text-light border-0" name="Description" placeholder="Mağazada görünecek kısa açıklama" />
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Fiyat (Taş)</label>
+                            <input type="number" min="0" class="form-control bg-secondary text-light border-0" name="PriceInStones" value="200" required />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Kitap Şartı</label>
+                            <input type="number" min="0" class="form-control bg-secondary text-light border-0" name="RequiredBookCount" value="0" required />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="btn btn-warning"><i class="fa-solid fa-upload"></i> Yükle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Yüklemeden önce 4:1 kutuda canlı önizleme (GIF ise animasyon burada da oynar)
+    function previewBanner(input) {
+        var wrap = document.getElementById('bannerPreviewWrap');
+        var img = document.getElementById('bannerPreviewImg');
+        if (input.files && input.files[0]) {
+            img.src = URL.createObjectURL(input.files[0]);
+            wrap.classList.remove('d-none');
+        }
+    }
+</script>

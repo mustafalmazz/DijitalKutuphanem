@@ -29,6 +29,22 @@ namespace BookManagementApp.ViewComponents
 
                 int requestCount = await _context.Follows.CountAsync(f => f.FollowingId == userId && !f.IsAccepted);
                 ViewBag.FollowRequestCount = requestCount;
+
+                if (viewModel.User != null)
+                {
+                    // Seri modalında gösterilecek "sıradaki hedef": mevcut seriden büyük
+                    // ilk İstikrar başarımı. Hepsi tamamlandıysa null kalır.
+                    var next = await _context.Achievements
+                        .Where(a => a.Category == "İstikrar" && a.TargetValue > viewModel.User.CurrentStreak)
+                        .OrderBy(a => a.TargetValue)
+                        .FirstOrDefaultAsync();
+
+                    viewModel.StreakModal = new BookManagementApp.Models.StreakModalModel
+                    {
+                        User = viewModel.User,
+                        NextMilestone = next
+                    };
+                }
             }
             return View(viewModel);
         }

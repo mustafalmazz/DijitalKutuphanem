@@ -45,6 +45,10 @@ namespace BookManagementApp.Controllers
                     .ToListAsync(),
                 Packages = await _context.StorePackages
                     .OrderBy(p => p.Id)
+                    .ToListAsync(),
+                Banners = await _context.ProfileBanners
+                    .OrderBy(b => b.PriceInStones)
+                    .ThenBy(b => b.RequiredBookCount)
                     .ToListAsync()
             };
 
@@ -58,11 +62,17 @@ namespace BookManagementApp.Controllers
                 .Select(ua => ua.ProfileAvatarId)
                 .ToListAsync();
 
+            var ownedBannerIds = await _context.UserBanners
+                .Where(ub => ub.UserId == userId)
+                .Select(ub => ub.ProfileBannerId)
+                .ToListAsync();
+
             var userBookCount = await _context.Books.CountAsync(b => b.UserId == userId);
 
             ViewBag.User = user;
             ViewBag.OwnedFrameIds = ownedFrameIds;
             ViewBag.OwnedAvatarIds = ownedAvatarIds;
+            ViewBag.OwnedBannerIds = ownedBannerIds;
             ViewBag.UserBookCount = userBookCount;
 
             return viewModel;
@@ -91,6 +101,13 @@ namespace BookManagementApp.Controllers
         }
 
         public async Task<IActionResult> Packs()
+        {
+            var viewModel = await LoadStoreAsync();
+            if (viewModel == null) return RedirectToAction("Login", "Account");
+            return View(viewModel);
+        }
+
+        public async Task<IActionResult> Banners()
         {
             var viewModel = await LoadStoreAsync();
             if (viewModel == null) return RedirectToAction("Login", "Account");
@@ -291,6 +308,78 @@ namespace BookManagementApp.Controllers
             await _context.SaveChangesAsync();
 
             return string.IsNullOrEmpty(returnUrl) ? RedirectToAction("Avatars") : Redirect(returnUrl);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BuyBanner(int id)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            var banner = await _context.ProfileBanners.FindAsync(id);
+            if (banner == null) return RedirectToAction("Banners");
+
+            bool alreadyOwned = await _context.UserBanners.AnyAsync(ub => ub.UserId == userId && ub.ProfileBannerId == id);
+            if (alreadyOwned)
+            {
+                TempData["ErrorMessage"] = "Bu bannera zaten sahipsiniz!";
+                return RedirectToAction("Banners");
+            }
+
+            if (banner.RequiredBookCount > 0)
+            {
+                var userBookCount = await _context.Books.CountAsync(b => b.UserId == userId);
+                if (userBookCount < banner.RequiredBookCount)
+                {
+                    TempData["ErrorMessage"] = $"Bu banner için en az {banner.RequiredBookCount} kitap eklemiş olmalısınız!";
+                    return RedirectToAction("Banners");
+                }
+            }
+
+            if (user.WisdomStones < banner.PriceInStones)
+            {
+                TempData["ErrorMessage"] = "Yeterli Bilgelik Taşınız yok!";
+                return RedirectToAction("Banners");
+            }
+
+            user.WisdomStones -= banner.PriceInStones;
+            _context.UserBanners.Add(new UserBanner { UserId = userId.Value, ProfileBannerId = id, PurchasedAt = DateTime.Now });
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"\"{banner.Name}\" başarıyla satın alındı!";
+            return RedirectToAction("Banners");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EquipBanner(int id)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account");
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            // id = 0: banneri kaldır, varsayılan gradyana dön
+            if (id == 0)
+            {
+                user.ActiveBannerId = null;
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Banner kaldırıldı.";
+                return RedirectToAction("Banners");
+            }
+
+            // Sunucu tarafı doğrulama: yalnızca sahip olunan banner takılabilir
+            bool owned = await _context.UserBanners.AnyAsync(ub => ub.UserId == userId && ub.ProfileBannerId == id);
+            if (!owned) return RedirectToAction("Banners");
+
+            // Takılıysa tekrar basmak çıkarır (çerçevelerle aynı davranış)
+            user.ActiveBannerId = user.ActiveBannerId == id ? null : id;
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Banners");
         }
 
         [HttpPost]

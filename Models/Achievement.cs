@@ -28,5 +28,31 @@ namespace BookManagementApp.Models
         public int TargetValue { get; set; } // Kazanmak için gereken hedef rakam
 
         public int RewardStones { get; set; } // Kazanınca verilecek Bilgelik Taşı
+
+        /// <summary>
+        /// Kategori adından HTML çapası üretir ("İstikrar" -> "ach-istikrar").
+        /// Başarımlar sayfasındaki bölüm id'si ile modaldaki bağlantı bunu ortak kullanır;
+        /// tek yerde durduğu için ikisi ayrışamaz.
+        /// </summary>
+        public static string CategoryAnchor(string? category)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return "ach";
+
+            var normalized = category
+                .Replace("İ", "i").Replace("I", "i").Replace("ı", "i")
+                .Replace("Ş", "s").Replace("ş", "s")
+                .Replace("Ğ", "g").Replace("ğ", "g")
+                .Replace("Ü", "u").Replace("ü", "u")
+                .Replace("Ö", "o").Replace("ö", "o")
+                .Replace("Ç", "c").Replace("ç", "c")
+                .ToLowerInvariant();
+
+            var sb = new System.Text.StringBuilder("ach-");
+            foreach (var ch in normalized)
+            {
+                if (char.IsLetterOrDigit(ch)) sb.Append(ch);
+            }
+            return sb.ToString();
+        }
     }
 }

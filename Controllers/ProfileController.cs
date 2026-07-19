@@ -143,7 +143,8 @@ namespace BookManagementApp.Controllers
                 ThisMonthStudyMinutes = monthStudyMins,
                 TotalPomodoroCompleted = completedPomodoros,
                 User = user,
-                UserAchievements = user.UserAchievements
+                UserAchievements = user.UserAchievements,
+                ActiveBannerId = user.ActiveBannerId
             };
             // --- ÇERÇEVE BİLGİLERİ ---
             var ownedFrames = _context.UserFrames
@@ -161,6 +162,15 @@ namespace BookManagementApp.Controllers
 
             ViewBag.Avatars = _context.ProfileAvatars
                 .Where(a => ownedAvatarIds.Contains(a.Id))
+                .ToList();
+
+            var ownedBannerIds = _context.UserBanners
+                .Where(ub => ub.UserId == userId)
+                .Select(ub => ub.ProfileBannerId)
+                .ToList();
+
+            ViewBag.Banners = _context.ProfileBanners
+                .Where(b => ownedBannerIds.Contains(b.Id))
                 .ToList();
 
             // Başarımlar partial'ı (_ProfileAchievements) için gerekli veriler
@@ -263,6 +273,7 @@ namespace BookManagementApp.Controllers
                 .Include(u => u.Books)
                 .Include(u => u.UserAchievements)
                 .ThenInclude(ua => ua.Achievement)
+                .Include(u => u.ActiveBanner)
                 .FirstOrDefaultAsync(u => u.Id == id);
                 
             if (user == null) return NotFound();
@@ -327,6 +338,15 @@ namespace BookManagementApp.Controllers
 
                 ViewBag.Avatars = _context.ProfileAvatars
                     .Where(a => ownedAvatarIds.Contains(a.Id))
+                    .ToList();
+
+                var ownedBannerIds = _context.UserBanners
+                    .Where(ub => ub.UserId == id)
+                    .Select(ub => ub.ProfileBannerId)
+                    .ToList();
+
+                ViewBag.Banners = _context.ProfileBanners
+                    .Where(b => ownedBannerIds.Contains(b.Id))
                     .ToList();
             }
 
@@ -798,6 +818,15 @@ namespace BookManagementApp.Controllers
                 .Where(a => ownedAvatarIds.Contains(a.Id))
                 .ToList();
 
+            var ownedBannerIds = _context.UserBanners
+                .Where(ub => ub.UserId == userId)
+                .Select(ub => ub.ProfileBannerId)
+                .ToList();
+
+            ViewBag.Banners = _context.ProfileBanners
+                .Where(b => ownedBannerIds.Contains(b.Id))
+                .ToList();
+
             return View(user);
         }
 
@@ -913,36 +942,56 @@ namespace BookManagementApp.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleBlock(int userId)
         {
-            var loggedInUserId = HttpContext.Session.GetInt32("UserId");
-            if (loggedInUserId == null) return Json(new { success = false, message = "Lütfen giriş yapın." });
+            var myId = HttpContext.Session.GetInt32("UserId");
+            if (myId == null) return Json(new { success = false, message = "Oturum kapal." });
 
-            var existingBlock = await _context.Blocks
-                .FirstOrDefaultAsync(b => b.BlockerId == loggedInUserId.Value && b.BlockedId == userId);
-
-            if (existingBlock != null)
+            var existing = await _context.Blocks.FirstOrDefaultAsync(b => b.BlockerId == myId.Value && b.BlockedId == userId);
+            if (existing != null)
             {
-                _context.Blocks.Remove(existingBlock);
+                _context.Blocks.Remove(existing);
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, isBlocked = false, message = "Engel kaldırıldı." });
+                return Json(new { success = true, isBlocked = false, message = "Engel kaldrld." });
             }
             else
             {
-                var block = new BookManagementApp.Models.Block
-                {
-                    BlockerId = loggedInUserId.Value,
-                    BlockedId = userId,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.Blocks.Add(block);
+                var b = new BookManagementApp.Models.Block { BlockerId = myId.Value, BlockedId = userId, CreatedAt = DateTime.Now };
+                _context.Blocks.Add(b);
 
-                var follow1 = await _context.Follows.FirstOrDefaultAsync(f => f.FollowerId == loggedInUserId.Value && f.FollowingId == userId);
-                var follow2 = await _context.Follows.FirstOrDefaultAsync(f => f.FollowerId == userId && f.FollowingId == loggedInUserId.Value);
-                if (follow1 != null) _context.Follows.Remove(follow1);
-                if (follow2 != null) _context.Follows.Remove(follow2);
+                // Eer takipleme varsa sil
+                var f1 = await _context.Follows.FirstOrDefaultAsync(f => f.FollowerId == myId.Value && f.FollowingId == userId);
+                if (f1 != null) _context.Follows.Remove(f1);
+                var f2 = await _context.Follows.FirstOrDefaultAsync(f => f.FollowerId == userId && f.FollowingId == myId.Value);
+                if (f2 != null) _context.Follows.Remove(f2);
 
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, isBlocked = true, message = "Kullanıcı engellendi." });
+                return Json(new { success = true, isBlocked = true, message = "Kullanc engellendi." });
             }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EquipBannerProfile(int bannerId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false, message = "Oturum kapal." });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return Json(new { success = false, message = "Kullanc bulunamad." });
+
+            // bannerId 0 ise kaldır
+            if (bannerId == 0)
+            {
+                user.ActiveBannerId = null;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "Banner kaldrld." });
+            }
+
+            // Sahiplik kontrolü
+            bool owned = await _context.UserBanners.AnyAsync(ub => ub.UserId == userId && ub.ProfileBannerId == bannerId);
+            if (!owned) return Json(new { success = false, message = "Bu arka plana sahip deilsiniz." });
+
+            user.ActiveBannerId = bannerId;
+            await _context.SaveChangesAsync();
+            return Json(new { success = true });
         }
 
         [HttpPost]

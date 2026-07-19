@@ -9,5 +9,6 @@ namespace BookManagementApp.Models
         public IEnumerable<ProfileAvatar> Avatars { get; set; }
         public IEnumerable<ProfileAvatar> PackAvatars { get; set; }
         public IEnumerable<StorePackage> Packages { get; set; }
+        public IEnumerable<ProfileBanner> Banners { get; set; } = new List<ProfileBanner>();
     }
 }

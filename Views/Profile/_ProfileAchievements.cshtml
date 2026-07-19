@@ -1,4 +1,4 @@
-@model BookManagementApp.Areas.Admin.Models.User
+﻿@model BookManagementApp.Areas.Admin.Models.User
 @*
     BAŞARIMLAR PARTIAL
     ------------------
@@ -158,6 +158,17 @@
         border-radius: 18px;
         box-shadow: 0 3px 12px rgba(107, 85, 65, 0.06);
         overflow: hidden;
+    }
+
+    /* Çapayla gelindiğinde ilgili seriyi kısa süre vurgular */
+    .pp-ach-cat-focus {
+        border-color: #ff9800 !important;
+        box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.22), 0 6px 20px rgba(255, 152, 0, 0.18) !important;
+        transition: box-shadow 0.4s ease, border-color 0.4s ease;
+    }
+
+    .pp-ach-cat {
+        scroll-margin-top: 90px;
     }
 
     .pp-ach-cat-head {
@@ -801,7 +812,9 @@
     int catClaimable = catItems.Count(ppClaimable); // Bu seride toplanmayı bekleyen ödül sayısı
     bool catCollapsed = true; // Tüm seriler varsayılan olarak KAPALI başlar
 
-    <div class="pp-ach-cat @(catCollapsed ? "collapsed" : "")">
+    <div class="pp-ach-cat @(catCollapsed ? "collapsed" : "")"
+         id="@BookManagementApp.Models.Achievement.CategoryAnchor(achGroup.Key)"
+         data-ach-cat="@achGroup.Key">
         <button type="button" class="pp-ach-cat-head" onclick="toggleAchCat(this)" aria-expanded="@(catCollapsed ? "false" : "true")">
             <div class="pp-ach-cat-icon">
                 <i class="fa-solid @catMeta.Item1"></i>
@@ -918,3 +931,36 @@
         </div>
     </div>
 }
+
+@* Modaldan "#ach-istikrar" gibi bir çapayla gelindiğinde ilgili seriyi açıp oraya kaydırır. *@
+<script>
+    (function () {
+        function openFromHash() {
+            var hash = window.location.hash;
+            if (!hash || hash.indexOf('#ach-') !== 0) return;
+
+            var target = document.getElementById(hash.substring(1));
+            if (!target) return;
+
+            target.classList.remove('collapsed');
+            var head = target.querySelector('.pp-ach-cat-head');
+            if (head) head.setAttribute('aria-expanded', 'true');
+
+            // Sayfa yerleşimi otursun diye bir tık bekle
+            setTimeout(function () {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                target.classList.add('pp-ach-cat-focus');
+                setTimeout(function () { target.classList.remove('pp-ach-cat-focus'); }, 2200);
+            }, 220);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', openFromHash);
+        } else {
+            openFromHash();
+        }
+
+        // Zaten açık sayfada çapa değişirse de çalışsın
+        window.addEventListener('hashchange', openFromHash);
+    })();
+</script>

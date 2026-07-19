@@ -418,6 +418,7 @@ namespace BookManagementApp.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ClaimDailyReward()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -433,9 +434,10 @@ namespace BookManagementApp.Controllers
                 return Json(new { success = false, message = "Bugünün ödülünü zaten topladınız." });
             }
 
-            // Ödülü hesapla
-            int reward = 10 + ((user.CurrentStreak - 1) * 5);
-            if (reward > 50) reward = 50;
+            // Ödül, kullanıcıya gösterilenle aynı kaynaktan gelir (bkz. User.DailyRewardStones).
+            // Mutlak seriye bağlı DEĞİL: haftalık döngüde ilerler, böylece uzun seride
+            // günlük gelir sınırsız büyümez. Uzun serinin karşılığı İstikrar başarımlarıdır.
+            int reward = user.DailyRewardStones;
 
             user.EarnStones(reward);
             user.LastRewardClaimDate = DateTime.Now;

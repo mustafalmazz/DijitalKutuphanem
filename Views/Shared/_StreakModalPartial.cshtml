@@ -1,9 +1,12 @@
 ﻿@using BookManagementApp.Areas.Admin.Models
-@model User
+@using BookManagementApp.Models
+@model StreakModalModel
 @{
-    bool isClaimedToday = Model.LastRewardClaimDate.HasValue && Model.LastRewardClaimDate.Value.Date == DateTime.Today;
-    int currentDayInWeek = (Model.CurrentStreak % 7 == 0 && Model.CurrentStreak > 0) ? 7 : (Model.CurrentStreak % 7);
-    if (Model.CurrentStreak == 0) currentDayInWeek = 1; // Güvenlik kontrolü
+    var user = Model.User;
+    bool isClaimedToday = user.LastRewardClaimDate.HasValue && user.LastRewardClaimDate.Value.Date == DateTime.Today;
+    // Hesap User modelinde; sunucu ödülü de aynı yerden okur, böylece ayrışamazlar.
+    int currentDayInWeek = user.DayInStreakWeek;
+    int weekNumber = user.CurrentStreak <= 0 ? 1 : ((user.CurrentStreak - 1) / 7) + 1;
 }
 
 <style>
@@ -38,6 +41,117 @@
     }
     .streak-row.locked .day-text { color: #6c757d; }
     
+    /* Seri Özeti */
+    .streak-summary {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 14px 12px;
+        margin-bottom: 18px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(255,152,0,0.10), rgba(255,87,34,0.07));
+        border: 1px solid rgba(255,152,0,0.28);
+    }
+
+    .streak-summary-main {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        color: #e65100;
+    }
+
+    .streak-summary-main i {
+        font-size: 1.15rem;
+        color: #ff5722;
+    }
+
+    .streak-summary-days {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .streak-summary-label {
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .streak-summary-sub {
+        font-size: 0.78rem;
+        color: #8b6f47;
+    }
+
+    @@media (max-width: 480px) {
+        .streak-summary-days { font-size: 1.6rem; }
+        .streak-summary-label { font-size: 0.82rem; }
+        .streak-summary-sub { font-size: 0.72rem; }
+    }
+
+    /* Sıradaki kilometre taşı */
+    .streak-next {
+        display: block;
+        margin-top: 16px;
+        padding: 11px 14px;
+        border-radius: 12px;
+        background: rgba(139, 111, 71, 0.06);
+        border: 1px solid rgba(139, 111, 71, 0.18);
+        text-decoration: none;
+        color: inherit;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+        .streak-next:hover {
+            background: rgba(139, 111, 71, 0.12);
+            border-color: rgba(139, 111, 71, 0.35);
+            color: inherit;
+        }
+
+    .streak-next-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 7px;
+    }
+
+    .streak-next-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #6b5541;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .streak-next-reward {
+        flex-shrink: 0;
+        color: #00838f;
+        font-size: 0.85rem;
+        font-weight: 800;
+    }
+
+    .streak-next-track {
+        height: 5px;
+        border-radius: 5px;
+        background: rgba(139, 111, 71, 0.15);
+        overflow: hidden;
+    }
+
+    .streak-next-fill {
+        height: 100%;
+        border-radius: 5px;
+        background: linear-gradient(90deg, #ff9800, #ff5722);
+    }
+
+    .streak-next-sub {
+        margin-top: 5px;
+        text-align: right;
+        color: #a08a6d;
+        font-size: 0.72rem;
+    }
+
     /* Topla Butonu */
     .btn-claim {
         background: linear-gradient(135deg, #ff9800, #ff5722);
@@ -61,6 +175,7 @@
 
 <div class="modal fade" id="streakModal" tabindex="-1" aria-labelledby="streakModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
+        @Html.AntiForgeryToken()
         <div class="modal-content" style="background: linear-gradient(135deg, #ffffff 0%, #fef8f0 100%); color: #4a3f35; border: 1px solid #ffcc80; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
             <div class="modal-header" style="border-bottom: 1px solid rgba(255, 152, 0, 0.2);">
                 <h5 class="modal-title fw-bold" id="streakModalLabel" style="color: #e65100;">
@@ -69,14 +184,25 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat" style="z-index: 1055;"></button>
             </div>
             <div class="modal-body p-4">
-                <p class="mb-4 text-center" style="color: #6b5541; font-weight: 500; font-size: 0.95rem;">
-                    Her gün giriş yaparak Bilgelik Taşı kazanın. Ödülünüzü almayı unutursanız seriniz 1. güne döner!
-                </p>
+                <div class="streak-summary">
+                    <div class="streak-summary-main">
+                        <i class="fa-solid fa-fire"></i>
+                        <span class="streak-summary-days">@user.CurrentStreak</span>
+                        <span class="streak-summary-label">günlük seri</span>
+                    </div>
+                    <div class="streak-summary-sub">
+                        @weekNumber. hafta &middot; @currentDayInWeek / 7. gün
+                        @if (user.LongestStreak > user.CurrentStreak)
+                        {
+                            <text>&middot; rekorun @user.LongestStreak</text>
+                        }
+                    </div>
+                </div>
                 
                 <div class="d-flex flex-column gap-3">
                     @for (int i = 1; i <= 7; i++)
                     {
-                        int reward = 10 + ((i - 1) * 5);
+                        int reward = BookManagementApp.Areas.Admin.Models.User.DailyRewardForWeekDay(i);
                         bool isPast = i < currentDayInWeek || (i == currentDayInWeek && isClaimedToday);
                         bool isCurrent = i == currentDayInWeek && !isClaimedToday;
                         bool isFuture = i > currentDayInWeek;
@@ -107,6 +233,29 @@
                         </div>
                     }
                 </div>
+
+                @if (Model.NextMilestone != null)
+                {
+                    var ms = Model.NextMilestone;
+                    int msPct = ms.TargetValue > 0
+                        ? Math.Min(100, (int)(user.CurrentStreak * 100.0 / ms.TargetValue))
+                        : 0;
+
+                    <a class="streak-next" asp-area="" asp-controller="Profile" asp-action="Index" asp-fragment="@BookManagementApp.Models.Achievement.CategoryAnchor(ms.Category)">
+                        <div class="streak-next-top">
+                            <span class="streak-next-name">
+                                <i class="fa-solid @ms.IconClass"></i> @ms.Name
+                            </span>
+                            <span class="streak-next-reward">
+                                <i class="fa-solid fa-gem"></i> +@ms.RewardStones.ToString("N0")
+                            </span>
+                        </div>
+                        <div class="streak-next-track">
+                            <div class="streak-next-fill" style="width: @msPct%;"></div>
+                        </div>
+                        <div class="streak-next-sub">@user.CurrentStreak / @ms.TargetValue gün</div>
+                    </a>
+                }
             </div>
         </div>
     </div>
