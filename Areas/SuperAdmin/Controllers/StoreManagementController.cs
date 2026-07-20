@@ -278,6 +278,8 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
         {
             var packages = await _context.StorePackages.ToListAsync();
             ViewBag.AllAvatars = await _context.ProfileAvatars.ToListAsync();
+            ViewBag.AllFrames = await _context.ProfileFrames.ToListAsync();
+            ViewBag.AllBanners = await _context.ProfileBanners.ToListAsync();
             return View(packages);
         }
 
@@ -306,6 +308,13 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
             existingPackage.IconClass = package.IconClass;
             existingPackage.ThemeColor = package.ThemeColor;
 
+            // Tür değişirse eski içerik paketten çözülür; yoksa öksüz kayıt kalır
+            if (existingPackage.ItemType != package.ItemType)
+            {
+                await ClearPackContentAsync(existingPackage.ItemType, existingPackage.CategoryCode);
+                existingPackage.ItemType = package.ItemType;
+            }
+
             _context.StorePackages.Update(existingPackage);
             await _context.SaveChangesAsync();
             
@@ -319,36 +328,67 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
             var package = await _context.StorePackages.FindAsync(id);
             if (package != null)
             {
+                // İçerik pakete bağlı kalmasın; ürünler normal mağazaya geri döner
+                await ClearPackContentAsync(package.ItemType, package.CategoryCode);
                 _context.StorePackages.Remove(package);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Paket silindi.";
+                TempData["SuccessMessage"] = "Paket silindi, içeriği normal mağazaya döndü.";
             }
             return RedirectToAction(nameof(PackagesIndex));
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdatePackageAvatars(string categoryCode, List<int> avatarIds)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdatePackageItems(string categoryCode, string itemType, List<int> itemIds)
         {
             if (string.IsNullOrEmpty(categoryCode)) return RedirectToAction(nameof(PackagesIndex));
+            if (!PackItemTypes.All.Contains(itemType)) itemType = PackItemTypes.Avatar;
 
-            var existingAvatars = await _context.ProfileAvatars.Where(a => a.PackCategory == categoryCode).ToListAsync();
-            foreach (var avatar in existingAvatars)
-            {
-                avatar.PackCategory = null;
-            }
+            // Önce paketin mevcut içeriği çözülür, sonra seçilenler bağlanır
+            await ClearPackContentAsync(itemType, categoryCode);
 
-            if (avatarIds != null && avatarIds.Any())
+            if (itemIds != null && itemIds.Any())
             {
-                var newAvatars = await _context.ProfileAvatars.Where(a => avatarIds.Contains(a.Id)).ToListAsync();
-                foreach (var avatar in newAvatars)
+                switch (itemType)
                 {
-                    avatar.PackCategory = categoryCode;
+                    case PackItemTypes.Frame:
+                        foreach (var f in await _context.ProfileFrames.Where(x => itemIds.Contains(x.Id)).ToListAsync())
+                            f.PackCategory = categoryCode;
+                        break;
+                    case PackItemTypes.Banner:
+                        foreach (var b in await _context.ProfileBanners.Where(x => itemIds.Contains(x.Id)).ToListAsync())
+                            b.PackCategory = categoryCode;
+                        break;
+                    default:
+                        foreach (var a in await _context.ProfileAvatars.Where(x => itemIds.Contains(x.Id)).ToListAsync())
+                            a.PackCategory = categoryCode;
+                        break;
                 }
             }
 
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Paket içeriği başarıyla güncellendi.";
             return RedirectToAction(nameof(PackagesIndex));
+        }
+
+        /// <summary>Bir paketin o türdeki tüm içeriğini paketten çözer (PackCategory = null).</summary>
+        private async Task ClearPackContentAsync(string itemType, string categoryCode)
+        {
+            switch (itemType)
+            {
+                case PackItemTypes.Frame:
+                    foreach (var f in await _context.ProfileFrames.Where(x => x.PackCategory == categoryCode).ToListAsync())
+                        f.PackCategory = null;
+                    break;
+                case PackItemTypes.Banner:
+                    foreach (var b in await _context.ProfileBanners.Where(x => x.PackCategory == categoryCode).ToListAsync())
+                        b.PackCategory = null;
+                    break;
+                default:
+                    foreach (var a in await _context.ProfileAvatars.Where(x => x.PackCategory == categoryCode).ToListAsync())
+                        a.PackCategory = null;
+                    break;
+            }
         }
     }
 }

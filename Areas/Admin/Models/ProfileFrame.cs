@@ -23,5 +23,8 @@ namespace BookManagementApp.Areas.Admin.Models
 
         [StringLength(50)]
         public string? IconEmoji { get; set; }
-    }
+    
+        /// <summary>Bir sürpriz pakete aitse paketin CategoryCode'u; değilse null.</summary>
+        public string? PackCategory { get; set; }
+}
 }

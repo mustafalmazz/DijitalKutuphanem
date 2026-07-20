@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BookManagementApp.Models
 {
@@ -22,6 +22,9 @@ namespace BookManagementApp.Models
         public int PriceInStones { get; set; } = 0;
 
         public int RequiredBookCount { get; set; } = 0; // Kilit açma şartı (çerçevelerle aynı desen)
+
+        /// <summary>Bir sürpriz pakete aitse paketin CategoryCode'u; değilse null.</summary>
+        public string? PackCategory { get; set; }
 
         /// <summary>Dosya uzantısından animasyon tespiti; mağazada "Animasyonlu" rozeti basar.</summary>
         public bool IsAnimated =>

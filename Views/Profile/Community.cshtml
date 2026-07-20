@@ -392,7 +392,8 @@
                     </div>
 
                     <div class="user-info">
-                        <div class="user-name">@user.UserName</div>
+                        <div class="user-name">@user.UserName  <span class="user-books" title="Kitap Sayısı"><i class="fa-solid fa-book" style="color:#cda45e;"></i> @(user.Books?.Count ?? 0)</span></div>
+                        
                         @if (listTitle != null)
                         {
                             string[] tierNames = { "", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Efsane" };
@@ -408,7 +409,7 @@
                                 <i class="fa-solid @listTitle.IconClass"></i> @listTitle.Name
                             </div>
                         }
-                        <span class="user-books" title="Kitap Sayısı"><i class="fa-solid fa-book" style="color:#cda45e;"></i> @(user.Books?.Count ?? 0)</span>
+                       
                     </div>
 
                     <button type="button"

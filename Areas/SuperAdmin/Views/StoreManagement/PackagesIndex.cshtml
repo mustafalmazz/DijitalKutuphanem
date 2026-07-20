@@ -25,6 +25,7 @@
                         <tr>
                             <th>İkon & Kod</th>
                             <th>Başlık & Açıklama</th>
+                            <th>Tür</th>
                             <th>Fiyat (Taş)</th>
                             <th>Tema Rengi</th>
                             <th class="text-end">İşlemler</th>
@@ -45,6 +46,12 @@
                                     <br />
                                     <small class="text-muted">@package.Description</small>
                                 </td>
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        <i class="@BookManagementApp.Models.PackItemTypes.Icon(package.ItemType)"></i>
+                                        @BookManagementApp.Models.PackItemTypes.DisplayName(package.ItemType)
+                                    </span>
+                                </td>
                                 <td><i class="fa-solid fa-gem text-info"></i> @package.PriceInStones</td>
                                 <td>
                                     <span class="badge" style="background-color: @(package.ThemeColor ?? "#666");">@package.ThemeColor</span>
@@ -56,7 +63,7 @@
                                     <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#editPackageModal-@package.Id" title="Düzenle">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
-                                    <form asp-action="DeletePackage" asp-route-id="@package.Id" method="post" class="d-inline" onsubmit="return confirm('Bu paketi silmek istediğinize emin misiniz? (İçindeki avatarlar etkilenmez, sadece mağaza görünümü silinir)');">
+                                    <form asp-action="DeletePackage" asp-route-id="@package.Id" method="post" class="d-inline" onsubmit="return confirm('Bu paket silinecek. İçindeki ürünler silinmez, normal mağazaya geri döner. Emin misiniz?');">
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
@@ -82,6 +89,19 @@
                                                 <div class="mb-3">
                                                     <label class="form-label">Başlık</label>
                                                     <input type="text" name="Title" class="form-control bg-secondary text-light border-0" value="@package.Title" required />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Paket Türü</label>
+                                                    <select name="ItemType" class="form-select bg-secondary text-light border-0">
+                                                        @foreach (var t in BookManagementApp.Models.PackItemTypes.All)
+                                                        {
+                                                            <option value="@t" selected="@(package.ItemType == t)">@BookManagementApp.Models.PackItemTypes.DisplayName(t)</option>
+                                                        }
+                                                    </select>
+                                                    <small class="text-warning">
+                                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                                        Türü değiştirirsen paketin mevcut içeriği çözülür, yeniden seçmen gerekir.
+                                                    </small>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="form-label">Açıklama</label>
@@ -113,7 +133,9 @@
                             <div class="modal fade" id="managePackageModal-@package.Id" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-scrollable">
                                     <div class="modal-content bg-dark text-light">
-                                        <form asp-action="UpdatePackageAvatars" method="post">
+                                        <form asp-action="UpdatePackageItems" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="itemType" value="@package.ItemType" />
                                             <div class="modal-header border-secondary">
                                                 <h5 class="modal-title text-info"><i class="fa-solid fa-list-check"></i> @package.Title - İçeriği Yönet</h5>
                                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -121,31 +143,60 @@
                                             <div class="modal-body p-0">
                                                 <div class="p-3 border-bottom border-secondary">
                                                     <input type="hidden" name="categoryCode" value="@package.CategoryCode" />
-                                                    <p class="text-muted mb-0">Hangi avatarların bu paketten çıkmasını istiyorsunuz? Buradan kolayca seçebilirsiniz.</p>
+                                                    <p class="text-muted mb-0">
+                                                        Bu paket <strong class="text-info">@BookManagementApp.Models.PackItemTypes.DisplayName(package.ItemType)</strong> dağıtıyor.
+                                                        Paketten çıkmasını istediklerini seç.
+                                                    </p>
                                                 </div>
                                                 
                                                 <div class="list-group list-group-flush">
-                                                    @if(ViewBag.AllAvatars != null)
-                                                    {
-                                                        foreach(var avatar in (IEnumerable<BookManagementApp.Models.ProfileAvatar>)ViewBag.AllAvatars)
+                                                    @{
+                                                        // Paketin türüne göre uygun ürün listesi; üçü de aynı satır biçiminde gösterilir
+                                                        var pickerItems = new List<(int Id, string? Name, string? ImageUrl, string? PackCategory)>();
+                                                        if (package.ItemType == BookManagementApp.Models.PackItemTypes.Frame && ViewBag.AllFrames != null)
                                                         {
-                                                            bool isChecked = avatar.PackCategory == package.CategoryCode;
-                                                            bool isOtherPackage = !string.IsNullOrEmpty(avatar.PackCategory) && avatar.PackCategory != package.CategoryCode;
-
-                                                            <label class="list-group-item bg-dark text-light border-secondary d-flex align-items-center gap-3 py-3" style="cursor: pointer;">
-                                                                <input class="form-check-input flex-shrink-0" style="width: 1.5em; height: 1.5em;" type="checkbox" name="avatarIds" value="@avatar.Id" @(isChecked ? "checked" : "")>
-                                                                <div class="bg-light rounded p-1" style="width: 50px; height: 50px; display: flex; justify-content: center; align-items: center;">
-                                                                    <img src="@avatar.ImageUrl" alt="@avatar.Name" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-                                                                </div>
-                                                                <div class="flex-grow-1">
-                                                                    <strong class="fs-5">@(string.IsNullOrEmpty(avatar.Name) ? "İsimsiz" : avatar.Name)</strong>
-                                                                    @if(isOtherPackage)
-                                                                    {
-                                                                        <br/><small class="text-warning"><i class="fa-solid fa-triangle-exclamation"></i> Şu an @avatar.PackCategory paketinde!</small>
-                                                                    }
-                                                                </div>
-                                                            </label>
+                                                            foreach (var f in (IEnumerable<BookManagementApp.Areas.Admin.Models.ProfileFrame>)ViewBag.AllFrames)
+                                                                pickerItems.Add((f.Id, f.Name, f.ImageUrl, f.PackCategory));
                                                         }
+                                                        else if (package.ItemType == BookManagementApp.Models.PackItemTypes.Banner && ViewBag.AllBanners != null)
+                                                        {
+                                                            foreach (var b in (IEnumerable<BookManagementApp.Models.ProfileBanner>)ViewBag.AllBanners)
+                                                                pickerItems.Add((b.Id, b.Name, b.ImageUrl, b.PackCategory));
+                                                        }
+                                                        else if (ViewBag.AllAvatars != null)
+                                                        {
+                                                            foreach (var a in (IEnumerable<BookManagementApp.Models.ProfileAvatar>)ViewBag.AllAvatars)
+                                                                pickerItems.Add((a.Id, a.Name, a.ImageUrl, a.PackCategory));
+                                                        }
+
+                                                        bool isWideItem = package.ItemType == BookManagementApp.Models.PackItemTypes.Banner;
+                                                    }
+
+                                                    @if (!pickerItems.Any())
+                                                    {
+                                                        <div class="p-4 text-center text-muted">
+                                                            Bu türde henüz ürün yok. Önce ilgili yönetim sayfasından ekleyin.
+                                                        </div>
+                                                    }
+                                                    @foreach (var item in pickerItems)
+                                                    {
+                                                        bool isChecked = item.PackCategory == package.CategoryCode;
+                                                        bool isOtherPackage = !string.IsNullOrEmpty(item.PackCategory) && item.PackCategory != package.CategoryCode;
+
+                                                        <label class="list-group-item bg-dark text-light border-secondary d-flex align-items-center gap-3 py-3" style="cursor: pointer;">
+                                                            <input class="form-check-input flex-shrink-0" style="width: 1.5em; height: 1.5em;" type="checkbox" name="itemIds" value="@item.Id" @(isChecked ? "checked" : "")>
+                                                            @* Banner geniş formatlı olduğu için önizlemesi de 4:1 *@
+                                                            <div class="bg-light rounded p-1 flex-shrink-0" style="@(isWideItem ? "width: 120px; aspect-ratio: 4/1;" : "width: 50px; height: 50px;") display: flex; justify-content: center; align-items: center; overflow: hidden;">
+                                                                <img src="@item.ImageUrl" alt="@item.Name" style="width: 100%; height: 100%; object-fit: @(isWideItem ? "cover" : "contain");" />
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <strong class="fs-5">@(string.IsNullOrEmpty(item.Name) ? "İsimsiz" : item.Name)</strong>
+                                                                @if (isOtherPackage)
+                                                                {
+                                                                    <br /><small class="text-warning"><i class="fa-solid fa-triangle-exclamation"></i> Şu an @item.PackCategory paketinde!</small>
+                                                                }
+                                                            </div>
+                                                        </label>
                                                     }
                                                 </div>
                                             </div>
@@ -188,6 +239,16 @@
                     <div class="mb-3">
                         <label class="form-label">Başlık</label>
                         <input type="text" name="Title" class="form-control bg-secondary text-light border-0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Paket Türü</label>
+                        <select name="ItemType" class="form-select bg-secondary text-light border-0">
+                            @foreach (var t in BookManagementApp.Models.PackItemTypes.All)
+                            {
+                                <option value="@t">@BookManagementApp.Models.PackItemTypes.DisplayName(t)</option>
+                            }
+                        </select>
+                        <small class="text-muted">Bu paketten hangi tür ürün çıkacağını belirler.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Açıklama</label>

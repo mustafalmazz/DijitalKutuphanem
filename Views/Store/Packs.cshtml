@@ -1,4 +1,4 @@
-@using BookManagementApp.Models
+﻿@using BookManagementApp.Models
 @using BookManagementApp.Areas.Admin.Models
 @model StoreViewModel
 @{
@@ -10,6 +10,8 @@
 
     var user = ViewBag.User as User;
     var ownedAvatarIds = ViewBag.OwnedAvatarIds as List<int> ?? new List<int>();
+    // Paket içeriği artık avatar/çerçeve/banner olabilir; sahiplik "Tür:Id" anahtarıyla tutulur
+    var ownedPackKeys = ViewBag.OwnedPackKeys as HashSet<string> ?? new HashSet<string>();
 }
 
 @await Html.PartialAsync("_StoreStyles")
@@ -147,6 +149,35 @@
             border-radius: 8px;
         }
 
+    /* Banner iceren paketlerde onizleme kareleri genis olur */
+    .pack-avatar-wide {
+        width: clamp(72px, 12vw, 132px) !important;
+        aspect-ratio: 4 / 1;
+        height: auto !important;
+    }
+
+        .pack-avatar-wide img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 6px;
+        }
+
+    .pack-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        vertical-align: middle;
+        margin-left: 8px;
+        padding: 3px 10px;
+        border-radius: 50px;
+        background: color-mix(in srgb, var(--pack-theme) 16%, transparent);
+        color: color-mix(in srgb, var(--pack-theme) 75%, #2b2118);
+        border: 1px solid color-mix(in srgb, var(--pack-theme) 40%, transparent);
+        font-size: 0.62em;
+        font-weight: 700;
+    }
+
     .pack-avatar-more {
         background: rgba(255,152,0,0.05);
         border-style: dashed;
@@ -272,9 +303,10 @@
         {
             @foreach (var package in Model.Packages)
             {
-                var packAvatars = Model.PackAvatars.Where(a => a.PackCategory == package.CategoryCode).ToList();
+                var packAvatars = Model.PackItems.Where(i => i.PackCategory == package.CategoryCode).ToList();
                 var packTotal = packAvatars.Count();
-                var packOwned = packAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
+                var packOwned = packAvatars.Count(i => ownedPackKeys.Contains($"{i.ItemType}:{i.Id}"));
+                var packIsWide = package.ItemType == BookManagementApp.Models.PackItemTypes.Banner;
                 var themeColor = package.ThemeColor ?? "#ff9800";
                 var iconClass = package.IconClass ?? "fa-solid fa-box";
 
@@ -288,6 +320,10 @@
                         <div class="pack-info">
                             <h2 class="pack-title">
                                 <i class="@iconClass"></i> @package.Title
+                                <span class="pack-type-badge">
+                                    <i class="@BookManagementApp.Models.PackItemTypes.Icon(package.ItemType)"></i>
+                                    @BookManagementApp.Models.PackItemTypes.DisplayName(package.ItemType)
+                                </span>
                             </h2>
                             <p class="pack-desc">
                                 @package.Description <br />
@@ -308,7 +344,7 @@
                         <div class="pack-preview">
                             @foreach (var item in packAvatars.Take(3))
                             {
-                                <div class="pack-avatar" title="@item.Name">
+                                <div class="pack-avatar @(packIsWide ? "pack-avatar-wide" : "")" title="@item.Name">
                                     <img src="@item.ImageUrl" alt="@item.Name" loading="lazy" />
                                 </div>
                             }
@@ -330,9 +366,10 @@
 {
     foreach (var package in Model.Packages)
     {
-        var packAvatars = Model.PackAvatars.Where(a => a.PackCategory == package.CategoryCode).ToList();
+        var packAvatars = Model.PackItems.Where(i => i.PackCategory == package.CategoryCode).ToList();
         var packTotal = packAvatars.Count();
-        var packOwned = packAvatars.Count(a => ownedAvatarIds.Contains(a.Id));
+        var packOwned = packAvatars.Count(i => ownedPackKeys.Contains($"{i.ItemType}:{i.Id}"));
+        var packIsWide = package.ItemType == BookManagementApp.Models.PackItemTypes.Banner;
         bool canBuyPack = packOwned < packTotal && user != null && user.WisdomStones >= package.PriceInStones;
         var themeColor = package.ThemeColor ?? "#ff9800";
         var iconClass = package.IconClass ?? "fa-solid fa-box";
@@ -351,11 +388,18 @@
                         <div class="store-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
                             @foreach (var item in packAvatars)
                             {
-                                bool isItemOwned = ownedAvatarIds.Contains(item.Id);
+                                bool isItemOwned = ownedPackKeys.Contains($"{item.ItemType}:{item.Id}");
 
-                                <div class="frame-card" style="@(isItemOwned ? "opacity: 0.5; filter: grayscale(100%); border-color: rgba(0,0,0,0.1);" : $"border-color: {themeColor}; box-shadow: 0 0 15px rgba(255,152,0,0.1); background: white;")" id="packItem-@item.Id">
+                                <div class="frame-card" style="@(isItemOwned ? "opacity: 0.5; filter: grayscale(100%); border-color: rgba(0,0,0,0.1);" : $"border-color: {themeColor}; box-shadow: 0 0 15px rgba(255,152,0,0.1); background: white;")" id="packItem-@item.ItemType-@item.Id">
                                     <div class="frame-preview d-flex justify-content-center align-items-center" style="min-height: 100px;">
-                                        <img src="@item.ImageUrl" alt="@item.Name" style="width: 70px; height: 70px; object-fit: contain; border-radius: 10px;" />
+                                        @if (item.IsWide)
+                                        {
+                                            <img src="@item.ImageUrl" alt="@item.Name" style="width: 100%; aspect-ratio: 4/1; object-fit: cover; border-radius: 8px;" />
+                                        }
+                                        else
+                                        {
+                                            <img src="@item.ImageUrl" alt="@item.Name" style="width: 70px; height: 70px; object-fit: contain; border-radius: 10px;" />
+                                        }
                                     </div>
                                     <div class="frame-info text-center" style="padding: 10px;">
                                         <div style="font-size: 0.8rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">@item.Name</div>
@@ -455,15 +499,31 @@
                 overlay.style.display = 'flex';
 
                 // Result datasını doldur
-                document.getElementById('gachaAvatarImage').src = data.avatarImage;
-                document.getElementById('gachaAvatarName').innerText = data.avatarName || 'Gizemli Hayvan';
+                var gachaImg = document.getElementById('gachaAvatarImage');
+                gachaImg.src = data.itemImage;
+                // Banner geniş formatlı; kutlama kartında da doğru oranda gösterilir
+                if (data.isWide) {
+                    gachaImg.style.width = '280px';
+                    gachaImg.style.height = 'auto';
+                    gachaImg.style.aspectRatio = '4 / 1';
+                    gachaImg.style.objectFit = 'cover';
+                    gachaImg.style.borderRadius = '10px';
+                } else {
+                    gachaImg.style.width = '150px';
+                    gachaImg.style.height = '150px';
+                    gachaImg.style.aspectRatio = '';
+                    gachaImg.style.objectFit = 'contain';
+                }
+                document.getElementById('gachaAvatarName').innerText = data.itemName || 'Gizemli Ödül';
 
                 // Koleksiyon gridindeki silik durumu uygula
-                var card = document.getElementById('packItem-' + data.avatarId);
+                var card = document.getElementById('packItem-' + data.itemType + '-' + data.itemId);
                 if(card) {
                     card.style = "opacity: 0.5; filter: grayscale(80%); border-color: rgba(0,0,0,0.1);";
-                    card.querySelector('img').style = "width: 80px; height: 80px; object-fit: contain; border-radius: 10px;";
-                    card.querySelector('.frame-info').innerHTML = '<div style="font-size: 0.85rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">' + (data.avatarName || 'Gizemli Hayvan') + '</div><div style="font-weight: bold; color: #6c757d; font-size: 0.8rem;"><i class="fa-solid fa-check"></i> Sende Var</div>';
+                    card.querySelector('img').style = data.isWide
+                        ? "width: 100%; aspect-ratio: 4/1; object-fit: cover; border-radius: 8px;"
+                        : "width: 80px; height: 80px; object-fit: contain; border-radius: 10px;";
+                    card.querySelector('.frame-info').innerHTML = '<div style="font-size: 0.85rem; font-weight: bold; color: #4a3f35; margin-bottom: 5px;">' + (data.itemName || 'Gizemli Ödül') + '</div><div style="font-weight: bold; color: #6c757d; font-size: 0.8rem;"><i class="fa-solid fa-check"></i> Sende Var</div>';
                 }
 
                 // Butonu düzelt

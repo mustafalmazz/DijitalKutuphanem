@@ -31,6 +31,7 @@ namespace BookManagementApp.Controllers
             var viewModel = new StoreViewModel
             {
                 Frames = await _context.ProfileFrames
+                    .Where(f => f.PackCategory == null)
                     .OrderBy(f => f.PriceInStones)
                     .ThenBy(f => f.RequiredBookCount)
                     .ToListAsync(),
@@ -47,10 +48,29 @@ namespace BookManagementApp.Controllers
                     .OrderBy(p => p.Id)
                     .ToListAsync(),
                 Banners = await _context.ProfileBanners
+                    .Where(b => b.PackCategory == null)
                     .OrderBy(b => b.PriceInStones)
                     .ThenBy(b => b.RequiredBookCount)
                     .ToListAsync()
             };
+
+            // Paket içerikleri tür bağımsız tek listede toplanır
+            var packAvatarItems = await _context.ProfileAvatars
+                .Where(a => a.PackCategory != null)
+                .Select(a => new PackItemView { Id = a.Id, Name = a.Name, ImageUrl = a.ImageUrl, PackCategory = a.PackCategory, ItemType = PackItemTypes.Avatar })
+                .ToListAsync();
+
+            var packFrameItems = await _context.ProfileFrames
+                .Where(f => f.PackCategory != null)
+                .Select(f => new PackItemView { Id = f.Id, Name = f.Name, ImageUrl = f.ImageUrl, PackCategory = f.PackCategory, ItemType = PackItemTypes.Frame })
+                .ToListAsync();
+
+            var packBannerItems = await _context.ProfileBanners
+                .Where(b => b.PackCategory != null)
+                .Select(b => new PackItemView { Id = b.Id, Name = b.Name, ImageUrl = b.ImageUrl, PackCategory = b.PackCategory, ItemType = PackItemTypes.Banner })
+                .ToListAsync();
+
+            viewModel.PackItems = packAvatarItems.Concat(packFrameItems).Concat(packBannerItems).ToList();
 
             var ownedFrameIds = await _context.UserFrames
                 .Where(uf => uf.UserId == userId)
@@ -73,6 +93,12 @@ namespace BookManagementApp.Controllers
             ViewBag.OwnedFrameIds = ownedFrameIds;
             ViewBag.OwnedAvatarIds = ownedAvatarIds;
             ViewBag.OwnedBannerIds = ownedBannerIds;
+
+            // Paket içeriğinde "sende var" işareti için tür bazlı sahiplik kümesi
+            ViewBag.OwnedPackKeys = ownedAvatarIds.Select(id => $"{PackItemTypes.Avatar}:{id}")
+                .Concat(ownedFrameIds.Select(id => $"{PackItemTypes.Frame}:{id}"))
+                .Concat(ownedBannerIds.Select(id => $"{PackItemTypes.Banner}:{id}"))
+                .ToHashSet();
             ViewBag.UserBookCount = userBookCount;
 
             return viewModel;
@@ -136,42 +162,89 @@ namespace BookManagementApp.Controllers
             if (user.WisdomStones < package.PriceInStones)
                 return Json(new { success = false, message = $"Yeterli Bilgelik Taşınız yok! En az {package.PriceInStones} taşa ihtiyacınız var." });
 
-            // Paketteki tüm avatarlar
-            var packItems = await _context.ProfileAvatars
-                .Where(a => a.PackCategory == package.CategoryCode)
-                .ToListAsync();
+            // Paket içeriği türe göre okunur; üçü de aynı akıştan geçer
+            var packItems = await GetPackItemsAsync(package);
 
             if (!packItems.Any())
-                return Json(new { success = false, message = "Bu pakette henüz hiç avatar yok!" });
+                return Json(new { success = false, message = $"Bu pakette henüz hiç {PackItemTypes.DisplayName(package.ItemType).ToLower()} yok!" });
 
-            // Kullanıcının sahip olduğu avatarlar
-            var ownedAvatarIds = await _context.UserAvatars
-                .Where(ua => ua.UserId == userId)
-                .Select(ua => ua.ProfileAvatarId)
-                .ToListAsync();
-
-            // Sadece sahip OLMADIĞI avatarlar
-            var unownedItems = packItems.Where(a => !ownedAvatarIds.Contains(a.Id)).ToList();
+            var ownedIds = await GetOwnedIdsForTypeAsync(package.ItemType, userId.Value);
+            var unownedItems = packItems.Where(i => !ownedIds.Contains(i.Id)).ToList();
 
             if (!unownedItems.Any())
-                return Json(new { success = false, message = "Tebrikler! Bu paketteki TÜM avatarlara zaten sahipsiniz. Başka çekiliş yapamazsınız." });
+                return Json(new { success = false, message = "Tebrikler! Bu paketteki TÜM ürünlere zaten sahipsiniz. Başka çekiliş yapamazsınız." });
 
-            // Rastgele seçim
             var random = new Random();
-            var drawnAvatar = unownedItems[random.Next(unownedItems.Count)];
+            var drawn = unownedItems[random.Next(unownedItems.Count)];
 
-            // Satın almayı gerçekleştir
             user.WisdomStones -= package.PriceInStones;
-            _context.UserAvatars.Add(new UserAvatar { UserId = userId.Value, ProfileAvatarId = drawnAvatar.Id });
+            GrantPackItem(package.ItemType, userId.Value, drawn.Id);
             await _context.SaveChangesAsync();
 
-            return Json(new { 
-                success = true, 
+            return Json(new {
+                success = true,
                 newBalance = user.WisdomStones,
-                avatarId = drawnAvatar.Id,
-                avatarName = drawnAvatar.Name,
-                avatarImage = drawnAvatar.ImageUrl
+                itemId = drawn.Id,
+                itemName = drawn.Name,
+                itemImage = drawn.ImageUrl,
+                itemType = package.ItemType,
+                isWide = drawn.IsWide
             });
+        }
+
+        /// <summary>Paketin türüne göre içeriğini tür bağımsız biçimde döner.</summary>
+        private async Task<List<PackItemView>> GetPackItemsAsync(StorePackage package)
+        {
+            return package.ItemType switch
+            {
+                PackItemTypes.Frame => await _context.ProfileFrames
+                    .Where(f => f.PackCategory == package.CategoryCode)
+                    .Select(f => new PackItemView { Id = f.Id, Name = f.Name, ImageUrl = f.ImageUrl, ItemType = PackItemTypes.Frame })
+                    .ToListAsync(),
+
+                PackItemTypes.Banner => await _context.ProfileBanners
+                    .Where(b => b.PackCategory == package.CategoryCode)
+                    .Select(b => new PackItemView { Id = b.Id, Name = b.Name, ImageUrl = b.ImageUrl, ItemType = PackItemTypes.Banner })
+                    .ToListAsync(),
+
+                _ => await _context.ProfileAvatars
+                    .Where(a => a.PackCategory == package.CategoryCode)
+                    .Select(a => new PackItemView { Id = a.Id, Name = a.Name, ImageUrl = a.ImageUrl, ItemType = PackItemTypes.Avatar })
+                    .ToListAsync()
+            };
+        }
+
+        /// <summary>Kullanıcının o türde sahip olduğu ürün id'leri.</summary>
+        private async Task<HashSet<int>> GetOwnedIdsForTypeAsync(string itemType, int userId)
+        {
+            return itemType switch
+            {
+                PackItemTypes.Frame => (await _context.UserFrames
+                    .Where(x => x.UserId == userId).Select(x => x.ProfileFrameId).ToListAsync()).ToHashSet(),
+
+                PackItemTypes.Banner => (await _context.UserBanners
+                    .Where(x => x.UserId == userId).Select(x => x.ProfileBannerId).ToListAsync()).ToHashSet(),
+
+                _ => (await _context.UserAvatars
+                    .Where(x => x.UserId == userId).Select(x => x.ProfileAvatarId).ToListAsync()).ToHashSet()
+            };
+        }
+
+        /// <summary>Çekilişten çıkan ürünü doğru sahiplik tablosuna yazar.</summary>
+        private void GrantPackItem(string itemType, int userId, int itemId)
+        {
+            switch (itemType)
+            {
+                case PackItemTypes.Frame:
+                    _context.UserFrames.Add(new UserFrame { UserId = userId, ProfileFrameId = itemId, PurchasedAt = DateTime.Now });
+                    break;
+                case PackItemTypes.Banner:
+                    _context.UserBanners.Add(new UserBanner { UserId = userId, ProfileBannerId = itemId, PurchasedAt = DateTime.Now });
+                    break;
+                default:
+                    _context.UserAvatars.Add(new UserAvatar { UserId = userId, ProfileAvatarId = itemId });
+                    break;
+            }
         }
 
         [HttpPost]
