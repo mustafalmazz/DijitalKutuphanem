@@ -1,0 +1,124 @@
+@model IEnumerable<BookManagementApp.Models.AmbientSoundItem>
+@{
+    ViewData["Title"] = "Ortam Sesleri";
+    Layout = "~/Areas/SuperAdmin/Views/Shared/_SuperAdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-warning mb-0"><i class="fa-solid fa-music"></i> Ortam Sesleri</h2>
+        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#addSoundModal">
+            <i class="fa-solid fa-plus"></i> Yeni Ses Ekle
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <p class="text-muted">
+        Buradan eklediğiniz sesler, Odaklanma (Pomodoro) sayfasındaki "Ortam Sesleri" mikserinde
+        otomatik görünür. Döngüye uygun (seamless loop), telifsiz (CC0) sesler önerilir.
+    </p>
+
+    <div class="card shadow-sm border-0 bg-dark text-light">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-dark align-middle">
+                    <thead class="table-secondary text-dark">
+                        <tr>
+                            <th style="width:70px;">İkon</th>
+                            <th>Ad</th>
+                            <th>Önizleme</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">Henüz ortam sesi eklenmemiş.</td>
+                            </tr>
+                        }
+                        @foreach (var s in Model)
+                        {
+                            <tr>
+                                <td class="text-center">
+                                    <span style="font-size:1.4rem; color:#ffca6b;"><i class="@s.Icon"></i></span>
+                                </td>
+                                <td><strong>@s.Name</strong><br /><small class="text-muted"><code>@s.File</code></small></td>
+                                <td>
+                                    <audio controls preload="none" src="@s.File" style="height:36px; max-width:240px;"></audio>
+                                </td>
+                                <td class="text-end">
+                                    <form asp-action="Delete" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bu ses kalıcı olarak silinsin mi?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="file" value="@s.File" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yeni Ses Modalı -->
+<div class="modal fade" id="addSoundModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Yeni Ortam Sesi</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Ad (Örn: Yağmur)</label>
+                        <input type="text" name="name" class="form-control bg-secondary text-light border-0" maxlength="40" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">İkon (FontAwesome sınıfı)</label>
+                        <input type="text" name="icon" list="iconPresets" value="fa-solid fa-cloud-rain"
+                               class="form-control bg-secondary text-light border-0" />
+                        <datalist id="iconPresets">
+                            <option value="fa-solid fa-cloud-rain">Yağmur</option>
+                            <option value="fa-solid fa-dove">Kuşlar</option>
+                            <option value="fa-solid fa-tree">Orman</option>
+                            <option value="fa-solid fa-fire">Şömine</option>
+                            <option value="fa-solid fa-mug-hot">Kafe</option>
+                            <option value="fa-solid fa-water">Dalga</option>
+                            <option value="fa-solid fa-wind">Rüzgar</option>
+                            <option value="fa-solid fa-volume-high">Beyaz Gürültü</option>
+                            <option value="fa-solid fa-music">Müzik</option>
+                        </datalist>
+                        <small class="text-muted">
+                            <i class="fa-solid fa-circle-info"></i>
+                            fontawesome.com/icons üzerinden bir ikon sınıfı yazabilirsiniz.
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ses Dosyası (MP3, OGG, WAV, M4A — en fazla 10 MB)</label>
+                        <input type="file" name="audioFile" accept="audio/*" class="form-control bg-secondary text-light border-0" required />
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-warning">Ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

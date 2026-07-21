@@ -253,6 +253,57 @@
             color: #fff;
         }
 
+    /* Tehlikeli bölge: hesap silme */
+    .st-danger-card {
+        border-color: #f0c9c2;
+        background: linear-gradient(160deg, #fffaf9 0%, #fbeeeb 100%);
+    }
+
+        .st-danger-card .st-card-title {
+            color: #b0392b;
+        }
+
+            .st-danger-card .st-card-title i {
+                background: linear-gradient(135deg, #fbe0db, #f6cabf);
+                color: #c0392b;
+            }
+
+    .st-danger-btn {
+        background: linear-gradient(135deg, #d35d4e 0%, #b83a2e 100%);
+        border: none;
+        color: #fff;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 9px 22px;
+        border-radius: 22px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 3px 10px rgba(184, 58, 46, 0.3);
+    }
+
+        .st-danger-btn:hover {
+            background: linear-gradient(135deg, #e0705f 0%, #c94a3d 100%);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+    .notice-cancel-btn {
+        background: #f5efe3;
+        border: 1px solid #dccbb2;
+        color: #6b5541;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        padding: 8px 24px;
+        border-radius: 22px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+    }
+
+        .notice-cancel-btn:hover {
+            background: #ece2cf;
+        }
+
     @@media (max-width: 991.98px) {
         .st-wrap {
             padding-bottom: 70px;
@@ -351,6 +402,20 @@
             </div>
         </form>
     </div>
+
+    <!-- HESABI KALICI SİL (TEHLİKELİ BÖLGE) -->
+    <div class="st-card st-danger-card">
+        <div class="st-card-title"><i class="fa-solid fa-triangle-exclamation"></i> Hesabı Kalıcı Olarak Sil</div>
+        <div class="st-card-desc">
+            Hesabınız; kitaplığınız, kesitleriniz, mesajlarınız, başarımlarınız, takip ilişkileriniz ve
+            tüm diğer verilerinizle birlikte <b>kalıcı olarak</b> silinir. Bu işlem <b>geri alınamaz.</b>
+        </div>
+        <div class="text-end">
+            <button type="button" class="st-danger-btn" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                <i class="fa-solid fa-trash me-1"></i> Hesabımı Sil
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- BİLDİRİM MODALI -->
@@ -363,6 +428,49 @@
             <div>
                 <button type="button" class="notice-ok-btn" data-bs-dismiss="modal">Tamam</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- HESAP SİLME ONAY MODALI -->
+<div class="modal fade notice-modal" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="notice-icon error"><i class="fas fa-user-slash"></i></div>
+            <div class="notice-text">
+                Hesabını <b>kalıcı olarak</b> silmek üzeresin. Bu işlem geri alınamaz ve tüm verilerin silinir.
+            </div>
+            <form asp-action="DeleteAccount" method="post" id="deleteAccountForm" class="d-flex flex-column gap-3 text-start">
+                @if (hasPassword)
+                {
+                    <div>
+                        <label class="st-label" for="deletePassword">Onaylamak için şifreni gir</label>
+                        <div class="st-pw-wrap">
+                            <input type="password" class="st-input" id="deletePassword" name="currentPassword"
+                                   required autocomplete="current-password" />
+                            <button type="button" class="st-pw-toggle" data-target="deletePassword" tabindex="-1">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <label class="st-label" for="deleteConfirmText">
+                            Onaylamak için kullanıcı adını (<b>@Model.UserName</b>) yaz
+                        </label>
+                        <input type="text" class="st-input" id="deleteConfirmText" name="confirmText"
+                               placeholder="@Model.UserName" required autocomplete="off" />
+                    </div>
+                }
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="notice-cancel-btn" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="submit" class="st-danger-btn" id="deleteAccountConfirmBtn">
+                        <i class="fas fa-trash me-1"></i> Kalıcı Olarak Sil
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

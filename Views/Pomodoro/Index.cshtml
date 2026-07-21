@@ -30,6 +30,9 @@
         --shadow-warm: rgba(61, 43, 31, 0.12);
         --shadow-deep: rgba(61, 43, 31, 0.25);
         --glass: rgba(247, 242, 232, 0.6);
+        /* İlerleme halkası renkleri — tema ile değişir */
+        --ring-focus: #4a7c59;
+        --ring-break: #c0622a;
     }
 
     /* ── RESET & TEMEL ── */
@@ -894,11 +897,780 @@
         .break-notice.visible {
             display: block;
         }
+
+    /* ── ORTAM SESLERİ MİKSERİ ── */
+    .ambient-section {
+        margin-top: 4px;
+        margin-bottom: 8px;
+    }
+
+    .ambient-heading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-family: 'Crimson Pro', Georgia, serif;
+        font-size: 0.72rem;
+        font-style: italic;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--tan);
+        margin-bottom: 14px;
+    }
+
+    .ambient-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .ambient-chip {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        width: 84px;
+        padding: 10px 6px;
+        background: var(--parchment);
+        border: 1px solid rgba(139, 111, 71, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        user-select: none;
+    }
+
+        .ambient-chip:hover {
+            background: var(--linen);
+        }
+
+        .ambient-chip .ac-icon {
+            font-size: 1.15rem;
+            color: var(--walnut);
+        }
+
+        .ambient-chip .ac-name {
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-size: 0.72rem;
+            color: var(--mahogany);
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .ambient-chip.active {
+            background: linear-gradient(160deg, var(--leaf) 0%, var(--leaf-dark) 100%);
+            border-color: var(--leaf-dark);
+            box-shadow: 0 2px 8px rgba(46, 89, 64, 0.3);
+        }
+
+            .ambient-chip.active .ac-icon,
+            .ambient-chip.active .ac-name {
+                color: #fff;
+            }
+
+        .ambient-chip.unavailable {
+            opacity: 0.38;
+            cursor: not-allowed;
+        }
+
+    .ambient-vol {
+        width: 100%;
+        margin-top: 3px;
+        accent-color: var(--leaf-dark);
+        cursor: pointer;
+        display: none;
+    }
+
+    .ambient-chip.active .ambient-vol {
+        display: block;
+        accent-color: #fff;
+    }
+
+    /* ============================================================
+       TEMA SEÇİCİ (Kütüphane / Neon)
+       ============================================================ */
+    .theme-switch {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 22px;
+    }
+
+    .theme-chip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 15px;
+        border-radius: 30px;
+        border: 1px solid rgba(139, 111, 71, 0.3);
+        background: var(--linen);
+        color: var(--mahogany);
+        font-family: 'Crimson Pro', Georgia, serif;
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .theme-chip:hover { filter: brightness(1.04); }
+
+        .theme-chip.active {
+            background: linear-gradient(160deg, var(--walnut), var(--mahogany));
+            color: var(--cream);
+            border-color: transparent;
+        }
+
+    .theme-chip .swatch {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
+    }
+
+    .theme-chip .prem-badge {
+        font-size: 0.56rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        padding: 2px 6px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #2f7bff, #37e6ff);
+        color: #041024;
+        text-transform: uppercase;
+    }
+
+    /* ============================================================
+       NEON TEMA — Lacivert & Mavi (performans dostu, transform/opacity)
+       ============================================================ */
+    body[data-theme="neon"] {
+        --cream: #101a3a;      /* panel yüzeyi */
+        --parchment: #0c1430;
+        --linen: #16224a;
+        --tan: #5f7bd6;
+        --walnut: #37e6ff;     /* ana neon accent (camgöbeği-mavi) */
+        --mahogany: #2f7bff;
+        --espresso: #070b1f;   /* sayfa zemini */
+        --ink: #dff2ff;        /* metin */
+        --leaf: #37e6ff;
+        --gold: #6ff0ff;
+        --ring-focus: #37e6ff;
+        --ring-break: #6f8cff;
+        background-color: #070b1f;
+        color: var(--ink);
+    }
+
+    /* Zemin: derin lacivert + yavaş süzülen mavi/camgöbeği auroralar
+       (yalnızca transform animasyonu → GPU dostu, filtre yok) */
+    body[data-theme="neon"] .room-background::before {
+        background:
+            radial-gradient(ellipse 60% 45% at 30% 25%, rgba(47,123,255,0.35), transparent 60%),
+            radial-gradient(ellipse 55% 40% at 75% 70%, rgba(55,230,255,0.22), transparent 60%),
+            linear-gradient(180deg, #070b1f 0%, #0a1130 55%, #070c22 100%);
+        will-change: transform;
+        animation: neonDrift1 26s ease-in-out infinite;
+    }
+
+    body[data-theme="neon"] .room-background::after {
+        background:
+            radial-gradient(ellipse 45% 40% at 65% 20%, rgba(90,140,255,0.20), transparent 60%),
+            radial-gradient(ellipse 50% 45% at 20% 80%, rgba(55,230,255,0.14), transparent 60%);
+        opacity: 1;
+        will-change: transform;
+        animation: neonDrift2 34s ease-in-out infinite;
+    }
+
+    @@keyframes neonDrift1 {
+        0%, 100% { transform: translate3d(-4%, -3%, 0) scale(1.05); }
+        50%      { transform: translate3d(5%, 4%, 0) scale(1.12); }
+    }
+
+    @@keyframes neonDrift2 {
+        0%, 100% { transform: translate3d(3%, 2%, 0) scale(1.1); }
+        50%      { transform: translate3d(-5%, -4%, 0) scale(1.04); }
+    }
+
+    /* Panel — koyu cam + ince neon kenar */
+    body[data-theme="neon"] .panel-wall {
+        background: linear-gradient(160deg, #0f1738 0%, #0a1026 100%);
+        border: 1px solid rgba(80, 140, 255, 0.30);
+        box-shadow:
+            0 0 0 1px rgba(55, 230, 255, 0.12),
+            0 18px 50px rgba(0, 0, 0, 0.6),
+            inset 0 0 70px rgba(47, 123, 255, 0.08);
+    }
+
+        body[data-theme="neon"] .panel-wall::after {
+            background: radial-gradient(ellipse 100% 100% at 50% 0%, rgba(55,230,255,0.10), transparent 60%);
+        }
+
+    body[data-theme="neon"] .panel-top-strip {
+        background: linear-gradient(90deg, #0a1026, #2f7bff 30%, #37e6ff 50%, #2f7bff 70%, #0a1026);
+        box-shadow: 0 0 12px rgba(55, 230, 255, 0.4);
+    }
+
+    body[data-theme="neon"] .panel-badge {
+        background: linear-gradient(135deg, #2f7bff, #37e6ff);
+        color: #041024;
+        box-shadow: 0 2px 14px rgba(55, 230, 255, 0.45);
+    }
+
+    body[data-theme="neon"] .room-title { color: #eaf6ff; }
+    body[data-theme="neon"] .room-subtitle,
+    body[data-theme="neon"] .mode-label-display,
+    body[data-theme="neon"] .footer-text,
+    body[data-theme="neon"] .time-label { color: #6f8fd8; }
+
+    /* Mod seçici */
+    body[data-theme="neon"] .mode-selector {
+        background: #0c1430;
+        border-color: rgba(80, 140, 255, 0.25);
+        box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);
+    }
+    body[data-theme="neon"] .mode-btn { color: #8fa6df; }
+    body[data-theme="neon"] .mode-btn.active {
+        background: #16224a;
+        color: #eaf6ff;
+        box-shadow: 0 0 0 1px rgba(55,230,255,0.35), 0 0 12px rgba(55,230,255,0.18);
+    }
+
+    /* Kadran */
+    body[data-theme="neon"] .clock-dial {
+        background: radial-gradient(circle at 38% 32%, #1a2a5e 0%, #101a3e 45%, #0b1330 100%);
+        border-color: rgba(80, 140, 255, 0.45);
+        box-shadow: inset 0 1px 0 rgba(120,170,255,0.25), inset 0 -2px 10px rgba(0,0,0,0.4),
+                    0 0 30px rgba(47,123,255,0.28); /* dingin dış parıltı */
+    }
+    body[data-theme="neon"] .clock-ring-deco {
+        border-color: rgba(80, 140, 255, 0.25);
+        box-shadow: 0 0 0 8px rgba(30, 50, 110, 0.35), 0 0 30px rgba(47, 123, 255, 0.2);
+    }
+    body[data-theme="neon"] .dial-ticks::before {
+        background: repeating-conic-gradient(from 0deg, rgba(80,140,255,0.22) 0deg 1deg, transparent 1deg 30deg);
+    }
+    body[data-theme="neon"] .time-display {
+        color: #eaf9ff;
+        text-shadow: 0 0 10px rgba(55, 230, 255, 0.55), 0 0 2px rgba(255,255,255,0.6);
+    }
+    body[data-theme="neon"] .progress-track { stroke: rgba(90, 140, 255, 0.15); }
+    body[data-theme="neon"] .progress-fill { filter: drop-shadow(0 0 3px rgba(55, 230, 255, 0.7)); }
+
+    /* Çalışırken belirgin nabız halesi — transform + opacity (ikisi de ucuz/GPU) */
+    body[data-theme="neon"] .clock-dial::before {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        box-shadow: 0 0 50px 10px rgba(55, 230, 255, 0.50),
+                    0 0 100px 22px rgba(47, 123, 255, 0.30);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+        will-change: opacity, transform;
+    }
+    body[data-theme="neon"] .clock-dial.running::before {
+        opacity: 1;
+        animation: neonHalo 2.4s ease-in-out infinite;
+    }
+    @@keyframes neonHalo {
+        0%, 100% { opacity: 0.6;  transform: scale(1); }
+        50%      { opacity: 1;    transform: scale(1.06); }
+    }
+
+    /* Butonlar */
+    body[data-theme="neon"] .btn-reset {
+        background: #16224a;
+        color: #9fb6ec;
+        border-color: rgba(80,140,255,0.3);
+        box-shadow: 0 2px 0 #0a1230, 0 3px 10px rgba(0,0,0,0.4);
+    }
+        body[data-theme="neon"] .btn-reset:hover { color: #eaf6ff; background: #1c2c5c; }
+
+    body[data-theme="neon"] .btn-play {
+        background: linear-gradient(160deg, #37e6ff 0%, #2f7bff 100%);
+        color: #041024;
+        border-color: rgba(55,230,255,0.4);
+        box-shadow: 0 3px 0 #164a8a, 0 0 22px rgba(55, 230, 255, 0.4);
+    }
+    body[data-theme="neon"] .btn-pause {
+        background: linear-gradient(160deg, #6f8cff 0%, #3a5bd0 100%);
+        color: #eaf0ff;
+        box-shadow: 0 3px 0 #22357e, 0 0 20px rgba(90, 130, 255, 0.35);
+    }
+    body[data-theme="neon"] .btn-save {
+        background: linear-gradient(160deg, #1c2c5c 0%, #14204a 100%);
+        color: #cfe4ff;
+        border-color: rgba(80,140,255,0.35);
+        box-shadow: 0 2px 0 #0a1230, 0 0 16px rgba(47,123,255,0.25);
+    }
+
+    /* Alt panel & mikser */
+    body[data-theme="neon"] .panel-footer {
+        background: #0c1430;
+        border-top-color: rgba(80,140,255,0.2);
+    }
+    body[data-theme="neon"] .ambient-heading { color: #6f8fd8; }
+    body[data-theme="neon"] .ambient-chip {
+        background: #14204a;
+        border-color: rgba(80,140,255,0.25);
+    }
+        body[data-theme="neon"] .ambient-chip .ac-icon,
+        body[data-theme="neon"] .ambient-chip .ac-name { color: #b9cdf5; }
+        body[data-theme="neon"] .ambient-chip.active {
+            background: linear-gradient(160deg, #2f7bff, #1c48b0);
+            border-color: rgba(55,230,255,0.4);
+            box-shadow: 0 0 14px rgba(47,123,255,0.4);
+        }
+        body[data-theme="neon"] .ambient-chip.active .ac-icon,
+        body[data-theme="neon"] .ambient-chip.active .ac-name { color: #fff; }
+
+    /* Neon temada tema-chip görünümü */
+    body[data-theme="neon"] .theme-chip {
+        background: #14204a;
+        border-color: rgba(80,140,255,0.3);
+        color: #9fb6ec;
+    }
+    body[data-theme="neon"] .theme-chip.active {
+        background: linear-gradient(160deg, #2f7bff, #1c48b0);
+        color: #eaf6ff;
+        box-shadow: 0 0 14px rgba(47,123,255,0.4);
+    }
+
+    /* Mobilde animasyonu hafiflet — telefon yormasın (hale yine belirgin) */
+    @@media (max-width: 640px) {
+        body[data-theme="neon"] .room-background::before { animation-duration: 34s; }
+        body[data-theme="neon"] .room-background::after  { opacity: 0.7; animation-duration: 42s; }
+        body[data-theme="neon"] .clock-dial::before {
+            box-shadow: 0 0 36px 7px rgba(55,230,255,0.42), 0 0 64px 14px rgba(47,123,255,0.22);
+        }
+    }
+
+    /* Hareket azaltma tercihi: tüm neon animasyonlarını durdur */
+    @@media (prefers-reduced-motion: reduce) {
+        body[data-theme="neon"] .room-background::before,
+        body[data-theme="neon"] .room-background::after,
+        body[data-theme="neon"] .clock-dial.running::before {
+            animation: none !important;
+        }
+    }
+
+    /* ============================================================
+       AYARLAR (dişli) BUTONU + MODAL
+       ============================================================ */
+    .btn-settings {
+        width: 52px;
+        height: 52px;
+        background: var(--parchment);
+        color: var(--mahogany);
+        font-size: 1rem;
+        box-shadow: 0 2px 0 var(--tan), 0 3px 8px rgba(61, 43, 31, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(139, 111, 71, 0.2);
+    }
+
+        .btn-settings:hover {
+            background: var(--linen);
+            color: var(--espresso);
+            transform: translateY(-1px);
+        }
+
+    .settings-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 10, 20, 0.55);
+        z-index: 4000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+        .settings-overlay.show { display: flex; }
+
+    .settings-panel {
+        width: 100%;
+        max-width: 440px;
+        max-height: 85vh;
+        max-height: 85dvh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--cream);
+        border: 1px solid var(--tan);
+        border-radius: 16px;
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+        font-family: 'Crimson Pro', Georgia, serif;
+        animation: settingsIn 0.25s ease;
+    }
+
+    @@keyframes settingsIn {
+        from { opacity: 0; transform: translateY(12px) scale(0.98); }
+        to   { opacity: 1; transform: none; }
+    }
+
+    .settings-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 18px;
+        border-bottom: 1px solid var(--linen);
+        color: var(--ink);
+        font-family: 'Playfair Display', Georgia, serif;
+        font-weight: 700;
+        font-size: 1.05rem;
+        flex-shrink: 0;
+    }
+
+        .settings-head span {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+    .settings-close {
+        background: transparent;
+        border: none;
+        color: var(--tan);
+        font-size: 1.15rem;
+        cursor: pointer;
+        padding: 4px 9px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+        .settings-close:hover {
+            background: var(--linen);
+            color: var(--ink);
+        }
+
+    .settings-body {
+        padding: 18px;
+        overflow-y: auto;
+    }
+
+    .settings-section { margin-bottom: 22px; }
+    .settings-section:last-child { margin-bottom: 0; }
+
+    .settings-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.72rem;
+        font-style: italic;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--tan);
+        margin-bottom: 12px;
+    }
+
+    /* Modal içinde tema/ses sola hizalı, alt boşluk yok */
+    .settings-body .theme-switch {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        margin-bottom: 0;
+    }
+    .settings-body .ambient-grid { justify-content: flex-start; }
+
+    /* Neon: dişli + panel */
+    body[data-theme="neon"] .btn-settings {
+        background: #16224a;
+        color: #9fb6ec;
+        border-color: rgba(80, 140, 255, 0.3);
+        box-shadow: 0 2px 0 #0a1230, 0 3px 10px rgba(0, 0, 0, 0.4);
+    }
+        body[data-theme="neon"] .btn-settings:hover { color: #eaf6ff; background: #1c2c5c; }
+
+    body[data-theme="neon"] .settings-panel {
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(55, 230, 255, 0.14);
+    }
+
+    /* ============================================================
+       ORMAN TEMASI — Sunlit Forest (aydınlık panel + düşen yapraklar)
+       Tüm animasyonlar transform/opacity; eleman sayısı sınırlı.
+       ============================================================ */
+    body[data-theme="forest"] {
+        --cream: #f3f2e4;      /* aydınlık misty panel */
+        --parchment: #e9ead4;
+        --linen: #dfe2c8;
+        --tan: #9caf8f;
+        --walnut: #4a7c59;     /* orman yeşili accent */
+        --mahogany: #2e5940;
+        --espresso: #0f1c14;   /* derin kanopi zemini */
+        --ink: #22301f;        /* koyu yeşil metin */
+        --leaf: #4a9c63;
+        --gold: #cda94e;
+        --ring-focus: #57a768;
+        --ring-break: #c58a3a;
+        background-color: #0f1c14;
+        color: var(--ink);
+    }
+
+    /* Zemin: derin kanopi + süzülen güneş lekeleri (yalnızca transform) */
+    body[data-theme="forest"] .room-background::before {
+        background:
+            radial-gradient(ellipse 55% 45% at 28% 22%, rgba(180,210,120,0.20), transparent 60%),
+            radial-gradient(ellipse 50% 40% at 75% 68%, rgba(90,150,90,0.22), transparent 62%),
+            linear-gradient(180deg, #0c1710 0%, #142519 55%, #0d1a12 100%);
+        will-change: transform;
+        animation: forestLight1 30s ease-in-out infinite;
+    }
+    body[data-theme="forest"] .room-background::after {
+        background:
+            radial-gradient(ellipse 45% 40% at 62% 18%, rgba(205,215,140,0.16), transparent 60%),
+            radial-gradient(ellipse 48% 42% at 22% 82%, rgba(70,130,80,0.16), transparent 60%);
+        opacity: 1;
+        will-change: transform;
+        animation: forestLight2 38s ease-in-out infinite;
+    }
+    @@keyframes forestLight1 {
+        0%, 100% { transform: translate3d(-3%, -2%, 0) scale(1.06); }
+        50%      { transform: translate3d(4%, 3%, 0) scale(1.12); }
+    }
+    @@keyframes forestLight2 {
+        0%, 100% { transform: translate3d(3%, 2%, 0) scale(1.1); }
+        50%      { transform: translate3d(-4%, -3%, 0) scale(1.05); }
+    }
+
+    /* Düşen yapraklar */
+    .forest-leaves { display: none; }
+    body[data-theme="forest"] .forest-leaves {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 1;              /* zeminin üstünde, panelin arkasında */
+        pointer-events: none;
+        overflow: hidden;
+    }
+        body[data-theme="forest"] .forest-leaves .leaf {
+            position: absolute;
+            top: -9vh;
+            opacity: 0;
+            will-change: transform, opacity;
+            animation: leafFall linear infinite;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.15));
+        }
+    @@keyframes leafFall {
+        0%   { transform: translate3d(0, -9vh, 0) rotate(0deg);   opacity: 0; }
+        8%   { opacity: 0.85; }
+        92%  { opacity: 0.85; }
+        100% { transform: translate3d(var(--sway, 24px), 112vh, 0) rotate(300deg); opacity: 0; }
+    }
+    .forest-leaves .leaf:nth-child(1) { left: 7%;  font-size: 15px; color: #6faa5c; animation-duration: 15s; animation-delay: 0s;   --sway: 34px; }
+    .forest-leaves .leaf:nth-child(2) { left: 23%; font-size: 12px; color: #c9a84a; animation-duration: 19s; animation-delay: -6s;  --sway: -28px; }
+    .forest-leaves .leaf:nth-child(3) { left: 42%; font-size: 17px; color: #568a4a; animation-duration: 17s; animation-delay: -11s; --sway: 22px; }
+    .forest-leaves .leaf:nth-child(4) { left: 61%; font-size: 13px; color: #7fb265; animation-duration: 21s; animation-delay: -3s;  --sway: -36px; }
+    .forest-leaves .leaf:nth-child(5) { left: 78%; font-size: 16px; color: #b98f3c; animation-duration: 16s; animation-delay: -9s;  --sway: 30px; }
+    .forest-leaves .leaf:nth-child(6) { left: 90%; font-size: 12px; color: #6faa5c; animation-duration: 20s; animation-delay: -14s; --sway: -24px; }
+
+    /* Sarmaşıktan sarkan sallanan maymunlar (yalnızca orman teması) */
+    .forest-monkey { display: none; }
+    body[data-theme="forest"] .mode-btn .forest-monkey {
+        display: block;
+        position: absolute;
+        top: 100%;                 /* sarmaşık butonun ALT kenarından başlar */
+        left: 50%;
+        width: 40px;
+        height: 108px;             /* uzun sarmaşık — butonun altına doğru sarkar */
+        margin-left: -20px;
+        transform-origin: top center;   /* cihaz eğimi (JS) bu noktadan uygulanır */
+        pointer-events: none;
+        z-index: 6;
+    }
+        /* İç katman: boştaki sürekli sallanma (cihaz eğimiyle birleşir) */
+        body[data-theme="forest"] .mode-btn .monkey-swing {
+            position: absolute;
+            inset: 0;
+            transform-origin: top center;
+            animation: monkeySwing 3.2s ease-in-out infinite;
+        }
+        /* Yapraklı sarmaşık deseni (dikeyde tekrarlar) — düz ip değil, büyük yapraklar */
+        body[data-theme="forest"] .mode-btn .forest-monkey .vine {
+            position: absolute;
+            top: 0;                /* butonun alt kenarından aşağı */
+            bottom: 36px;          /* sarmaşık maymunun ellerine kadar iner */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='26' viewBox='0 0 24 26'%3E%3Cpath d='M12 0 C8 5 16 9 12 13 C8 17 16 21 12 26' stroke='%233f7d55' stroke-width='2.8' fill='none' stroke-linecap='round'/%3E%3Cellipse cx='4.5' cy='8' rx='5' ry='2.7' fill='%236faa5c' transform='rotate(-42 4.5 8)'/%3E%3Cellipse cx='19.5' cy='18' rx='5' ry='2.7' fill='%237fb265' transform='rotate(42 19.5 18)'/%3E%3C/svg%3E");
+            background-repeat: repeat-y;
+            background-position: center top;
+            background-size: 24px 26px;
+        }
+        body[data-theme="forest"] .mode-btn .forest-monkey .mk {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            line-height: 0;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
+        }
+            body[data-theme="forest"] .mode-btn .forest-monkey .mk svg {
+                display: block;
+                width: 36px;
+                height: auto;
+            }
+    /* İki maymun senkron sallanmasın */
+    body[data-theme="forest"] #btnStopwatch .monkey-swing {
+        animation-duration: 3.7s;
+        animation-delay: -1.3s;
+    }
+    @@keyframes monkeySwing {
+        0%, 100% { transform: rotate(-7deg); }
+        50%      { transform: rotate(7deg); }
+    }
+
+    /* Panel — aydınlık misty */
+    body[data-theme="forest"] .panel-wall {
+        background: linear-gradient(160deg, #f6f5e8 0%, #e9ecd6 100%);
+        border: 1px solid rgba(78,124,89,0.30);
+        box-shadow: 0 0 0 1px rgba(120,160,110,0.12), 0 16px 46px rgba(10,25,15,0.5), inset 0 0 70px rgba(120,160,110,0.10);
+    }
+        body[data-theme="forest"] .panel-wall::after {
+            background: radial-gradient(ellipse 100% 100% at 50% 0%, rgba(120,170,110,0.10), transparent 60%);
+        }
+    body[data-theme="forest"] .panel-top-strip {
+        background: linear-gradient(90deg, #2e5940, #4a7c59 30%, #7fb265 50%, #4a7c59 70%, #2e5940);
+        box-shadow: 0 0 10px rgba(90,150,90,0.35);
+    }
+    body[data-theme="forest"] .panel-badge {
+        background: linear-gradient(135deg, #4a7c59, #2e5940);
+        color: #eef3e4;
+        box-shadow: 0 2px 12px rgba(46,89,64,0.45);
+    }
+    body[data-theme="forest"] .room-title { color: #26331f; }
+    body[data-theme="forest"] .room-subtitle,
+    body[data-theme="forest"] .mode-label-display,
+    body[data-theme="forest"] .footer-text,
+    body[data-theme="forest"] .time-label { color: #6f855f; }
+
+    body[data-theme="forest"] .mode-selector {
+        background: #e2e6cd;
+        border-color: rgba(78,124,89,0.25);
+    }
+    body[data-theme="forest"] .mode-btn { color: #5e7a52; }
+    body[data-theme="forest"] .mode-btn.active {
+        background: #f4f4e6;
+        color: #26331f;
+        box-shadow: 0 0 0 1px rgba(90,150,90,0.3), 0 1px 4px rgba(46,89,64,0.15);
+    }
+
+    body[data-theme="forest"] .clock-dial {
+        background: radial-gradient(circle at 38% 32%, #ffffff 0%, #f0f2df 42%, #e3e8cf 100%);
+        border-color: rgba(90,150,90,0.4);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 10px rgba(46,89,64,0.12), 0 0 26px rgba(90,150,90,0.20);
+    }
+    body[data-theme="forest"] .clock-ring-deco {
+        border-color: rgba(120,160,110,0.4);
+        box-shadow: 0 0 0 8px rgba(200,210,175,0.5), 0 0 24px rgba(90,150,90,0.18);
+    }
+    body[data-theme="forest"] .dial-ticks::before {
+        background: repeating-conic-gradient(from 0deg, rgba(78,124,89,0.18) 0deg 1deg, transparent 1deg 30deg);
+    }
+    body[data-theme="forest"] .time-display {
+        color: #26331f;
+        text-shadow: 1px 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(46,89,64,0.15);
+    }
+    body[data-theme="forest"] .progress-track { stroke: rgba(78,124,89,0.15); }
+    body[data-theme="forest"] .progress-fill { filter: drop-shadow(0 0 3px rgba(90,170,100,0.6)); }
+
+    /* Çalışırken güneş süzülmesi halesi (yeşil-altın) */
+    body[data-theme="forest"] .clock-dial::before {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        box-shadow: 0 0 48px 9px rgba(120,190,110,0.42), 0 0 96px 20px rgba(205,169,78,0.20);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+        will-change: opacity, transform;
+    }
+    body[data-theme="forest"] .clock-dial.running::before {
+        opacity: 1;
+        animation: forestHalo 2.8s ease-in-out infinite;
+    }
+    @@keyframes forestHalo {
+        0%, 100% { opacity: 0.55; transform: scale(1); }
+        50%      { opacity: 0.95; transform: scale(1.05); }
+    }
+
+    /* Butonlar */
+    body[data-theme="forest"] .btn-reset,
+    body[data-theme="forest"] .btn-settings {
+        background: #e6e9d2;
+        color: #4a7c59;
+        border-color: rgba(78,124,89,0.3);
+        box-shadow: 0 2px 0 #c3ccae, 0 3px 8px rgba(20,40,25,0.12);
+    }
+        body[data-theme="forest"] .btn-reset:hover,
+        body[data-theme="forest"] .btn-settings:hover { background: #dde2c5; color: #2e5940; }
+    body[data-theme="forest"] .btn-play {
+        background: linear-gradient(160deg, #5aa86a 0%, #3f7d55 100%);
+        color: #f2f7ec;
+        border-color: rgba(46,89,64,0.35);
+        box-shadow: 0 3px 0 #285238, 0 0 22px rgba(90,168,106,0.4);
+    }
+    body[data-theme="forest"] .btn-pause {
+        background: linear-gradient(160deg, #cdaa54 0%, #a9822f 100%);
+        color: #fff8ea;
+        box-shadow: 0 3px 0 #7a5c1e, 0 0 20px rgba(205,170,84,0.35);
+    }
+    body[data-theme="forest"] .btn-save {
+        background: linear-gradient(160deg, #4a7c59 0%, #345e42 100%);
+        color: #eef3e4;
+        border-color: rgba(46,89,64,0.35);
+        box-shadow: 0 2px 0 #223d2b, 0 0 14px rgba(74,124,89,0.3);
+    }
+
+    /* Alt panel + mikser */
+    body[data-theme="forest"] .panel-footer { background: #e2e6cd; border-top-color: rgba(78,124,89,0.2); }
+    body[data-theme="forest"] .ambient-chip { background: #e6e9d2; border-color: rgba(78,124,89,0.25); }
+        body[data-theme="forest"] .ambient-chip .ac-icon,
+        body[data-theme="forest"] .ambient-chip .ac-name { color: #4a6b45; }
+        body[data-theme="forest"] .ambient-chip.active {
+            background: linear-gradient(160deg, #5aa86a, #35704a);
+            border-color: rgba(120,190,110,0.4);
+            box-shadow: 0 0 12px rgba(74,124,89,0.35);
+        }
+        body[data-theme="forest"] .ambient-chip.active .ac-icon,
+        body[data-theme="forest"] .ambient-chip.active .ac-name { color: #fff; }
+
+    /* Mobilde hafiflet: yaprak sayısını azalt, ışık daha yavaş, maymun biraz küçük */
+    @@media (max-width: 640px) {
+        body[data-theme="forest"] .room-background::before { animation-duration: 40s; }
+        body[data-theme="forest"] .room-background::after  { opacity: 0.75; animation-duration: 48s; }
+        body[data-theme="forest"] .forest-leaves .leaf:nth-child(5),
+        body[data-theme="forest"] .forest-leaves .leaf:nth-child(6) { display: none; }
+        body[data-theme="forest"] .mode-btn .forest-monkey .mk svg { width: 31px; }
+    }
+
+    /* Hareket azaltma tercihi: orman animasyonlarını durdur (maymunlar düz asılı kalır) */
+    @@media (prefers-reduced-motion: reduce) {
+        body[data-theme="forest"] .room-background::before,
+        body[data-theme="forest"] .room-background::after,
+        body[data-theme="forest"] .forest-leaves .leaf,
+        body[data-theme="forest"] .clock-dial.running::before {
+            animation: none !important;
+        }
+        body[data-theme="forest"] .forest-leaves { display: none; }
+    }
 </style>
 
 <!-- Ortam ışığı -->
 <div class="room-background"></div>
 <div class="ambient-light"></div>
+
+<!-- Orman teması: düşen yapraklar (yalnızca data-theme="forest" iken görünür) -->
+<div class="forest-leaves" aria-hidden="true">
+    <i class="leaf fa-solid fa-leaf"></i>
+    <i class="leaf fa-solid fa-leaf"></i>
+    <i class="leaf fa-solid fa-leaf"></i>
+    <i class="leaf fa-solid fa-leaf"></i>
+    <i class="leaf fa-solid fa-leaf"></i>
+    <i class="leaf fa-solid fa-leaf"></i>
+</div>
+
 <div class="page-wrapper">
     <div class="container-override">
 
@@ -928,8 +1700,14 @@
 
                     <!-- MOD SEÇİCİ -->
                     <div class="mode-selector">
-                        <button class="mode-btn active" id="btnPomodoro" onclick="setMode('Pomodoro')">Pomodoro · 25 dk</button>
-                        <button class="mode-btn" id="btnStopwatch" onclick="setMode('Stopwatch')">Serbest Çalışma</button>
+                        <button class="mode-btn active" id="btnPomodoro" onclick="setMode('Pomodoro')">
+                            Pomodoro · 25 dk
+                            <span class="forest-monkey" aria-hidden="true"><span class="monkey-swing"><span class="vine"></span><span class="mk"><svg viewBox="0 0 46 54" xmlns="http://www.w3.org/2000/svg"><path d="M17 27 C10 18 16 6 22 6" fill="none" stroke="#9c6a42" stroke-width="5" stroke-linecap="round"/><path d="M29 27 C36 18 30 6 24 6" fill="none" stroke="#9c6a42" stroke-width="5" stroke-linecap="round"/><circle cx="22" cy="6" r="3.2" fill="#7a4f30"/><circle cx="24" cy="6" r="3.2" fill="#7a4f30"/><path d="M31 44 C41 44 40 32 34 33 C31 33.5 32 37 34 36" fill="none" stroke="#8a5c38" stroke-width="3" stroke-linecap="round"/><ellipse cx="23" cy="42" rx="8.5" ry="8" fill="#8a5c38"/><ellipse cx="23" cy="43" rx="5" ry="5.5" fill="#f0d3ac"/><ellipse cx="18.5" cy="50" rx="2.6" ry="3.4" fill="#7a4f30"/><ellipse cx="27.5" cy="50" rx="2.6" ry="3.4" fill="#7a4f30"/><circle cx="23" cy="27" r="12" fill="#9c6a42"/><circle cx="12" cy="24" r="5.2" fill="#9c6a42"/><circle cx="34" cy="24" r="5.2" fill="#9c6a42"/><circle cx="12" cy="24" r="2.6" fill="#f0d3ac"/><circle cx="34" cy="24" r="2.6" fill="#f0d3ac"/><ellipse cx="23" cy="30" rx="8.6" ry="8" fill="#f0d3ac"/><circle cx="15.5" cy="31" r="2.1" fill="#e6907a" opacity="0.55"/><circle cx="30.5" cy="31" r="2.1" fill="#e6907a" opacity="0.55"/><circle cx="19.5" cy="26.5" r="2.8" fill="#fff"/><circle cx="26.5" cy="26.5" r="2.8" fill="#fff"/><circle cx="20" cy="27" r="1.6" fill="#3a2415"/><circle cx="26" cy="27" r="1.6" fill="#3a2415"/><circle cx="20.5" cy="26.4" r="0.6" fill="#fff"/><circle cx="26.9" cy="26.4" r="0.6" fill="#fff"/><ellipse cx="23" cy="31.6" rx="1.5" ry="1" fill="#7a4f30"/><path d="M20.6 34 Q23 36.4 25.4 34" fill="none" stroke="#7a4f30" stroke-width="1.2" stroke-linecap="round"/></svg></span></span></span>
+                        </button>
+                        <button class="mode-btn" id="btnStopwatch" onclick="setMode('Stopwatch')">
+                            Serbest Çalışma
+                            <span class="forest-monkey" aria-hidden="true"><span class="monkey-swing"><span class="vine"></span><span class="mk"><svg viewBox="0 0 46 54" xmlns="http://www.w3.org/2000/svg"><path d="M17 27 C10 18 16 6 22 6" fill="none" stroke="#9c6a42" stroke-width="5" stroke-linecap="round"/><path d="M29 27 C36 18 30 6 24 6" fill="none" stroke="#9c6a42" stroke-width="5" stroke-linecap="round"/><circle cx="22" cy="6" r="3.2" fill="#7a4f30"/><circle cx="24" cy="6" r="3.2" fill="#7a4f30"/><path d="M31 44 C41 44 40 32 34 33 C31 33.5 32 37 34 36" fill="none" stroke="#8a5c38" stroke-width="3" stroke-linecap="round"/><ellipse cx="23" cy="42" rx="8.5" ry="8" fill="#8a5c38"/><ellipse cx="23" cy="43" rx="5" ry="5.5" fill="#f0d3ac"/><ellipse cx="18.5" cy="50" rx="2.6" ry="3.4" fill="#7a4f30"/><ellipse cx="27.5" cy="50" rx="2.6" ry="3.4" fill="#7a4f30"/><circle cx="23" cy="27" r="12" fill="#9c6a42"/><circle cx="12" cy="24" r="5.2" fill="#9c6a42"/><circle cx="34" cy="24" r="5.2" fill="#9c6a42"/><circle cx="12" cy="24" r="2.6" fill="#f0d3ac"/><circle cx="34" cy="24" r="2.6" fill="#f0d3ac"/><ellipse cx="23" cy="30" rx="8.6" ry="8" fill="#f0d3ac"/><circle cx="15.5" cy="31" r="2.1" fill="#e6907a" opacity="0.55"/><circle cx="30.5" cy="31" r="2.1" fill="#e6907a" opacity="0.55"/><circle cx="19.5" cy="26.5" r="2.8" fill="#fff"/><circle cx="26.5" cy="26.5" r="2.8" fill="#fff"/><circle cx="20" cy="27" r="1.6" fill="#3a2415"/><circle cx="26" cy="27" r="1.6" fill="#3a2415"/><circle cx="20.5" cy="26.4" r="0.6" fill="#fff"/><circle cx="26.9" cy="26.4" r="0.6" fill="#fff"/><ellipse cx="23" cy="31.6" rx="1.5" ry="1" fill="#7a4f30"/><path d="M20.6 34 Q23 36.4 25.4 34" fill="none" stroke="#7a4f30" stroke-width="1.2" stroke-linecap="round"/></svg></span></span></span>
+                        </button>
                     </div>
 
                     <!-- SEANS İNDİKATÖRLERİ -->
@@ -999,6 +1777,14 @@
                                 title="Bitir ve Kaydet">
                             <i class="fa-solid fa-flag-checkered"></i>&nbsp; Kaydet
                         </button>
+
+                        <button class="btn-control btn-settings has-tooltip"
+                                data-tip="Tema & Ses"
+                                id="btnSettings"
+                                onclick="openSettings()"
+                                title="Tema ve Ses Ayarları">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
                     </div>
 
                     <!-- DURUM MESAJI -->
@@ -1024,16 +1810,57 @@
     </div>
 </div>
 
+<!-- AYARLAR MODALI (Tema & Ses) -->
+<div class="settings-overlay" id="settingsModal" aria-hidden="true">
+    <div class="settings-panel">
+        <div class="settings-head">
+            <span><i class="fa-solid fa-gear"></i> Ayarlar</span>
+            <button type="button" class="settings-close" onclick="closeSettings()" aria-label="Kapat">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="settings-body">
+            <!-- TEMA -->
+            <div class="settings-section">
+                <div class="settings-label"><i class="fa-solid fa-palette"></i> Tema</div>
+                <div class="theme-switch">
+                    <button type="button" class="theme-chip active" data-theme="library" onclick="applyTheme('library')">
+                        <span class="swatch" style="background:#e0d5be;"></span> Kütüphane
+                    </button>
+                    <button type="button" class="theme-chip" data-theme="neon" onclick="applyTheme('neon')">
+                        <span class="swatch" style="background:linear-gradient(135deg,#2f7bff,#37e6ff);"></span> Neon
+                        <span class="prem-badge">Premium</span>
+                    </button>
+                    <button type="button" class="theme-chip" data-theme="forest" onclick="applyTheme('forest')">
+                        <span class="swatch" style="background:linear-gradient(135deg,#5aa86a,#2e5940);"></span> Orman
+                        <span class="prem-badge">Premium</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ORTAM SESLERİ -->
+            <div class="settings-section ambient-section">
+                <div class="settings-label"><i class="fa-solid fa-music"></i> Ortam Sesleri</div>
+                <div class="ambient-grid" id="ambientGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     const POMODORO_MINUTES = 25;
     const SHORT_BREAK_MINUTES = 5;
     const LONG_BREAK_MINUTES = 15;
 
     let currentMode = 'Pomodoro';
-    let timerInterval;
-    let elapsedSeconds = 0;
+    let tickInterval = null;
+    // Zaman artık tik saymak yerine gerçek saat damgasıyla ölçülüyor (arka planda drift yok)
+    let accumulatedMs = 0;   // duraklamalar arası biriken süre
+    let runStartMs = 0;      // mevcut çalışma segmentinin başlangıç damgası
+    let elapsedSeconds = 0;  // türetilmiş: geçen tam saniye
     let isRunning = false;
     let sessionPomodoroCount = 0;
+    let wakeLock = null;
 
     // DOM
     const display     = document.getElementById('timeDisplay');
@@ -1045,51 +1872,121 @@
     const alertBox    = document.getElementById('statusAlert');
     const progressArc = document.getElementById('progressArc');
     const breakNotice = document.getElementById('breakNotice');
+    const baseTitle   = document.title;
 
     const CIRCUMFERENCE = 2 * Math.PI * 122; // ~766.5
 
-    function updateDisplay() {
-        let displaySeconds = 0;
-        let totalSeconds   = 0;
+    // Halka artık kesintili adımlar yerine 250ms'de akıcı ilerlesin
+    progressArc.style.transition = 'stroke-dashoffset 0.25s linear';
 
-        if (currentMode === 'Pomodoro') {
-            totalSeconds   = POMODORO_MINUTES * 60;
-            displaySeconds = Math.max(0, totalSeconds - elapsedSeconds);
-        } else if (currentMode === 'ShortBreak') {
-            totalSeconds   = SHORT_BREAK_MINUTES * 60;
-            displaySeconds = Math.max(0, totalSeconds - elapsedSeconds);
-        } else if (currentMode === 'LongBreak') {
-            totalSeconds   = LONG_BREAK_MINUTES * 60;
-            displaySeconds = Math.max(0, totalSeconds - elapsedSeconds);
-        } else {
-            displaySeconds = elapsedSeconds;
-            totalSeconds   = 0; // kronometre — hatta dolma yok
+    // Tema halka renkleri — updateDisplay sıcak yolunda getComputedStyle çağırmamak için önbellek
+    let ringFocusColor = '#4a7c59', ringBreakColor = '#c0622a';
+    function refreshRingColors() {
+        const cs = getComputedStyle(document.body);
+        const f = cs.getPropertyValue('--ring-focus').trim();
+        const b = cs.getPropertyValue('--ring-break').trim();
+        if (f) ringFocusColor = f;
+        if (b) ringBreakColor = b;
+    }
+
+    // ── TEMA (Kütüphane / Neon) ──
+    const THEME_KEY = 'pomodoroTheme';
+    function applyTheme(name) {
+        if (name === 'neon' || name === 'forest') document.body.dataset.theme = name;
+        else { delete document.body.dataset.theme; name = 'library'; }
+        document.querySelectorAll('.theme-chip').forEach(function (c) {
+            c.classList.toggle('active', c.dataset.theme === name);
+        });
+        try { localStorage.setItem(THEME_KEY, name); } catch (e) { }
+        refreshRingColors();
+        updateDisplay();
+    }
+
+    // ── AYARLAR MODALI (Tema & Ses) ──
+    function openSettings() { document.getElementById('settingsModal').classList.add('show'); }
+    function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+
+    (function () {
+        var ov = document.getElementById('settingsModal');
+        if (ov) ov.addEventListener('click', function (e) { if (e.target === ov) closeSettings(); });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeSettings();
+        });
+    })();
+
+    // ── Telefon hareketine göre maymunlar hafifçe eğilsin (basit) ──
+    // Dış katmana (device tilt) cihaz eğimi, iç katmana (CSS) sürekli salınım uygulanır → birleşir.
+    (function () {
+        if (!window.DeviceOrientationEvent) return;
+        var current = 0, target = 0, running = false;
+
+        function onOrient(e) {
+            if (e.gamma == null) return;
+            target = Math.max(-16, Math.min(16, e.gamma * 0.4)); // sol-sağ eğim, sınırlı
+            if (!running) { running = true; requestAnimationFrame(loop); }
         }
+        function loop() {
+            current += (target - current) * 0.08; // yumuşat
+            var ms = document.querySelectorAll('.forest-monkey');
+            for (var i = 0; i < ms.length; i++) {
+                ms[i].style.transform = 'rotate(' + current.toFixed(2) + 'deg)';
+            }
+            requestAnimationFrame(loop);
+        }
+
+        window.addEventListener('deviceorientation', onOrient, { passive: true });
+
+        // iOS 13+ hareket sensörü izni: ilk dokunuşta iste
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            window.addEventListener('touchend', function askOnce() {
+                window.removeEventListener('touchend', askOnce);
+                DeviceOrientationEvent.requestPermission().catch(function () { });
+            }, { once: true, passive: true });
+        }
+    })();
+
+    function totalSecondsForMode() {
+        if (currentMode === 'Pomodoro')   return POMODORO_MINUTES * 60;
+        if (currentMode === 'ShortBreak') return SHORT_BREAK_MINUTES * 60;
+        if (currentMode === 'LongBreak')  return LONG_BREAK_MINUTES * 60;
+        return 0; // Serbest çalışma (kronometre) — dolma yok
+    }
+
+    function currentElapsedMs() {
+        return accumulatedMs + (isRunning ? (Date.now() - runStartMs) : 0);
+    }
+
+    function updateDisplay() {
+        const elapsedMs   = currentElapsedMs();
+        elapsedSeconds    = Math.floor(elapsedMs / 1000);
+        const totalSeconds = totalSecondsForMode();
+
+        const displaySeconds = totalSeconds > 0
+            ? Math.max(0, totalSeconds - elapsedSeconds)
+            : elapsedSeconds;
 
         const minutes = Math.floor(displaySeconds / 60);
         const seconds = displaySeconds % 60;
-        display.textContent =
-            String(minutes).padStart(2, '0') + ':' +
-            String(seconds).padStart(2, '0');
+        const txt = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+        display.textContent = txt;
 
-        // İlerleme halkası
+        // İlerleme halkası — kesirli ilerleme (akıcı ve 25 dk'da tam dolar)
         if (totalSeconds > 0) {
-            const progress  = Math.min(elapsedSeconds / totalSeconds, 1);
-            const offset    = CIRCUMFERENCE * (1 - progress);
+            const progress = Math.min((elapsedMs / 1000) / totalSeconds, 1);
             progressArc.style.strokeDasharray  = CIRCUMFERENCE;
-            progressArc.style.strokeDashoffset = offset;
-
-            // Mola modunda farklı renk
-            if (currentMode === 'ShortBreak' || currentMode === 'LongBreak') {
-                progressArc.style.stroke = '#c0622a';
-            } else {
-                progressArc.style.stroke = '#4a7c59';
-            }
+            progressArc.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+            const isBreak = (currentMode === 'ShortBreak' || currentMode === 'LongBreak');
+            progressArc.style.stroke = isBreak ? ringBreakColor : ringFocusColor;
         } else {
             progressArc.style.strokeDashoffset = CIRCUMFERENCE;
         }
 
-        // Seans noktalarını güncelle
+        // Sekme başlığında geri sayım (arka plandayken de görünür)
+        if (isRunning) {
+            const tl = { Pomodoro: 'Odak', Stopwatch: 'Çalışma', ShortBreak: 'Mola', LongBreak: 'Mola' }[currentMode] || '';
+            document.title = txt + ' · ' + tl;
+        }
+
         updateDots();
     }
 
@@ -1103,6 +2000,49 @@
                 dot.classList.add('active');
             }
         }
+    }
+
+    // ── EKRANI UYANIK TUT (Wake Lock) ──
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+        } catch (e) { /* desteklenmiyor veya reddedildi */ }
+    }
+    function releaseWakeLock() {
+        try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) { }
+    }
+
+    // ── BİTİŞ SESİ (Web Audio ile üretilir, dosya gerekmez) ──
+    let audioCtx = null;
+    function playChime() {
+        try {
+            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            [880, 1174.66, 1567.98].forEach(function (freq, i) {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = 'sine';
+                o.frequency.value = freq;
+                o.connect(g); g.connect(audioCtx.destination);
+                const t = now + i * 0.16;
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+                o.start(t); o.stop(t + 0.95);
+            });
+        } catch (e) { }
+    }
+
+    // ── TARAYICI BİLDİRİMİ ──
+    function ensureNotifyPermission() {
+        try {
+            if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+        } catch (e) { }
+    }
+    function notify(title, body) {
+        try {
+            if ('Notification' in window && Notification.permission === 'granted') new Notification(title, { body: body });
+        } catch (e) { }
     }
 
     function setMode(mode) {
@@ -1142,10 +2082,21 @@
         resetTimer();
     }
 
+    function tick() {
+        updateDisplay();
+        const total = totalSecondsForMode();
+        if (total > 0 && currentElapsedMs() / 1000 >= total) {
+            // Süre doldu — tek sefer tetiklenir (finish* içinde pauseTimer çağrılıyor)
+            if (currentMode === 'Pomodoro') finishAndSave(true);
+            else finishBreak();
+        }
+    }
+
     function startTimer() {
         if (isRunning) return;
 
         isRunning = true;
+        runStartMs = Date.now();
         timerWrapper.classList.add('running');
         btnPlay.style.display  = 'none';
         btnPause.style.display = 'flex';
@@ -1155,39 +2106,48 @@
             btnSave.style.display = 'flex';
         }
 
-        timerInterval = setInterval(() => {
-            elapsedSeconds++;
-            updateDisplay();
+        requestWakeLock();
+        ensureNotifyPermission();
+        resumeAmbientIfAny();
 
-            if (currentMode === 'Pomodoro' && elapsedSeconds >= (POMODORO_MINUTES * 60)) {
-                finishAndSave(true);
-            } else if (currentMode === 'ShortBreak' && elapsedSeconds >= (SHORT_BREAK_MINUTES * 60)) {
-                finishBreak();
-            } else if (currentMode === 'LongBreak' && elapsedSeconds >= (LONG_BREAK_MINUTES * 60)) {
-                finishBreak();
-            }
-        }, 1000); // NOT: Test için 100x hız. Gerçek kullanımda 1000 yap.
+        tickInterval = setInterval(tick, 250);
+        tick();
     }
 
     function pauseTimer() {
         if (!isRunning) return;
-        clearInterval(timerInterval);
+        accumulatedMs += Date.now() - runStartMs;
+        clearInterval(tickInterval);
         isRunning = false;
         timerWrapper.classList.remove('running');
         btnPause.style.display = 'none';
         btnPlay.style.display  = 'flex';
+        releaseWakeLock();
+        document.title = baseTitle;
     }
 
     function resetTimer() {
         pauseTimer();
+        accumulatedMs  = 0;
         elapsedSeconds = 0;
         btnSave.style.display  = 'none';
         alertBox.style.display = 'none';
+        document.title = baseTitle;
         updateDisplay();
     }
 
+    // Arka plandan dönünce süreyi anında gerçek saatle senkronla + kilidi geri al
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            if (isRunning && !wakeLock) requestWakeLock();
+            if (isRunning) tick();
+        }
+    });
+
     function finishBreak() {
         pauseTimer();
+        playChime();
+        notify('Mola bitti', 'Yeni bir odak seansına hazır mısın?');
         setMode('Pomodoro');
         showAlert("Mola süreniz doldu. Yeni bir odak seansına hazır mısınız?", true);
     }
@@ -1200,7 +2160,15 @@
             return;
         }
 
-        const durationInMinutes = Math.floor(elapsedSeconds / 60);
+        if (isAutoCompleted) {
+            playChime();
+            notify('Odak tamamlandı 🎉', '25 dakikalık seansın bitti. Harika iş!');
+        }
+
+        // Otomatik tamamlanan pomodoro tam süre kaydedilir (arka plan taşmasını sınırla)
+        const durationInMinutes = (currentMode === 'Pomodoro' && isAutoCompleted)
+            ? POMODORO_MINUTES
+            : Math.floor(currentElapsedMs() / 60000);
 
         if (durationInMinutes < 1) {
             showAlert("En az 1 dakikalık çalışmaları kaydedebilirsiniz.", false);
@@ -1234,6 +2202,7 @@
                     showFloatingRewardAnimation(data.earnedStones);
                 }
 
+                accumulatedMs  = 0;
                 elapsedSeconds = 0;
                 btnSave.style.display = 'none';
 
@@ -1278,8 +2247,117 @@
         }, 6000);
     }
 
+    // ============================================================
+    //  ORTAM SESLERİ MİKSERİ (yağmur, kuş, şömine, kafe, dalga…)
+    //  Sesler yönetici panelinden eklenir (SuperAdmin › Ortam Sesleri),
+    //  wwwroot/sounds/manifest.json içinde tutulur. Hiç ses yoksa bölüm gizlenir.
+    // ============================================================
+    const AMBIENT_DATA = @Html.Raw(ViewBag.AmbientSoundsJson ?? "[]");
+    const SOUNDS = (Array.isArray(AMBIENT_DATA) ? AMBIENT_DATA : []).map(function (s) {
+        return { key: s.file, name: s.name, icon: s.icon || 'fa-solid fa-music', file: s.file };
+    });
+    const AMB_KEY = 'pomodoroAmbient';
+    let ambState = {};          // key -> { on, volume }
+    const ambAudio = {};        // key -> Audio
+    let ambResumed = false;
+
+    function loadAmbState() {
+        try { ambState = JSON.parse(localStorage.getItem(AMB_KEY)) || {}; } catch (e) { ambState = {}; }
+    }
+    function saveAmbState() {
+        try { localStorage.setItem(AMB_KEY, JSON.stringify(ambState)); } catch (e) { }
+    }
+
+    function buildAmbient() {
+        loadAmbState();
+        const grid = document.getElementById('ambientGrid');
+        const section = document.querySelector('.ambient-section');
+
+        // Hiç ses eklenmemişse ses bölümünü gizle (ayarlar modalında)
+        if (!SOUNDS.length) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+
+        SOUNDS.forEach(function (sd) {
+            const st = ambState[sd.key] || { on: false, volume: 0.6 };
+            ambState[sd.key] = st;
+
+            const chip = document.createElement('div');
+            chip.className = 'ambient-chip' + (st.on ? ' active' : '');
+            chip.dataset.key = sd.key;
+            chip.innerHTML =
+                '<i class="ac-icon ' + sd.icon + '"></i>' +
+                '<span class="ac-name">' + sd.name + '</span>' +
+                '<input type="range" class="ambient-vol" min="0" max="1" step="0.05" value="' + st.volume + '">';
+            grid.appendChild(chip);
+
+            const slider = chip.querySelector('.ambient-vol');
+            slider.addEventListener('click', function (e) { e.stopPropagation(); });
+            slider.addEventListener('input', function (e) {
+                e.stopPropagation();
+                st.volume = parseFloat(slider.value);
+                if (ambAudio[sd.key]) ambAudio[sd.key].volume = st.volume;
+                saveAmbState();
+            });
+
+            chip.addEventListener('click', function (e) {
+                if (e.target.closest('.ambient-vol')) return;
+                if (chip.classList.contains('unavailable')) return;
+                toggleAmbient(sd, chip);
+            });
+        });
+    }
+
+    function playAmbient(sd, chip) {
+        let a = ambAudio[sd.key];
+        if (!a) {
+            a = new Audio(sd.file);
+            a.loop = true;
+            a.addEventListener('error', function () {
+                // Dosya eksik/oynatılamıyor → butonu kullanılamaz yap
+                if (chip) { chip.classList.add('unavailable'); chip.classList.remove('active'); }
+                ambState[sd.key].on = false;
+                saveAmbState();
+            });
+            ambAudio[sd.key] = a;
+        }
+        a.volume = ambState[sd.key].volume;
+        a.play().catch(function () { /* autoplay engeli ya da dosya yok */ });
+    }
+
+    function toggleAmbient(sd, chip) {
+        const st = ambState[sd.key];
+        if (st.on) {
+            st.on = false;
+            chip.classList.remove('active');
+            if (ambAudio[sd.key]) ambAudio[sd.key].pause();
+        } else {
+            st.on = true;
+            chip.classList.add('active');
+            playAmbient(sd, chip);
+        }
+        saveAmbState();
+    }
+
+    // Önceden açık bırakılan sesleri ilk kullanıcı etkileşiminde sürdür
+    function resumeAmbientIfAny() {
+        if (ambResumed) return;
+        ambResumed = true;
+        SOUNDS.forEach(function (sd) {
+            const st = ambState[sd.key];
+            if (st && st.on) {
+                const chip = document.querySelector('.ambient-chip[data-key="' + sd.key + '"]');
+                playAmbient(sd, chip);
+            }
+        });
+    }
+    document.addEventListener('click', resumeAmbientIfAny, { once: true });
+
     // Başlangıç
     window.onload = function () {
+        buildAmbient();
+        applyTheme(localStorage.getItem(THEME_KEY) || 'library');
         updateDisplay();
         // İlerleme halkası başlangıç
         progressArc.style.strokeDasharray  = CIRCUMFERENCE;

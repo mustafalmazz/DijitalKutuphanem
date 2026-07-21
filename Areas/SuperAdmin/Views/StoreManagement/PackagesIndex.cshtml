@@ -28,6 +28,7 @@
                             <th>Tür</th>
                             <th>Fiyat (Taş)</th>
                             <th>Tema Rengi</th>
+                            <th>Bitiş / Durum</th>
                             <th class="text-end">İşlemler</th>
                         </tr>
                     </thead>
@@ -55,6 +56,22 @@
                                 <td><i class="fa-solid fa-gem text-info"></i> @package.PriceInStones</td>
                                 <td>
                                     <span class="badge" style="background-color: @(package.ThemeColor ?? "#666");">@package.ThemeColor</span>
+                                </td>
+                                <td>
+                                    @if (package.ExpiresAt == null)
+                                    {
+                                        <span class="badge bg-secondary"><i class="fa-solid fa-infinity"></i> Süresiz</span>
+                                    }
+                                    else if (package.IsExpired)
+                                    {
+                                        <span class="badge bg-danger"><i class="fa-solid fa-ban"></i> Süresi doldu</span>
+                                        <br /><small class="text-muted">@package.ExpiresAt.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success"><i class="fa-solid fa-clock"></i> Aktif</span>
+                                        <br /><small class="text-muted">@package.ExpiresAt.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                                    }
                                 </td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#managePackageModal-@package.Id" title="İçeriği Yönet">
@@ -118,6 +135,17 @@
                                                 <div class="mb-3">
                                                     <label class="form-label">Tema Rengi (HEX, Örn: #ff9800)</label>
                                                     <input type="color" name="ThemeColor" class="form-control form-control-color bg-secondary border-0" value="@(package.ThemeColor ?? "#ff9800")" title="Renk seçin" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Bitiş Tarihi &amp; Saati (bu anda paket gizlenir)</label>
+                                                    <div class="input-group">
+                                                        <input type="datetime-local" name="ExpiresAt" class="form-control bg-secondary text-light border-0"
+                                                               value="@(package.ExpiresAt?.ToString("yyyy-MM-ddTHH:mm"))" />
+                                                        <button type="button" class="btn btn-outline-secondary" onclick="this.closest('.input-group').querySelector('input').value=''" title="Süresiz yap">
+                                                            <i class="fa-solid fa-xmark"></i>
+                                                        </button>
+                                                    </div>
+                                                    <small class="text-muted">Boş bırakırsan paket süresiz olur. Bu tarih geçince paket Packs sayfasında gizlenir, silinmez.</small>
                                                 </div>
                                             </div>
                                             <div class="modal-footer border-secondary">
@@ -212,7 +240,7 @@
                         @if (!Model.Any())
                         {
                             <tr>
-                                <td colspan="5" class="text-center py-4">Henüz hiç paket eklenmemiş.</td>
+                                <td colspan="7" class="text-center py-4">Henüz hiç paket eklenmemiş.</td>
                             </tr>
                         }
                     </tbody>
@@ -265,6 +293,11 @@
                     <div class="mb-3">
                         <label class="form-label">Tema Rengi (HEX, Örn: #ff9800)</label>
                         <input type="color" name="ThemeColor" class="form-control form-control-color bg-secondary border-0" value="#ff9800" title="Renk seçin" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bitiş Tarihi &amp; Saati (opsiyonel)</label>
+                        <input type="datetime-local" name="ExpiresAt" class="form-control bg-secondary text-light border-0" />
+                        <small class="text-muted">Boş bırakırsan paket süresiz olur. Bu tarih geçince paket Packs sayfasında otomatik gizlenir (silinmez).</small>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">

@@ -582,8 +582,13 @@
         @if (fIsMember)
         {
             <li>
-                <a href="/Profile/PublicProfile/@fUserId" class="action-sheet-item">
+                <a href="/Profile/PublicProfile/@fUserId" class="action-sheet-item d-flex align-items-center">
                   <i class="fa-solid fa-user"></i>  Profilim
+                    @* Takip isteği uyarısı artık burada gösterilir (zil profil sayfasına taşındı).
+                       id, mevcut azaltma JS'iyle uyumlu kalması için "toplulukBadge" olarak korunur. *@
+                    <span id="toplulukBadge" class="badge bg-danger rounded-pill ms-auto @(ViewBag.FollowRequestCount != null && ViewBag.FollowRequestCount > 0 ? "" : "d-none")" style="font-size: 0.8rem; margin-right: 0;">
+                        @(ViewBag.FollowRequestCount ?? 0)
+                    </span>
                 </a>
             </li>
         <li>
@@ -601,11 +606,8 @@
             </a>
         </li>
         <li>
-            <a href="/Profile/Community" class="action-sheet-item d-flex align-items-center">
+            <a href="/Profile/Community" class="action-sheet-item">
                 <i class="fa-solid fa-users"></i> Topluluk
-                <span id="toplulukBadge" class="badge bg-danger rounded-pill ms-auto @(ViewBag.FollowRequestCount != null && ViewBag.FollowRequestCount > 0 ? "" : "d-none")" style="font-size: 0.8rem; margin-right: 0;">
-                    @(ViewBag.FollowRequestCount ?? 0)
-                </span>
             </a>
         </li>
         <li>

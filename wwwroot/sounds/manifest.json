@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Ya\u011Fmur",
+    "icon": "fa-solid fa-cloud-rain",
+    "file": "/sounds/079c8a6766cc4ad8ba4cdd80fc18b5d8.mp3"
+  },
+  {
+    "name": "Ku\u015F",
+    "icon": "fa-solid fa-bird",
+    "file": "/sounds/ff550ed14d294ecbbc51f0ba2d011895.mp3"
+  },
+  {
+    "name": "Beyaz G\u00FCr\u00FClt\u00FC",
+    "icon": "fa-solid fa-brain",
+    "file": "/sounds/72c480e461614e49a8cb3f908c7d175f.mp3"
+  }
+]

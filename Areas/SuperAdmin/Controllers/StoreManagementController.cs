@@ -307,6 +307,7 @@ namespace BookManagementApp.Areas.SuperAdmin.Controllers
             existingPackage.PriceInStones = package.PriceInStones;
             existingPackage.IconClass = package.IconClass;
             existingPackage.ThemeColor = package.ThemeColor;
+            existingPackage.ExpiresAt = package.ExpiresAt;
 
             // Tür değişirse eski içerik paketten çözülür; yoksa öksüz kayıt kalır
             if (existingPackage.ItemType != package.ItemType)

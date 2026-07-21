@@ -243,6 +243,12 @@
                     <i class="fa-solid fa-panorama"></i> <span>Banner Yönetimi</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "AmbientSounds" ? "active" : "")"
+                   asp-area="SuperAdmin" asp-controller="AmbientSounds" asp-action="Index">
+                    <i class="fa-solid fa-music"></i> <span>Ortam Sesleri</span>
+                </a>
+            </li>
         </ul>
 
         <div class="mt-auto">

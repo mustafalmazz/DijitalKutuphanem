@@ -3,19 +3,15 @@ using BookManagementApp.Models;
 using BookManagementApp.Areas.Admin.Models;
 using Microsoft.EntityFrameworkCore;
 
-using Microsoft.AspNetCore.SignalR;
-
 namespace BookManagementApp.Controllers
 {
     public class MessageController : Controller
     {
         private readonly MyDbContext _context;
-        private readonly IHubContext<BookManagementApp.Hubs.ChatHub> _hubContext;
 
-        public MessageController(MyDbContext context, IHubContext<BookManagementApp.Hubs.ChatHub> hubContext)
+        public MessageController(MyDbContext context)
         {
             _context = context;
-            _hubContext = hubContext;
         }
 
         public IActionResult Index()
@@ -23,22 +19,33 @@ namespace BookManagementApp.Controllers
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null) return RedirectToAction("Login", "Account");
 
-            // Blocked or blocking IDs
+            int uid = userId.Value;
+
+            // Engellenen / engelleyen kullanıcı id'leri
             var blockedOrBlockingIds = _context.Blocks
-                .Where(b => b.BlockerId == userId.Value || b.BlockedId == userId.Value)
-                .Select(b => b.BlockerId == userId.Value ? b.BlockedId : b.BlockerId)
+                .Where(b => b.BlockerId == uid || b.BlockedId == uid)
+                .Select(b => b.BlockerId == uid ? b.BlockedId : b.BlockerId)
                 .ToList();
 
-            // Kullanıcının daha önce mesajlaştığı kişileri bul (En son mesaj atanlar üstte)
+            // Her sohbet partneri için EN SON mesajın Id'si. Gruplama ve MAX artık
+            // veritabanında yapılıyor (eskiden kullanıcının TÜM mesajları belleğe çekilip
+            // orada gruplanıyordu). Id kimlik sütunu insertion sırasıyla arttığından,
+            // bir partnerle olan en büyük Id = en yeni mesaj.
+            var lastMessageIds = _context.ChatMessages
+                .Where(m => m.SenderId == uid || m.ReceiverId == uid)
+                .GroupBy(m => m.SenderId == uid ? m.ReceiverId : m.SenderId)
+                .Select(g => g.Max(m => m.Id))
+                .ToList();
+
+            // Yalnızca bu son mesajları taraf bilgileriyle çek (partner sayısı kadar satır).
             var conversations = _context.ChatMessages
                 .Include(m => m.Sender)
                 .Include(m => m.Receiver)
-                .Where(m => m.SenderId == userId || m.ReceiverId == userId)
+                .Where(m => lastMessageIds.Contains(m.Id))
                 .OrderByDescending(m => m.CreatedAt)
                 .ToList()
-                .GroupBy(m => m.SenderId == userId ? m.ReceiverId : m.SenderId)
-                .Where(g => !blockedOrBlockingIds.Contains(g.Key))
-                .Select(g => g.First())
+                // Engelli partnerler küçük sonuç kümesi üzerinde elenir (partner başına tek satır).
+                .Where(m => !blockedOrBlockingIds.Contains(m.SenderId == uid ? m.ReceiverId : m.SenderId))
                 .ToList();
 
             ViewBag.CurrentUserId = userId;
@@ -50,11 +57,14 @@ namespace BookManagementApp.Controllers
             var myId = HttpContext.Session.GetInt32("UserId");
             if (myId == null) return RedirectToAction("Login", "Account");
 
+            // Kendine sohbet açılmaz (hub da göndermeyi reddeder)
+            if (userId == myId.Value) return RedirectToAction("Index");
+
             var otherUser = _context.Users.FirstOrDefault(u => u.Id == userId);
             if (otherUser == null) return NotFound();
 
-            var isBlocked = _context.Blocks.Any(b => 
-                (b.BlockerId == myId.Value && b.BlockedId == userId) || 
+            var isBlocked = _context.Blocks.Any(b =>
+                (b.BlockerId == myId.Value && b.BlockedId == userId) ||
                 (b.BlockerId == userId && b.BlockedId == myId.Value));
 
             if (isBlocked)
@@ -62,14 +72,15 @@ namespace BookManagementApp.Controllers
                 return RedirectToAction("Index"); // Redirect to messages if blocked
             }
 
-            if (otherUser.IsPrivate && otherUser.Id != myId.Value)
+            // Mesajlaşma kuralı: taraflardan biri diğerini takip ediyor olmalı
+            // (takip ettiğin VEYA seni takip eden). Bu iki durum dışında sohbet açılmaz.
+            bool related = _context.Follows.Any(f => f.IsAccepted &&
+                ((f.FollowerId == myId.Value && f.FollowingId == userId) ||
+                 (f.FollowerId == userId && f.FollowingId == myId.Value)));
+            if (!related)
             {
-                var isFollowing = _context.Follows.Any(f => f.FollowerId == myId.Value && f.FollowingId == userId && f.IsAccepted);
-                if (!isFollowing)
-                {
-                    TempData["ErrorMessage"] = "Bu hesap gizli olduğu için mesaj gönderemezsiniz. Lütfen önce takip edin.";
-                    return RedirectToAction("PublicProfile", "Profile", new { id = userId });
-                }
+                TempData["ErrorMessage"] = "Yalnızca takip ettiğin ya da seni takip eden kişilerle mesajlaşabilirsin.";
+                return RedirectToAction("PublicProfile", "Profile", new { id = userId });
             }
 
             ViewBag.OtherUser = otherUser;
@@ -82,79 +93,12 @@ namespace BookManagementApp.Controllers
                 .OrderBy(m => m.CreatedAt)
                 .ToList();
 
-            // Okunmamışları okundu yap
-            var unreadMessages = messages.Where(m => m.ReceiverId == myId && !m.IsRead).ToList();
-            if (unreadMessages.Any())
-            {
-                foreach (var msg in unreadMessages)
-                {
-                    msg.IsRead = true;
-                }
-                _context.SaveChanges();
-            }
+            // NOT: Okundu işaretleme artık burada yapılmıyor. İstemci bağlanınca hub'daki
+            // MarkMessagesAsRead çağrılıyor; o hem DB'de işaretliyor HEM de gönderene
+            // "MessagesRead" sinyali gönderiyor. Burada sessizce işaretlersek, hub okunmamış
+            // mesaj bulamayıp gönderene bildirim atamıyor ve tikler anlık maviye dönmüyordu.
 
             return View(messages);
-        }
-
-        [HttpPost]
-        public IActionResult SendMessage(int receiverId, string content)
-        {
-            var senderId = HttpContext.Session.GetInt32("UserId");
-            if (senderId == null) return Json(new { success = false, message = "Oturum kapalı." });
-            if (string.IsNullOrWhiteSpace(content)) return Json(new { success = false, message = "Boş mesaj gönderilemez." });
-
-            var otherUser = _context.Users.FirstOrDefault(u => u.Id == receiverId);
-            if (otherUser != null && otherUser.IsPrivate && otherUser.Id != senderId.Value)
-            {
-                var isFollowing = _context.Follows.Any(f => f.FollowerId == senderId.Value && f.FollowingId == receiverId && f.IsAccepted);
-                if (!isFollowing)
-                {
-                    return Json(new { success = false, message = "Bu hesap gizli olduğu için mesaj gönderemezsiniz." });
-                }
-            }
-
-            var msg = new ChatMessage
-            {
-                SenderId = senderId.Value,
-                ReceiverId = receiverId,
-                Content = content,
-                CreatedAt = DateTime.Now,
-                IsRead = false
-            };
-
-            _context.ChatMessages.Add(msg);
-            _context.SaveChanges();
-
-            return Json(new { success = true, messageId = msg.Id, content = msg.Content, createdAt = msg.CreatedAt.ToString("HH:mm") });
-        }
-
-        [HttpGet]
-        public IActionResult GetNewMessages(int receiverId, int lastMessageId)
-        {
-            var myId = HttpContext.Session.GetInt32("UserId");
-            if (myId == null) return Json(new { success = false });
-
-            var newMessages = _context.ChatMessages
-                .Where(m => m.Id > lastMessageId && ((m.SenderId == myId && m.ReceiverId == receiverId) || (m.SenderId == receiverId && m.ReceiverId == myId)))
-                .OrderBy(m => m.CreatedAt)
-                .Select(m => new {
-                    id = m.Id,
-                    senderId = m.SenderId,
-                    content = m.Content,
-                    createdAt = m.CreatedAt.ToString("HH:mm")
-                })
-                .ToList();
-
-            // Bize gelenleri okundu olarak işaretle
-            var unreadIds = newMessages.Where(m => m.senderId == receiverId).Select(m => m.id).ToList();
-            if (unreadIds.Any())
-            {
-                var unreadMsgs = _context.ChatMessages.Where(m => unreadIds.Contains(m.Id)).ToList();
-                foreach(var u in unreadMsgs) u.IsRead = true;
-                _context.SaveChanges();
-            }
-
-            return Json(new { success = true, messages = newMessages });
         }
 
         [HttpGet]

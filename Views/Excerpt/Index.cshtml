@@ -287,6 +287,222 @@
             cursor: pointer;
         }
 
+    /* Fotoğraf çek / galeri butonları */
+    .upload-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .upload-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: #f5efe3;
+        border: 1px solid #dccbb2;
+        color: #6b5541;
+        font-family: 'Georgia', serif;
+        font-size: 0.88rem;
+        font-weight: 600;
+        padding: 9px 18px;
+        border-radius: 22px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .upload-action-btn:hover {
+            background: #ece2cf;
+            border-color: #c89666;
+            color: #6b5541;
+        }
+
+        .upload-action-btn i {
+            color: #c89666;
+            font-size: 1rem;
+        }
+
+        /* Fotoğraf çekme yalnızca mobil/dokunmatik cihazlarda anlamlı */
+        .upload-action-btn.cam {
+            display: none;
+        }
+
+    /* Kitap seçici tetikleyici (select görünümünde buton) */
+    .book-picker-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    /* --- KİTAP SEÇİCİ MODAL (aramalı, mobil uyumlu) --- */
+    .book-picker-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(40, 30, 20, 0.55);
+        z-index: 3000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+        .book-picker-overlay.show {
+            display: flex;
+        }
+
+    .book-picker-panel {
+        background: linear-gradient(160deg, #fffdf9 0%, #f7f1e6 100%);
+        border: 1px solid #e6dac8;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 460px;
+        max-height: 85vh;
+        max-height: 85dvh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+        font-family: 'Georgia', serif;
+    }
+
+    .book-picker-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px solid #ecdfc9;
+        color: #6b5541;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .bp-close {
+        background: transparent;
+        border: none;
+        color: #9c8468;
+        font-size: 1.1rem;
+        padding: 4px 9px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+        .bp-close:hover {
+            background: #f0e8da;
+            color: #6b5541;
+        }
+
+    .book-picker-search {
+        position: relative;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f0e8da;
+        flex-shrink: 0;
+    }
+
+        .book-picker-search i {
+            position: absolute;
+            left: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #c89666;
+        }
+
+        .book-picker-search input {
+            width: 100%;
+            border: 1px solid #dccbb2;
+            border-radius: 12px;
+            background: #fffefb;
+            color: #5c4b3d;
+            font-family: 'Georgia', serif;
+            font-size: 16px; /* iOS'ta odaklanınca zoom yapmasın */
+            padding: 10px 12px 10px 38px;
+        }
+
+            .book-picker-search input:focus {
+                outline: none;
+                border-color: #c89666;
+                box-shadow: 0 0 0 3px rgba(200, 150, 102, 0.15);
+            }
+
+    .book-picker-list {
+        overflow-y: auto;
+        flex: 1;
+        padding: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .bp-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+        width: 100%;
+        text-align: left;
+        background: #fffdf9;
+        border: 1px solid #eee3d2;
+        border-radius: 10px;
+        padding: 11px 13px;
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+        .bp-row:hover, .bp-row:active {
+            background: #f7efdf;
+            border-color: #d9c3a2;
+        }
+
+    .bp-title {
+        color: #5c4b3d;
+        font-weight: 700;
+        font-size: 0.92rem;
+    }
+
+    .bp-author {
+        color: #9c8468;
+        font-style: italic;
+        font-size: 0.78rem;
+    }
+
+    .bp-empty {
+        text-align: center;
+        color: #9c8468;
+        padding: 26px 10px;
+        font-style: italic;
+    }
+
+    .book-picker-other {
+        border: none;
+        border-top: 1px solid #ecdfc9;
+        background: #f5efe3;
+        color: #8b6f47;
+        font-family: 'Georgia', serif;
+        font-weight: 600;
+        padding: 14px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+        .book-picker-other:hover {
+            background: #ece2cf;
+            color: #6b5541;
+        }
+
+    @@media (max-width: 575.98px) {
+        .book-picker-overlay {
+            padding: 0;
+        }
+
+        .book-picker-panel {
+            max-width: 100%;
+            height: 100%;
+            max-height: 100%;
+            border-radius: 0;
+        }
+    }
+
     .share-btn {
         background: linear-gradient(135deg, #a0785a 0%, #8b6f47 100%);
         border: none;
@@ -577,6 +793,11 @@
             .feed-header h2 {
                 justify-content: center;
             }
+
+        /* Mobilde "Fotoğraf Çek" görünür olsun */
+        .upload-action-btn.cam {
+            display: inline-flex;
+        }
     }
 </style>
 
@@ -615,7 +836,7 @@
 </div>
 
 <!-- PAYLAŞIM MODALI -->
-<div class="modal fade share-modal" id="shareModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade share-modal" id="shareModal" tabindex="-1" aria-hidden="true" data-bs-focus="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -625,15 +846,38 @@
             <div class="modal-body">
                 <form asp-action="Create" method="post" enctype="multipart/form-data" id="excerptForm">
                     <div class="d-flex flex-column gap-3">
-                        <select name="bookId" class="share-select" required asp-items="ViewBag.MyBooks">
-                            <option value="">📚 Kitabını seç...</option>
-                        </select>
+                        <!-- KİTAP SEÇİMİ: aramalı modal tetikleyicisi -->
+                        <div>
+                            <button type="button" class="share-select book-picker-trigger" id="bookPickerTrigger">
+                                <span id="bookPickerLabel"><i class="fa-solid fa-book me-1" style="color:#c89666"></i> Kitabını seç...</span>
+                                <i class="fa-solid fa-chevron-down" style="color:#b9a88f;"></i>
+                            </button>
+                            <input type="hidden" name="bookId" id="selectedBookId" value="" />
+                        </div>
 
+                        <!-- "Diğer" seçilince: kitabı elle gir -->
+                        <div id="customBookArea" class="d-none flex-column gap-2">
+                            <input type="text" name="customTitle" id="customTitle" class="share-input" maxlength="150"
+                                   placeholder="Kitap adı *" autocomplete="off" />
+                            <input type="text" name="customAuthor" id="customAuthor" class="share-input" maxlength="200"
+                                   placeholder="Yazar (isteğe bağlı)" autocomplete="off" />
+                        </div>
+
+                        <!-- FOTOĞRAF: mobilde çek ya da galeriden seç -->
                         <div class="upload-zone" id="uploadZone">
                             <i class="fa-solid fa-camera"></i>
-                            <span id="uploadText">Fotoğraf çek veya galeriden / bilgisayardan seç</span>
-                            <input type="file" name="imageFile" id="imageFileInput" accept="image/*" required
-                                   title="Fotoğraf çek veya galeriden/bilgisayardan seç" />
+                            <span id="uploadText">Bir fotoğraf ekle</span>
+                            <div class="upload-actions">
+                                <button type="button" class="upload-action-btn cam" id="cameraBtn">
+                                    <i class="fa-solid fa-camera"></i> Fotoğraf Çek
+                                </button>
+                                <button type="button" class="upload-action-btn" id="galleryBtn">
+                                    <i class="fa-solid fa-images"></i> Galeriden Seç
+                                </button>
+                            </div>
+                            <!-- Asıl gönderilen dosya (name=imageFile). Kamera girişi buna kopyalanır. -->
+                            <input type="file" name="imageFile" id="imageFileInput" accept="image/*" class="d-none" />
+                            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="d-none" />
                         </div>
 
                         <!-- KIRPMA ALANI -->
@@ -663,6 +907,8 @@
                             <div class="caption-counter"><span id="captionCount">0</span>/100</div>
                         </div>
 
+                        <div id="shareError" class="d-none" style="color:#c0392b; font-size:0.85rem; font-weight:600; text-align:center;"></div>
+
                         <div class="text-end">
                             <button type="submit" class="share-btn" id="shareBtn">
                                 <i class="fas fa-paper-plane me-1"></i> Paylaş
@@ -672,6 +918,36 @@
                 </form>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- KİTAP SEÇİCİ (aramalı, tam mobil uyumlu) -->
+<div class="book-picker-overlay" id="bookPicker" aria-hidden="true">
+    <div class="book-picker-panel">
+        <div class="book-picker-header">
+            <span><i class="fa-solid fa-book-open me-1"></i> Kitabını Seç</span>
+            <button type="button" class="bp-close" id="bookPickerClose" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="book-picker-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="bookSearchInput" placeholder="Kitap adını yaz..." autocomplete="off" />
+        </div>
+        <div class="book-picker-list" id="bookPickerList">
+            @foreach (var b in (List<ExcerptBookOption>)ViewBag.MyBookOptions)
+            {
+                <button type="button" class="bp-row" data-id="@b.Id" data-name="@b.Name" data-author="@(b.Author ?? "")">
+                    <span class="bp-title">@b.Name</span>
+                    @if (!string.IsNullOrEmpty(b.Author))
+                    {
+                        <span class="bp-author">@b.Author</span>
+                    }
+                </button>
+            }
+            <div class="bp-empty d-none" id="bookPickerEmpty">Eşleşen kitap yok. "Diğer" ile ekleyebilirsin.</div>
+        </div>
+        <button type="button" class="book-picker-other" id="pickOther">
+            <i class="fa-solid fa-pen-nib me-1"></i> Diğer — kitabım listede yok
+        </button>
     </div>
 </div>
 
@@ -762,16 +1038,21 @@
                 document.getElementById('captionCount').textContent = captionInput.value.length;
             });
 
-            // --- FOTOĞRAF SEÇİMİ + KIRPMA (Cropper.js) ---
-            var fileInput = document.getElementById('imageFileInput');
+            // --- FOTOĞRAF SEÇİMİ (kamera + galeri) + KIRPMA (Cropper.js) ---
+            var fileInput = document.getElementById('imageFileInput');   // asıl gönderilen (name=imageFile)
+            var cameraInput = document.getElementById('cameraInput');    // mobilde kamera
             var uploadZone = document.getElementById('uploadZone');
             var cropStage = document.getElementById('cropStage');
             var cropImage = document.getElementById('cropImage');
             var cropper = null;
 
-            fileInput.addEventListener('change', function () {
-                if (!fileInput.files || !fileInput.files[0]) return;
-                cropImage.src = URL.createObjectURL(fileInput.files[0]);
+            document.getElementById('galleryBtn').addEventListener('click', function () { fileInput.click(); });
+            var cameraBtn = document.getElementById('cameraBtn');
+            if (cameraBtn) cameraBtn.addEventListener('click', function () { cameraInput.click(); });
+
+            function startCropper(file) {
+                if (!file) return;
+                cropImage.src = URL.createObjectURL(file);
                 uploadZone.classList.add('d-none');
                 cropStage.classList.remove('d-none');
                 if (cropper) cropper.destroy();
@@ -781,14 +1062,99 @@
                     background: false,
                     responsive: true
                 });
+            }
+
+            fileInput.addEventListener('change', function () {
+                if (fileInput.files && fileInput.files[0]) startCropper(fileInput.files[0]);
+            });
+
+            // Kameradan gelen fotoğrafı asıl gönderilecek input'a taşı, sonra kırp
+            cameraInput.addEventListener('change', function () {
+                if (!cameraInput.files || !cameraInput.files[0]) return;
+                var dt = new DataTransfer();
+                dt.items.add(cameraInput.files[0]);
+                fileInput.files = dt.files;
+                startCropper(fileInput.files[0]);
             });
 
             function resetCropStage() {
                 if (cropper) { cropper.destroy(); cropper = null; }
                 fileInput.value = '';
+                cameraInput.value = '';
                 cropStage.classList.add('d-none');
                 uploadZone.classList.remove('d-none');
             }
+
+            // --- KİTAP SEÇİCİ (aramalı modal) ---
+            var bookPicker = document.getElementById('bookPicker');
+            var bookPickerList = document.getElementById('bookPickerList');
+            var bookSearchInput = document.getElementById('bookSearchInput');
+            var bookPickerEmpty = document.getElementById('bookPickerEmpty');
+            var selectedBookId = document.getElementById('selectedBookId');
+            var bookPickerLabel = document.getElementById('bookPickerLabel');
+            var customBookArea = document.getElementById('customBookArea');
+            var customTitleInput = document.getElementById('customTitle');
+            var customAuthorInput = document.getElementById('customAuthor');
+            var shareError = document.getElementById('shareError');
+
+            function escapeHtml(s) {
+                return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function openBookPicker() {
+                bookPicker.classList.add('show');
+                bookSearchInput.value = '';
+                filterBooks('');
+                setTimeout(function () { bookSearchInput.focus(); }, 60);
+            }
+            function closeBookPicker() { bookPicker.classList.remove('show'); }
+
+            function filterBooks(q) {
+                q = (q || '').toLowerCase().trim();
+                var rows = bookPickerList.querySelectorAll('.bp-row');
+                var visible = 0;
+                rows.forEach(function (r) {
+                    var name = (r.getAttribute('data-name') || '').toLowerCase();
+                    var show = !q || name.indexOf(q) !== -1;
+                    r.classList.toggle('d-none', !show);
+                    if (show) visible++;
+                });
+                bookPickerEmpty.classList.toggle('d-none', visible > 0);
+            }
+
+            function selectRealBook(id, name, author) {
+                selectedBookId.value = id;
+                var sub = author ? ' <span style="color:#9c8468;font-style:italic;font-size:0.82em;">' + escapeHtml(author) + '</span>' : '';
+                bookPickerLabel.innerHTML = '<i class="fa-solid fa-book me-1" style="color:#c89666"></i> ' + escapeHtml(name) + sub;
+                customBookArea.classList.add('d-none');
+                customBookArea.classList.remove('d-flex');
+                customTitleInput.value = '';
+                customAuthorInput.value = '';
+                if (shareError) shareError.classList.add('d-none');
+                closeBookPicker();
+            }
+
+            function selectOtherBook() {
+                selectedBookId.value = ''; // 0/other → controller elle girilen başlığı kullanır
+                bookPickerLabel.innerHTML = '<i class="fa-solid fa-pen-nib me-1" style="color:#c89666"></i> Diğer — kitabı elle gir';
+                customBookArea.classList.remove('d-none');
+                customBookArea.classList.add('d-flex');
+                if (shareError) shareError.classList.add('d-none');
+                closeBookPicker();
+                setTimeout(function () { customTitleInput.focus(); }, 60);
+            }
+
+            document.getElementById('bookPickerTrigger').addEventListener('click', openBookPicker);
+            document.getElementById('bookPickerClose').addEventListener('click', closeBookPicker);
+            document.getElementById('pickOther').addEventListener('click', selectOtherBook);
+            bookPicker.addEventListener('click', function (e) { if (e.target === bookPicker) closeBookPicker(); });
+            bookSearchInput.addEventListener('input', function () { filterBooks(this.value); });
+            bookPickerList.addEventListener('click', function (e) {
+                var row = e.target.closest('.bp-row');
+                if (!row) return;
+                selectRealBook(row.getAttribute('data-id'), row.getAttribute('data-name'), row.getAttribute('data-author'));
+            });
 
             document.getElementById('cropRotateLeft').addEventListener('click', function () { if (cropper) cropper.rotate(-90); });
             document.getElementById('cropRotateRight').addEventListener('click', function () { if (cropper) cropper.rotate(90); });
@@ -798,11 +1164,20 @@
                 fileInput.click();
             });
 
-            // Modal kapanınca kırpma alanını ve formu sıfırla
+            // Modal kapanınca kırpma alanını, formu ve kitap seçimini sıfırla
             document.getElementById('shareModal').addEventListener('hidden.bs.modal', function () {
                 resetCropStage();
                 document.getElementById('excerptForm').reset();
                 document.getElementById('captionCount').textContent = '0';
+
+                // Kitap seçimini başlangıç durumuna al
+                selectedBookId.value = '';
+                bookPickerLabel.innerHTML = '<i class="fa-solid fa-book me-1" style="color:#c89666"></i> Kitabını seç...';
+                customBookArea.classList.add('d-none');
+                customBookArea.classList.remove('d-flex');
+                if (shareError) shareError.classList.add('d-none');
+                closeBookPicker();
+
                 var btn = document.getElementById('shareBtn');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Paylaş';
@@ -813,6 +1188,26 @@
             var submittingCropped = false;
             excerptForm.addEventListener('submit', function (e) {
                 var btn = document.getElementById('shareBtn');
+
+                // Kitap ve fotoğraf zorunlu (required kaldırıldığı için burada kontrol edilir)
+                var bid = parseInt(selectedBookId.value) || 0;
+                if (bid <= 0 && !customTitleInput.value.trim()) {
+                    e.preventDefault();
+                    if (shareError) {
+                        shareError.textContent = 'Lütfen bir kitap seç ya da "Diğer" ile kitabın adını yaz.';
+                        shareError.classList.remove('d-none');
+                    }
+                    return;
+                }
+                if (!cropper && (!fileInput.files || !fileInput.files[0])) {
+                    e.preventDefault();
+                    if (shareError) {
+                        shareError.textContent = 'Kesit fotoğrafı zorunludur.';
+                        shareError.classList.remove('d-none');
+                    }
+                    return;
+                }
+                if (shareError) shareError.classList.add('d-none');
 
                 if (submittingCropped || !cropper) {
                     // Kırpma yoksa (çok eski tarayıcı) veya kırpılmış dosya hazırsa normal gönder

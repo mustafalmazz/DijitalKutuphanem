@@ -1237,6 +1237,23 @@
 
                 <!-- İSİM & ETİKET -->
                 <h1 class="pp-name">@Model.UserName</h1>
+                @if (activeTitle != null)
+                {
+                    string[] tierNames = { "", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Efsane" };
+                    var tierLabel = tierNames[Math.Clamp(activeTitle.Tier, 1, 6)];
+
+                    <div class="pp-title-badge js-title-badge"
+                         style="--title-color: @(activeTitle.ColorHex ?? "#8b6f47");"
+                         role="button" tabindex="0"
+                         data-title-name="@activeTitle.Name"
+                         data-title-desc="@activeTitle.Description"
+                         data-title-icon="@activeTitle.IconClass"
+                         data-title-color="@(activeTitle.ColorHex ?? "#8b6f47")"
+                         data-title-tier="@tierLabel">
+                        <i class="fa-solid @activeTitle.IconClass"></i>
+                        <span>@activeTitle.Name</span>
+                    </div>
+                }
 
                 <!-- SAYACLAR (kompakt, tek satır) -->
                 @{
@@ -1262,23 +1279,7 @@
                     </span>
                 </div>
 
-                @if (activeTitle != null)
-                {
-                    string[] tierNames = { "", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Efsane" };
-                    var tierLabel = tierNames[Math.Clamp(activeTitle.Tier, 1, 6)];
-
-                    <div class="pp-title-badge js-title-badge"
-                         style="--title-color: @(activeTitle.ColorHex ?? "#8b6f47");"
-                         role="button" tabindex="0"
-                         data-title-name="@activeTitle.Name"
-                         data-title-desc="@activeTitle.Description"
-                         data-title-icon="@activeTitle.IconClass"
-                         data-title-color="@(activeTitle.ColorHex ?? "#8b6f47")"
-                         data-title-tier="@tierLabel">
-                        <i class="fa-solid @activeTitle.IconClass"></i>
-                        <span>@activeTitle.Name</span>
-                    </div>
-                }
+              
 
                 @if (!string.IsNullOrEmpty(Model.Bio))
                 {
@@ -1293,8 +1294,14 @@
                 <div class="pp-actions">
                     @if (ViewBag.LoggedInUserId == Model.Id)
                     {
-                        <button type="button" class="pp-btn pp-btn-follow" data-bs-toggle="modal" data-bs-target="#editProfileModalInline" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; width: 100%;">
+                        <button type="button" class="pp-btn pp-btn-follow" data-bs-toggle="modal" data-bs-target="#editProfileModalInline" style="background: linear-gradient(135deg, #8b6f47, #6b5541); color: #fff; flex: 1 1 auto;">
                             <i class="fas fa-user-pen"></i> Profili Düzenle
+                        </button>
+                        <button type="button" class="pp-btn pp-btn-share position-relative" onclick="openRequestsModal()" title="Takip İstekleri">
+                            <i class="fa-solid fa-bell"></i>
+                            <span id="ppRequestsBadge" class="badge bg-danger rounded-pill position-absolute @(ViewBag.IncomingRequestCount != null && ViewBag.IncomingRequestCount > 0 ? "" : "d-none")" style="top: -2px; right: -2px; font-size: 0.6rem; border: 2px solid #f5f0e8;">
+                                @(ViewBag.IncomingRequestCount ?? 0)
+                            </span>
                         </button>
                     }
                     else
@@ -1316,7 +1323,8 @@
                             </button>
                         }
 
-                        @if (!Model.IsPrivate || ViewBag.IsFollowing == true)
+                        @* Mesajlaşma yalnızca takip ettiğin ya da seni takip eden kişilerle *@
+                        @if (ViewBag.IsFollowing == true || ViewBag.IsFollower == true)
                         {
                             <a href="/Message/Chat?userId=@Model.Id" class="pp-btn pp-btn-message">
                                 <i class="fas fa-comment-dots"></i> Mesaj Gönder
@@ -1985,8 +1993,129 @@
     </div>
 }
 
+@if (ViewBag.LoggedInUserId == Model.Id)
+{
+    <!-- Takip İstekleri Modalı (kendi profilinde) -->
+    <div class="modal fade" id="requestsModal" tabindex="-1" aria-labelledby="requestsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #fff9f0; border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(107, 85, 65, 0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(139, 111, 71, 0.2);">
+                    <h5 class="modal-title" id="requestsModalLabel" style="color: #4a3f35; font-weight: 700; font-family: 'Georgia', serif;">
+                        <i class="fa-solid fa-bell"></i> Takip İstekleri
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body" id="requestsModalBody" style="padding: 15px; max-height: 400px; overflow-y: auto;">
+                    <div class="text-center"><i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
     <script>
+        // ============================================================
+        //  TAKİP İSTEKLERİ (kendi profilinde zil ikonu)
+        // ============================================================
+        var ppReqModal;
+        function openRequestsModal() {
+            if (!ppReqModal) {
+                ppReqModal = new bootstrap.Modal(document.getElementById('requestsModal'));
+            }
+            ppReqModal.show();
+            loadRequests();
+        }
+
+        function loadRequests() {
+            var body = $('#requestsModalBody');
+            body.html('<div class="text-center"><i class="fa-solid fa-spinner fa-spin"></i> Yükleniyor...</div>');
+
+            $.get('/Profile/GetFollowRequests', function (res) {
+                if (res.success) {
+                    if (res.data.length === 0) {
+                        body.html('<div class="text-center text-muted" style="padding: 20px;">Bekleyen takip isteği yok.</div>');
+                        return;
+                    }
+                    var html = '<div class="list-group list-group-flush">';
+                    res.data.forEach(function (req) {
+                        var avatarContent = req.profileImage
+                            ? '<img src="' + req.profileImage + '" style="width:40px;height:40px;border-radius:10px;object-fit:cover;">'
+                            : '<div style="width:40px;height:40px;border-radius:10px;background:#e6dac8;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#8b6f47;">' + req.userName.charAt(0).toUpperCase() + '</div>';
+
+                        var frameContent = req.activeFrame
+                            ? '<img src="' + req.activeFrame + '" style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; pointer-events: none; z-index: 10; object-fit: contain;">'
+                            : '';
+
+                        var avatarHtml = '<div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">' + avatarContent + frameContent + '</div>';
+
+                        html += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center" style="background:transparent; border-color: rgba(139,111,71,0.1);" id="req-item-${req.followerId}">
+                            <a href="/Profile/PublicProfile/${req.followerId}" class="d-flex align-items-center gap-3 text-decoration-none" style="flex-grow: 1;">
+                                ${avatarHtml}
+                                <span style="font-weight: 600; color: #4a3f35;">${req.userName}</span>
+                            </a>
+                            <div style="flex-shrink: 0;">
+                                <button class="btn btn-sm btn-success me-1" onclick="handleReq(${req.followerId}, true)"><i class="fa-solid fa-check"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="handleReq(${req.followerId}, false)"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>`;
+                    });
+                    html += '</div>';
+                    body.html(html);
+                } else {
+                    body.html('<div class="text-center text-danger">İstekler yüklenemedi.</div>');
+                }
+            }).fail(function () {
+                body.html('<div class="text-center text-danger">İstekler yüklenemedi.</div>');
+            });
+        }
+
+        function handleReq(followerId, isAccept) {
+            var url = isAccept ? '/Profile/AcceptFollowRequest' : '/Profile/RejectFollowRequest';
+            $.post(url, { followerId: followerId }, function (res) {
+                if (res.success) {
+                    $('#req-item-' + followerId).fadeOut(300, function () {
+                        $(this).remove();
+
+                        // Zil rozeti + mobil menü rozetlerini azalt
+                        var decrementFn = function (selector) {
+                            var b = $(selector);
+                            if (b.length) {
+                                var curr = parseInt(b.text()) || 0;
+                                if (curr > 1) { b.text(curr - 1); }
+                                else { b.text(0).addClass('d-none'); }
+                            }
+                        };
+
+                        decrementFn('#ppRequestsBadge');
+                        decrementFn('#toplulukBadge');
+
+                        // Mobil menü noktası: takip isteği kalmadıysa ilgili işareti kaldır
+                        var tBadge = $('#toplulukBadge');
+                        if (tBadge.length && (parseInt(tBadge.text()) || 0) === 0) {
+                            var md = $('#mobileMenuDot');
+                            if (md.length) {
+                                md.data('follow-requests', false);
+                                md.attr('data-follow-requests', 'false');
+                                if (md.attr('data-achievements') !== 'true') {
+                                    md.addClass('d-none');
+                                }
+                            }
+                        }
+
+                        if ($('#requestsModalBody .list-group-item').length === 0) {
+                            $('#requestsModalBody').html('<div class="text-center text-muted" style="padding: 20px;">Bekleyen takip isteği yok.</div>');
+                        }
+                    });
+                } else {
+                    alert((res && res.message) || "İşlem gerçekleştirilemedi.");
+                }
+            }).fail(function () {
+                alert("Sunucu ile bağlantı kurulamadı.");
+            });
+        }
+
         // ============================================================
         //  BANNER TAKMA / KALDIRMA (PublicProfile)
         // ============================================================

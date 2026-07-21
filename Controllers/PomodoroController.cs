@@ -6,18 +6,23 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace BookManagementApp.Controllers
 {
-    [Authorize] 
+    [Authorize]
     public class PomodoroController : Controller
     {
         private readonly MyDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public PomodoroController(MyDbContext context)
+        public PomodoroController(MyDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         public IActionResult Index()
         {
+            // Ortam sesleri yönetici panelinden yönetilir; mikser bu listeyi kullanır
+            var sounds = BookManagementApp.Services.AmbientSoundStore.Load(_env);
+            ViewBag.AmbientSoundsJson = BookManagementApp.Services.AmbientSoundStore.ToJson(sounds);
             return View();
         }
 

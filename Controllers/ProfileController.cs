@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using BookManagementApp.Areas.Admin.Models;
 using BookManagementApp.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 
@@ -284,6 +286,8 @@ namespace BookManagementApp.Controllers
             var followersCount = _context.Follows.Count(f => f.FollowingId == id && f.IsAccepted);
             var followingCount = _context.Follows.Count(f => f.FollowerId == id && f.IsAccepted);
             var isFollowing = _context.Follows.Any(f => f.FollowerId == loggedInUserId && f.FollowingId == id && f.IsAccepted);
+            // Bu kullanıcı beni takip ediyor mu (mesajlaşma butonu için: takipçim de mesaj atabilir)
+            var isFollower = _context.Follows.Any(f => f.FollowerId == id && f.FollowingId == loggedInUserId && f.IsAccepted);
             var isPending = _context.Follows.Any(f => f.FollowerId == loggedInUserId && f.FollowingId == id && !f.IsAccepted);
             var bookCount = _context.Books.Count(b => b.UserId == id);
 
@@ -294,6 +298,7 @@ namespace BookManagementApp.Controllers
             ViewBag.FollowersCount = followersCount;
             ViewBag.FollowingCount = followingCount;
             ViewBag.IsFollowing = isFollowing;
+            ViewBag.IsFollower = isFollower;
             ViewBag.IsPending = isPending;
             ViewBag.BookCount = bookCount;
             ViewBag.TotalFocusHours = totalFocusHours;
@@ -321,6 +326,9 @@ namespace BookManagementApp.Controllers
             if (loggedInUserId == id)
             {
                 user.PasswordHash = string.Empty;
+
+                // Kendi profilindeki takip istekleri zili için bekleyen istek sayısı
+                ViewBag.IncomingRequestCount = _context.Follows.Count(f => f.FollowingId == id && !f.IsAccepted);
 
                 var ownedFrames = _context.UserFrames
                     .Where(uf => uf.UserId == id)
@@ -790,6 +798,114 @@ namespace BookManagementApp.Controllers
             return RedirectToAction(nameof(Settings));
         }
 
+        // ================== HESABI KALICI SİL (Play Store uyumu) ==================
+        // Kullanıcının hesabını ve TÜM kişisel verisini kalıcı olarak siler.
+        // Restrict FK'lı tablolar elle temizlenir; kalanlar veritabanı cascade'iyle gider.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAccount(string? currentPassword, string? confirmText)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account", new { area = "" });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return NotFound();
+
+            var hasPassword = !string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash.StartsWith("$2");
+
+            // Kimlik doğrulama: şifresi olan mevcut şifresini, Google kullanıcısı kullanıcı adını yazar.
+            if (hasPassword)
+            {
+                if (string.IsNullOrEmpty(currentPassword) || !BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+                {
+                    TempData["SettingsError"] = "Hesabı silmek için mevcut şifrenizi doğru girmelisiniz.";
+                    return RedirectToAction(nameof(Settings));
+                }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(confirmText) ||
+                    !string.Equals(confirmText.Trim(), user.UserName, StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["SettingsError"] = "Onay için kullanıcı adınızı doğru yazmalısınız.";
+                    return RedirectToAction(nameof(Settings));
+                }
+            }
+
+            int uid = userId.Value;
+
+            // Cloudinary'deki kesit görsellerini DB silinmeden önce topla
+            var excerptPublicIds = await _context.BookExcerpts
+                .Where(e => e.UserId == uid && e.ImagePublicId != null && e.ImagePublicId != "")
+                .Select(e => e.ImagePublicId)
+                .ToListAsync();
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Kesitler ve etkileşimleri
+                await _context.ExcerptReactions.Where(r => r.UserId == uid).ExecuteDeleteAsync();
+                await _context.ExcerptReports.Where(r => r.ReporterId == uid || r.ReportedUserId == uid).ExecuteDeleteAsync();
+                await _context.BookExcerpts.Where(e => e.UserId == uid).ExecuteDeleteAsync();
+
+                // Sosyal ilişkiler (her iki yön)
+                await _context.Follows.Where(f => f.FollowerId == uid || f.FollowingId == uid).ExecuteDeleteAsync();
+                await _context.ChatMessages.Where(m => m.SenderId == uid || m.ReceiverId == uid).ExecuteDeleteAsync();
+                await _context.Blocks.Where(b => b.BlockerId == uid || b.BlockedId == uid).ExecuteDeleteAsync();
+                await _context.Reports.Where(r => r.ReporterId == uid || r.ReportedUserId == uid).ExecuteDeleteAsync();
+
+                // Bu kullanıcının başka kitaplardaki beğeni/yorumları
+                await _context.BookLikes.Where(bl => bl.UserId == uid).ExecuteDeleteAsync();
+                await _context.BookComments.Where(bc => bc.UserId == uid).ExecuteDeleteAsync();
+
+                // İletişim formu mesajları (UserId nullable → NO ACTION olduğu için elle silinmeli)
+                await _context.Contacts.Where(c => c.UserId == uid).ExecuteDeleteAsync();
+
+                // Sahiplik ve istatistik kayıtları
+                await _context.UserAchievements.Where(x => x.UserId == uid).ExecuteDeleteAsync();
+                await _context.UserAvatars.Where(x => x.UserId == uid).ExecuteDeleteAsync();
+                await _context.UserBanners.Where(x => x.UserId == uid).ExecuteDeleteAsync();
+                await _context.UserFrames.Where(x => x.UserId == uid).ExecuteDeleteAsync();
+                await _context.StudySessions.Where(x => x.UserId == uid).ExecuteDeleteAsync();
+
+                // Kitaplar (üzerlerindeki beğeni/yorumlar kitap FK'sıyla cascade silinir)
+                await _context.Books.Where(b => b.UserId == uid).ExecuteDeleteAsync();
+
+                // Son olarak kullanıcının kendisi
+                await _context.Users.Where(u => u.Id == uid).ExecuteDeleteAsync();
+
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                TempData["SettingsError"] = "Hesap silinirken bir hata oluştu. Lütfen tekrar deneyin.";
+                return RedirectToAction(nameof(Settings));
+            }
+
+            // Cloudinary görsellerini temizle (best-effort; hesap zaten silindi)
+            if (excerptPublicIds.Count > 0)
+            {
+                try
+                {
+                    var cloudinary = new Cloudinary(new Account(
+                        _configuration["CloudinarySettings:CloudName"],
+                        _configuration["CloudinarySettings:ApiKey"],
+                        _configuration["CloudinarySettings:ApiSecret"]));
+                    foreach (var pid in excerptPublicIds)
+                        await cloudinary.DestroyAsync(new DeletionParams(pid) { Invalidate = true });
+                }
+                catch { /* görsel temizliği başarısız olsa da hesap silme geçerlidir */ }
+            }
+
+            // Oturumu tamamen kapat
+            HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            TempData["Success"] = "Hesabınız ve tüm verileriniz kalıcı olarak silindi.";
+            return RedirectToAction("Login", "Account", new { area = "" });
+        }
+
         public IActionResult Edit()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
@@ -937,6 +1053,32 @@ namespace BookManagementApp.Controllers
                 .CountAsync(f => f.FollowingId == loggedInUserId.Value && !f.IsAccepted);
 
             return View(users);
+        }
+
+        // Engellenen kullanıcılar listelenir; engel kaldırma için tek erişim noktası.
+        // (Engellenen kişi arama/mesaj/takip listelerinden çıktığı için profiline ulaşılamıyordu.)
+        [HttpGet]
+        public async Task<IActionResult> GetBlockedUsers()
+        {
+            var myId = HttpContext.Session.GetInt32("UserId");
+            if (myId == null) return Json(new { success = false, message = "Oturum kapalı." });
+
+            var blocked = await _context.Blocks
+                .Where(b => b.BlockerId == myId.Value)
+                .OrderByDescending(b => b.CreatedAt)
+                .Join(_context.Users,
+                      b => b.BlockedId,
+                      u => u.Id,
+                      (b, u) => new
+                      {
+                          id = u.Id,
+                          userName = u.UserName,
+                          profileImage = u.ProfileImageUrl,
+                          activeFrame = u.ActiveFrameImageUrl
+                      })
+                .ToListAsync();
+
+            return Json(new { success = true, data = blocked });
         }
 
         [HttpPost]

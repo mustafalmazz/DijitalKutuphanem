@@ -28,6 +28,16 @@ namespace BookManagementApp.Models
         [Required]
         [StringLength(20)]
         public string ItemType { get; set; } = PackItemTypes.Avatar;
+
+        /// <summary>
+        /// Paketin son geçerlilik tarihi. null ise paket süresizdir (hep görünür).
+        /// Bu tarih geçtiğinde paket Packs sayfasında gizlenir; kayıt ve içeriği silinmez,
+        /// admin tarihi güncelleyerek paketi tekrar yayınlayabilir.
+        /// </summary>
+        public DateTime? ExpiresAt { get; set; }
+
+        /// <summary>Paketin süresi dolmuş mu? null tarih hiç dolmaz.</summary>
+        public bool IsExpired => ExpiresAt.HasValue && ExpiresAt.Value <= DateTime.Now;
     }
 
     /// <summary>Paket türleri tek yerde; string sabitleri kod içine dağılmasın.</summary>

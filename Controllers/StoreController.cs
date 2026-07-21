@@ -44,7 +44,9 @@ namespace BookManagementApp.Controllers
                     .Where(a => a.PackCategory != null)
                     .OrderBy(a => a.Id)
                     .ToListAsync(),
+                // Süresi dolan paketler gizlenir (kayıt silinmez); süresiz olanlar hep görünür
                 Packages = await _context.StorePackages
+                    .Where(p => p.ExpiresAt == null || p.ExpiresAt > DateTime.Now)
                     .OrderBy(p => p.Id)
                     .ToListAsync(),
                 Banners = await _context.ProfileBanners
@@ -158,6 +160,10 @@ namespace BookManagementApp.Controllers
 
             var package = await _context.StorePackages.FindAsync(packageId);
             if (package == null) return Json(new { success = false, message = "Paket bulunamadı." });
+
+            // Süresi dolan paket açık kalan bir sayfadan bile satın alınamaz
+            if (package.IsExpired)
+                return Json(new { success = false, message = "Bu paketin süresi doldu, artık satın alınamaz." });
 
             if (user.WisdomStones < package.PriceInStones)
                 return Json(new { success = false, message = $"Yeterli Bilgelik Taşınız yok! En az {package.PriceInStones} taşa ihtiyacınız var." });

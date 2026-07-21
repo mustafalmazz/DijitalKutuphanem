@@ -43,13 +43,12 @@ namespace BookManagementApp.Controllers
 
             var page = await BuildFeedPageAsync(userId.Value, 0);
 
-            ViewBag.MyBooks = new SelectList(
-                await _context.Books
-                    .Where(b => b.UserId == userId)
-                    .OrderBy(b => b.Name)
-                    .Select(b => new { b.Id, b.Name })
-                    .ToListAsync(),
-                "Id", "Name");
+            // Kitap seçici modalı için: isimle arama ve yazar gösterimi
+            ViewBag.MyBookOptions = await _context.Books
+                .Where(b => b.UserId == userId)
+                .OrderBy(b => b.Name)
+                .Select(b => new ExcerptBookOption(b.Id, b.Name, b.Author))
+                .ToListAsync();
 
             ViewBag.HasMore = page.Excerpts.Count == PageSize;
             return View(page);
@@ -101,7 +100,7 @@ namespace BookManagementApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int bookId, string? caption, IFormFile? imageFile)
+        public async Task<IActionResult> Create(int bookId, string? customTitle, string? customAuthor, string? caption, IFormFile? imageFile)
         {
             var userId = CurrentUserId;
             if (userId == null) return RedirectToAction("Login", "Account");
@@ -113,11 +112,35 @@ namespace BookManagementApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var book = await _context.Books.FirstOrDefaultAsync(b => b.Id == bookId && b.UserId == userId);
-            if (book == null)
+            // Kitap bilgisi iki yoldan gelebilir:
+            //  1) Kendi rafındaki bir kitap (bookId > 0) — bilgiler kitaptan kopyalanır.
+            //  2) "Diğer" — kitap rafta yoksa kullanıcı adı elle yazar (customTitle).
+            string bookTitle;
+            string? bookAuthor;
+            if (bookId > 0)
             {
-                TempData["Error"] = "Lütfen kendi kitaplarınızdan birini seçin.";
-                return RedirectToAction(nameof(Index));
+                var book = await _context.Books.FirstOrDefaultAsync(b => b.Id == bookId && b.UserId == userId);
+                if (book == null)
+                {
+                    TempData["Error"] = "Lütfen kendi kitaplarınızdan birini seçin.";
+                    return RedirectToAction(nameof(Index));
+                }
+                bookTitle = book.Name;
+                bookAuthor = book.Author;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(customTitle))
+                {
+                    TempData["Error"] = "Lütfen bir kitap seçin ya da kitap adını yazın.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                bookTitle = customTitle.Trim();
+                if (bookTitle.Length > 150) bookTitle = bookTitle.Substring(0, 150);
+
+                bookAuthor = string.IsNullOrWhiteSpace(customAuthor) ? null : customAuthor.Trim();
+                if (bookAuthor != null && bookAuthor.Length > 200) bookAuthor = bookAuthor.Substring(0, 200);
             }
 
             if (imageFile == null || imageFile.Length == 0)
@@ -164,8 +187,8 @@ namespace BookManagementApp.Controllers
             var excerpt = new BookExcerpt
             {
                 UserId = userId.Value,
-                BookTitle = book.Name,
-                BookAuthor = book.Author,
+                BookTitle = bookTitle,
+                BookAuthor = bookAuthor,
                 Caption = string.IsNullOrWhiteSpace(caption) ? null : caption.Trim(),
                 ImageUrl = imageUrl,
                 ImagePublicId = publicId

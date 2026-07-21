@@ -220,6 +220,31 @@
         }
     }
 
+    /* ---- Sürpriz Paket Geri Sayımı (minimalist) ---- */
+    .pack-countdown {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: clamp(0.75rem, 1.3vw, 0.9rem);
+        color: #8b6f47;
+    }
+
+    .pack-countdown i {
+        color: var(--pack-theme);
+        opacity: 0.8;
+    }
+
+    .pack-countdown .cd-text {
+        color: var(--pack-theme);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pack-countdown.is-ending .cd-text {
+        color: #e53935;
+    }
+
     /* ---- Gacha Animasyon Overlay ---- */
     #gachaOverlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -329,6 +354,14 @@
                                 @package.Description <br />
                                 Koleksiyonu tamamlayabilecek misin? (@packOwned / @packTotal)
                             </p>
+
+                            @if (package.ExpiresAt != null)
+                            {
+                                <div class="pack-countdown" data-expires="@package.ExpiresAt.Value.ToString("yyyy-MM-ddTHH:mm:ss")">
+                                    <i class="fa-solid fa-hourglass-half"></i>
+                                    Bitmesine: <b class="cd-text">--:--:--</b>
+                                </div>
+                            }
                         </div>
 
                         <div class="pack-actions">
@@ -460,6 +493,54 @@
 </div>
 
 <script>
+    // ---- Sürpriz Paket Geri Sayımı ----
+    // Her paketin bitiş tarihine kadar canlı sayaç. Süre dolunca paket kartı gizlenir.
+    (function () {
+        var boxes = Array.prototype.slice.call(document.querySelectorAll('.pack-countdown'));
+        if (!boxes.length) return;
+
+        function tick() {
+            var now = Date.now();
+            boxes.forEach(function (box) {
+                // "yyyy-MM-ddTHH:mm:ss" saat dilimsiz string tarayıcıda yerel saat olarak yorumlanır
+                var target = new Date(box.dataset.expires).getTime();
+                var diff = target - now;
+
+                if (isNaN(target)) return;
+
+                if (diff <= 0) {
+                    // Süre doldu: paketi sayfadan kaldır (sunucuda zaten gizlenecek)
+                    var banner = box.closest('.pack-banner');
+                    if (banner) {
+                        banner.style.transition = 'opacity 0.4s';
+                        banner.style.opacity = '0';
+                        setTimeout(function () { banner.remove(); }, 400);
+                    }
+                    box.dataset.done = '1';
+                    return;
+                }
+
+                var totalSeconds = Math.floor(diff / 1000);
+                var days = Math.floor(totalSeconds / 86400);
+                var hours = Math.floor((totalSeconds % 86400) / 3600);
+
+                // Sadece gün ve saat: "2 gün 5 saat" / "5 saat" / "1 saatten az"
+                var text;
+                if (days > 0) text = days + ' gün ' + hours + ' saat';
+                else if (hours > 0) text = hours + ' saat';
+                else text = '1 saatten az';
+                box.querySelector('.cd-text').textContent = text;
+
+                // Son 1 saatte kırmızıya döner
+                if (diff <= 3600 * 1000) box.classList.add('is-ending');
+                else box.classList.remove('is-ending');
+            });
+        }
+
+        tick();
+        setInterval(tick, 1000);
+    })();
+
     function buyPack(btn, packageId) {
         var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
 
